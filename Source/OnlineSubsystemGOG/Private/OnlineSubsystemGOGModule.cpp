@@ -35,12 +35,12 @@ IMPLEMENT_MODULE(FOnlineSubsystemGOGModule, OnlineSubsystemGOG)
 FOnlineSubsystemGOGModule::FOnlineSubsystemGOGModule()
 	: galaxySdkDllHandle{nullptr}
 {
-	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::ctor()"));
+	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::ctor()"));
 }
 
 void FOnlineSubsystemGOGModule::RegisterOnlineSubsystem()
 {
-	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::RegisterOnlineSubsystem()"));
+	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::RegisterOnlineSubsystem()"));
 
 	check(!onlineFactoryGOG.IsValid() && "FOnlineFactoryGOG already created (and probably registered)");
 
@@ -54,7 +54,7 @@ void FOnlineSubsystemGOGModule::RegisterOnlineSubsystem()
 
 void FOnlineSubsystemGOGModule::StartupModule()
 {
-	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::StartupModule()"));
+	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::StartupModule()"));
 
 	check(!galaxySdkDllHandle && "GalaxySDK already loaded");
 
@@ -70,7 +70,7 @@ void FOnlineSubsystemGOGModule::StartupModule()
 
 void FOnlineSubsystemGOGModule::UnRegisterOnlineSubsystem()
 {
-	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::UnRegisterOnlineSubsystem()"));
+	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::UnRegisterOnlineSubsystem()"));
 
 	if (!onlineFactoryGOG.IsValid())
 	{
@@ -86,7 +86,7 @@ void FOnlineSubsystemGOGModule::UnRegisterOnlineSubsystem()
 
 void FOnlineSubsystemGOGModule::ShutdownModule()
 {
-	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::ShutdownModule()"));
+	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::ShutdownModule()"));
 
 	UnRegisterOnlineSubsystem();
 
@@ -96,7 +96,7 @@ void FOnlineSubsystemGOGModule::ShutdownModule()
 
 FOnlineSubsystemGOGModule::~FOnlineSubsystemGOGModule()
 {
-	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::dtor()"));
+	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::dtor()"));
 
 	check(!onlineFactoryGOG.IsValid() && "FOnlineFactoryGOG was not deleted (and probably still registered)");
 	check(!galaxySdkDllHandle && "GalaxySDK library was not released");
