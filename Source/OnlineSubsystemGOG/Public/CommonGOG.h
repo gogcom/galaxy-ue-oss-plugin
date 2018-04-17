@@ -4,9 +4,9 @@
 #include "Core.h"
 #include "OnlineSubsystem.h"
 
-#define GOG_SUBSYSTEM FName(TEXT("GOG"))
+#define TEXT_GOG TEXT("GOG")
 
-#define GOG_OSS_MODULE FName(TEXT("OnlineSubsystemGOG"))
+#define TEXT_ONLINE_SUBSYSTEM_GOG TEXT("OnlineSubsystemGOG")
 
 #define STRINGIFY(X) STRINGIFYIMPL(X)
 #define STRINGIFYIMPL(X) #X

@@ -7,22 +7,23 @@
 namespace
 {
 
-	const FString GetBinariesDir()
-	{
-		const auto pluginRootDir = IPluginManager::Get().FindPlugin(GOG_OSS_MODULE.ToString())->GetBaseDir();
-
-		if(pluginRootDir.IsEmpty())
-			UE_LOG_ONLINE(Warning, TEXT("Cannot find base plugin directory for %s"), *GOG_OSS_MODULE.ToString());
-
-		return FPaths::Combine(pluginRootDir, TEXT("Binaries"), TEXT("ThirdParty"), TEXT("GalaxySDK"));
-	}
-
 	const FString GetGalaxySdkLibraryPath()
 	{
-		auto galaxySdkDllPath = FPaths::Combine(*GetBinariesDir(), TEXT(STRINGIFY(GALAXY_DLL_NAME)));
+		const auto pluginRootDir = IPluginManager::Get().FindPlugin(TEXT_ONLINE_SUBSYSTEM_GOG)->GetBaseDir();
 
-		if(!FPaths::FileExists(galaxySdkDllPath))
-			UE_LOG_ONLINE(Warning, TEXT("Cannot find GalaxySDK dll (%s)"), *galaxySdkDllPath);
+		if (pluginRootDir.IsEmpty())
+			UE_LOG_ONLINE(Error, TEXT("Cannot find base plugin directory for %s"), TEXT_ONLINE_SUBSYSTEM_GOG);
+
+		auto galaxySdkDllPath = FPaths::Combine(
+			pluginRootDir,
+			TEXT("Source"),
+			TEXT("ThirdParty"),
+			TEXT("GalaxySDK"),
+			TEXT("Libraries"),
+			TEXT(STRINGIFY(GALAXY_DLL_NAME)));
+
+		if (!FPaths::FileExists(galaxySdkDllPath))
+			UE_LOG_ONLINE(Error, TEXT("Cannot find GalaxySDK dll (%s)"), *galaxySdkDllPath);
 
 		return galaxySdkDllPath;
 	}
@@ -34,12 +35,12 @@ IMPLEMENT_MODULE(FOnlineSubsystemGOGModule, OnlineSubsystemGOG)
 FOnlineSubsystemGOGModule::FOnlineSubsystemGOGModule()
 	: galaxySdkDllHandle{nullptr}
 {
-	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::ctor()"));
+	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::ctor()"));
 }
 
 void FOnlineSubsystemGOGModule::RegisterOnlineSubsystem()
 {
-	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::RegisterOnlineSubsystem()"));
+	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::RegisterOnlineSubsystem()"));
 
 	check(!onlineFactoryGOG.IsValid() && "FOnlineFactoryGOG already created (and probably registered)");
 
@@ -48,17 +49,17 @@ void FOnlineSubsystemGOGModule::RegisterOnlineSubsystem()
 	check(onlineFactoryGOG.IsValid() && "Failed to create FOnlineFactoryGOG factory");
 
 	FModuleManager::GetModuleChecked<FOnlineSubsystemModule>(TEXT("OnlineSubsystem"))
-		.RegisterPlatformService(GOG_SUBSYSTEM, onlineFactoryGOG.Get());
+		.RegisterPlatformService(TEXT_GOG, onlineFactoryGOG.Get());
 }
 
 void FOnlineSubsystemGOGModule::StartupModule()
 {
-	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::StartupModule()"));
+	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::StartupModule()"));
 
 	check(!galaxySdkDllHandle && "GalaxySDK already loaded");
 
 	galaxySdkDllHandle = FPlatformProcess::GetDllHandle(*GetGalaxySdkLibraryPath());
-	if(!galaxySdkDllHandle)
+	if (!galaxySdkDllHandle)
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to load GalaxySDK library: libraryPath=%s"), *GetGalaxySdkLibraryPath());
 		return;
@@ -69,23 +70,23 @@ void FOnlineSubsystemGOGModule::StartupModule()
 
 void FOnlineSubsystemGOGModule::UnRegisterOnlineSubsystem()
 {
-	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::UnRegisterOnlineSubsystem()"));
+	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::UnRegisterOnlineSubsystem()"));
 
-	if(!onlineFactoryGOG.IsValid())
+	if (!onlineFactoryGOG.IsValid())
 	{
 		UE_LOG_ONLINE(Warning, TEXT("FOnlineFactoryGOG was already deleted"));
 		return;
 	}
 
 	FModuleManager::GetModuleChecked<FOnlineSubsystemModule>(TEXT("OnlineSubsystem"))
-		.UnregisterPlatformService(GOG_SUBSYSTEM);
+		.UnregisterPlatformService(TEXT_GOG);
 
 	onlineFactoryGOG.Reset();
 }
 
 void FOnlineSubsystemGOGModule::ShutdownModule()
 {
-	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::ShutdownModule()"));
+	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::ShutdownModule()"));
 
 	UnRegisterOnlineSubsystem();
 
@@ -95,7 +96,7 @@ void FOnlineSubsystemGOGModule::ShutdownModule()
 
 FOnlineSubsystemGOGModule::~FOnlineSubsystemGOGModule()
 {
-	UE_LOG_ONLINE(Verbose, TEXT("OnlineSubsystemGOGModule::dtor()"));
+	UE_LOG_ONLINE(Log, TEXT("OnlineSubsystemGOGModule::dtor()"));
 
 	check(!onlineFactoryGOG.IsValid() && "FOnlineFactoryGOG was not deleted (and probably still registered)");
 	check(!galaxySdkDllHandle && "GalaxySDK library was not released");

@@ -15,11 +15,6 @@ public class GalaxySDK : ModuleRules
 		get { return Path.GetFullPath(Path.Combine(ModuleDirectory, "Libraries")); }
 	}
 
-	private string BinariesPath
-	{
-		get { return Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "Binaries", "ThirdParty","GalaxySDK")); }
-	}
-
 	public GalaxySDK(ReadOnlyTargetRules Target) : base(Target)
 	{
 		Type = ModuleType.External;
@@ -51,18 +46,23 @@ public class GalaxySDK : ModuleRules
 		if(Target.Platform == UnrealTargetPlatform.Win32)
 		{
 			galaxyDLLName = "Galaxy.dll";
-			PublicAdditionalLibraries.Add(Path.Combine(LibrariesPath, "Galaxy.lib"));
+			PublicDelayLoadDLLs.Add(galaxyDLLName);
+			PublicAdditionalLibraries.Add("Galaxy.lib");
 		}
 		else if(Target.Platform == UnrealTargetPlatform.Win64)
 		{
 			galaxyDLLName = "Galaxy64.dll";
+			PublicDelayLoadDLLs.Add(galaxyDLLName);
 			PublicAdditionalLibraries.Add("Galaxy64.lib");
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Mac)
 		{
 			galaxyDLLName = "libGalaxy.dylib";
-			PublicAdditionalShadowFiles.Add(Path.Combine(BinariesPath, galaxyDLLName));
-			PublicLibraryPaths.Add(BinariesPath);
+			string galaxyDLLPath = Path.Combine(LibrariesPath, galaxyDLLName);
+			PublicAdditionalShadowFiles.Add(galaxyDLLPath);
+			PublicDelayLoadDLLs.Add(galaxyDLLPath);
+			PublicLibraryPaths.Add(LibrariesPath);
+			AdditionalBundleResources.Add(new UEBuildBundleResource(galaxyDLLPath, "MacOS"));
 		}
 		else
 		{
@@ -72,7 +72,6 @@ public class GalaxySDK : ModuleRules
 		}
 
 		PublicDefinitions.Add("GALAXY_DLL_NAME=" + galaxyDLLName);
-		PublicDelayLoadDLLs.Add(Path.Combine(BinariesPath, galaxyDLLName));
-		RuntimeDependencies.Add(Path.Combine(BinariesPath, galaxyDLLName));
+		RuntimeDependencies.Add(Path.Combine(LibrariesPath, galaxyDLLName));
 	}
 }
