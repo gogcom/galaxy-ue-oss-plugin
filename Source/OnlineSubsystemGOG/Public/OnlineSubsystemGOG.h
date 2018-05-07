@@ -25,13 +25,21 @@ public:
 
 	// Implementation of the IOnlineSubsystem
 
+	#define DECLARE_ONLINE_INTERFACE(interfaceName) \
+		IOnline##interfaceName##Ptr galaxy##interfaceName##Interface; \
+		\
+		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
+		{ \
+			return galaxy##interfaceName##Interface; \
+		}
+
+	DECLARE_ONLINE_INTERFACE(Identity);
+
 	#define STUB_ONLINE_INTERFACE(interfaceName) \
 		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
 		{ \
 			return nullptr; \
 		}
-
-	STUB_ONLINE_INTERFACE(Identity);
 
 	STUB_ONLINE_INTERFACE(Leaderboards);
 

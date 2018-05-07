@@ -13,3 +13,11 @@
 
 #define STRINGIFY(X) STRINGIFYIMPL(X)
 #define STRINGIFYIMPL(X) #X
+
+// The controller number of the associated local user
+constexpr int32 LOCAL_USER_NUM{0};
+
+inline void CheckLocalUserNum(int32 InLocalUserNum)
+{
+	check(InLocalUserNum == LOCAL_USER_NUM && "Only single local player is supported")
+}

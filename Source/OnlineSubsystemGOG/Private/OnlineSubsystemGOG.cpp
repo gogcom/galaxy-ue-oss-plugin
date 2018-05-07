@@ -1,5 +1,7 @@
 #include "OnlineSubsystemGOG.h"
 
+#include "Identity/OnlineIdentityGOG.h"
+
 #include "SharedPointer.h"
 
 FOnlineSubsystemGOG::FOnlineSubsystemGOG()
@@ -65,6 +67,12 @@ bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 	UE_LOG_ONLINE(VeryVerbose, TEXT("OnlineSubsystemGOG::Tick()"));
 
 	galaxy::api::ProcessData();
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Error, TEXT("Failed to tick galaxy::api::ProcessData()"));
+		return false;
+	}
 
 	return FOnlineSubsystemImpl::Tick(InDeltaTime);
 }
@@ -74,7 +82,6 @@ bool FOnlineSubsystemGOG::InitGalaxyPeer()
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::InitGalaxyPeer()"));
 
 	galaxy::api::Init(galaxy::api::InitOptions{TCHAR_TO_ANSI(*GetAppId()), TCHAR_TO_ANSI(*GetClientSecret())});
-
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -98,6 +105,13 @@ bool FOnlineSubsystemGOG::Init()
 		UE_LOG_ONLINE(Error, TEXT("Failed to initialize OnlineSubsystemGOG. Online features are not available."));
 		return false;
 	}
+
+#define DEFINE_ONLINE_INTERFACE(interfaceName) \
+	galaxy##interfaceName##Interface = MakeShared<FOnline##interfaceName##GOG, ESPMode::ThreadSafe>(*this); \
+	\
+	check(galaxy##interfaceName##Interface.IsValid())
+
+	DEFINE_ONLINE_INTERFACE(Identity);
 
 	// TODO: create interfaces here
 
@@ -139,6 +153,8 @@ bool FOnlineSubsystemGOG::Shutdown()
 	FOnlineSubsystemImpl::Shutdown();
 
 	// TODO: release interfaces here
+
+	galaxyIdentityInterface.Reset();
 
 	ShutdownGalaxyPeer();
 
