@@ -34,6 +34,7 @@ public:
 		}
 
 	DECLARE_ONLINE_INTERFACE(Identity);
+	DECLARE_ONLINE_INTERFACE(Session);
 
 	#define STUB_ONLINE_INTERFACE(interfaceName) \
 		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
@@ -42,8 +43,6 @@ public:
 		}
 
 	STUB_ONLINE_INTERFACE(Leaderboards);
-
-	STUB_ONLINE_INTERFACE(Session);
 
 	STUB_ONLINE_INTERFACE(User);
 

@@ -1,6 +1,7 @@
 #include "OnlineSubsystemGOG.h"
 
 #include "Identity/OnlineIdentityGOG.h"
+#include "Session/OnlineSessionGOG.h"
 
 #include "SharedPointer.h"
 
@@ -112,6 +113,7 @@ bool FOnlineSubsystemGOG::Init()
 	check(galaxy##interfaceName##Interface.IsValid())
 
 	DEFINE_ONLINE_INTERFACE(Identity);
+	DEFINE_ONLINE_INTERFACE(Session);
 
 	// TODO: create interfaces here
 
@@ -153,6 +155,7 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 	// TODO: release interfaces here
 
 	galaxyIdentityInterface.Reset();
+	galaxySessionInterface.Reset();
 
 	ShutdownGalaxyPeer();
 
