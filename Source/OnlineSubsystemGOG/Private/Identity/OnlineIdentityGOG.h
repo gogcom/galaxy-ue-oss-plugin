@@ -21,7 +21,7 @@ public:
 
 	TSharedPtr<FUserOnlineAccount> GetUserAccount(const FUniqueNetId& InUserId) const override;
 
-	TArray<TSharedPtr<FUserOnlineAccount> > GetAllUserAccounts() const override;
+	TArray<TSharedPtr<FUserOnlineAccount>> GetAllUserAccounts() const override;
 
 	TSharedPtr<const FUniqueNetId> GetUniquePlayerId(int32 InLocalUserNum) const override;
 
@@ -51,8 +51,6 @@ public:
 
 private:
 
-	void ResetCachedAccountCredentials();
-
 	TSharedPtr<FUserOnlineAccount> CreateUserInfo(const FUniqueNetId& InUserId) const;
 
 	TSharedPtr<FUserOnlineAccount> FillUserData(TSharedPtr<FUserOnlineAccount>) const;
@@ -68,9 +66,8 @@ private:
 	FString FailureReasonToFString(FailureReason failureReason);
 
 	class FOnlineSubsystemGOG& onlineSubsystemGOG;
-	FOnlineAccountCredentials cachedAccountCredentials;
 
-	bool authCompletionNeeded{false};
+	bool isAuthInProgress{false};
 };
 
 using FOnlineIdentityGOGPtr = TSharedPtr<class FOnlineIdentityGOG, ESPMode::ThreadSafe>;

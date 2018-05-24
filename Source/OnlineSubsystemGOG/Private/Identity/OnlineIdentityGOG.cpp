@@ -22,16 +22,26 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::Login()"));
 
-	if (!cachedAccountCredentials.Type.IsEmpty())
+	if (isAuthInProgress)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("User is already authenticated or authentication operation is in progress"));
+		UE_LOG_ONLINE(Display, TEXT("Another authentication attempt is already inprogress"));
+		return false;
+	}
+
+	if (GetLoginStatus(InLocalUserNum) == ELoginStatus::LoggedIn)
+	{
+		UE_LOG_ONLINE(Display, TEXT("User is already logged in"));
+
+		TriggerOnLoginChangedDelegates(InLocalUserNum);
+		TriggerOnLoginCompleteDelegates(InLocalUserNum, true, *GetUniquePlayerId(InLocalUserNum), TEXT(""));
+
 		return false;
 	}
 
 	CheckLocalUserNum(InLocalUserNum);
 
 #if PLATFORM_WINDOWS
-	
+
 	auto accountType = InAccountCredentials.Type.ToLower();
 
 	if (accountType == "steam")
@@ -45,7 +55,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 			return false;
 		}
 
-		cachedAccountCredentials = InAccountCredentials;
+		isAuthInProgress = true;
 		return true;
 	}
 
@@ -60,7 +70,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 			return false;
 		}
 
-		cachedAccountCredentials = InAccountCredentials;
+		isAuthInProgress = true;
 		return true;
 	}
 
@@ -73,7 +83,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 		return false;
 	}
 
-	cachedAccountCredentials = InAccountCredentials;
+	isAuthInProgress = true;
 	return true;
 
 #elif PLATFORM_XBOXONE
@@ -87,7 +97,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 		return false;
 	}
 
-	cachedAccountCredentials = InAccountCredentials;
+	isAuthInProgress = true;
 	return true;
 
 #elif PLATFORM_PS4
@@ -101,7 +111,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 		return false;
 	}
 
-	cachedAccountCredentials = InAccountCredentials;
+	isAuthInProgress = true;
 	return true;
 
 #else
@@ -125,7 +135,10 @@ bool FOnlineIdentityGOG::Logout(int32 InLocalUserNum)
 
 bool FOnlineIdentityGOG::AutoLogin(int32 InLocalUserNum)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::AutoLogin()"));
+	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::AutoLogin(%d)"), InLocalUserNum);
+
+	// TODO: this has to be a dedicated server login
+	Login(InLocalUserNum, {GetAuthType(), TEXT(""), TEXT("")});
 
 	return true;
 }
@@ -146,8 +159,7 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::GetUserAccount(const FUniqueN
 
 TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueNetId &InUserId) const
 {
-	galaxy::api::GalaxyID(FUniqueNetIdGOG(InUserId));
-	const auto galaxyID = galaxy::api::GalaxyID(dynamic_cast<const FUniqueNetIdGOG&>(InUserId));
+	const auto galaxyID = galaxy::api::GalaxyID(AsUniqueNetIDGOG(InUserId));
 
 	if (!galaxy::api::Friends()->IsUserInformationAvailable(galaxyID))
 	{
@@ -208,7 +220,7 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueN
 
 TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::FillUserData(TSharedPtr<FUserOnlineAccount> InUserInfo) const
 {
-	const auto galaxyID = galaxy::api::GalaxyID(dynamic_cast<const FUniqueNetIdGOG&>(*InUserInfo->GetUserId()));
+	const auto galaxyID = galaxy::api::GalaxyID(AsUniqueNetIDGOG(*InUserInfo->GetUserId()));
 
 	if (!galaxy::api::User()->IsUserDataAvailable(galaxyID))
 	{
@@ -263,6 +275,12 @@ TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::GetUniquePlayerId(int32 InLoc
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to get user ID: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		return nullptr;
+	}
+
+	if (!userID.IsValid())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get user ID"));
 		return nullptr;
 	}
 
@@ -352,7 +370,7 @@ FString FOnlineIdentityGOG::GetPlayerNickname(int32 InLocalUserNum) const
 		return {};
 	}
 
-	return {UTF8_TO_TCHAR(usernameBuffer.data())};
+	return FString{ANSI_TO_TCHAR(usernameBuffer.data())};
 }
 
 FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) const
@@ -362,7 +380,7 @@ FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) cons
 	constexpr uint32_t MAX_USERNAME_LENGHT = 1024;
 	std::array<char, MAX_USERNAME_LENGHT> usernameBuffer;
 
-	galaxy::api::Friends()->GetFriendPersonaNameCopy(dynamic_cast<const FUniqueNetIdGOG&>(InUserId), usernameBuffer.data(), usernameBuffer.size());
+	galaxy::api::Friends()->GetFriendPersonaNameCopy(AsUniqueNetIDGOG(InUserId), usernameBuffer.data(), usernameBuffer.size());
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -370,7 +388,7 @@ FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) cons
 		return {};
 	}
 
-	return {UTF8_TO_TCHAR(usernameBuffer.data())};
+	return FString{ANSI_TO_TCHAR(usernameBuffer.data())};
 }
 
 FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
@@ -474,48 +492,48 @@ void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOn
 	InDelegate.ExecuteIfBound(InUserId, FOnlineError{true});
 }
 
-void FOnlineIdentityGOG::ResetCachedAccountCredentials()
-{
-	cachedAccountCredentials.Type.Reset();
-	cachedAccountCredentials.Id.Reset();
-	cachedAccountCredentials.Token.Reset();
-}
-
 void FOnlineIdentityGOG::OnAuthSuccess()
 {
 	UE_LOG_ONLINE(Display, TEXT("GOGAuthListener::OnAuthSuccess()"));
 
 	check(IsInGameThread());
 
+	isAuthInProgress = false;
+
 	galaxy::api::User()->RequestUserData();
 	auto err = galaxy::api::GetError();
 	if (err)
-	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to request user data: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
-		return;
-	}
 
 	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
-	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, *GetUniquePlayerId(LOCAL_USER_NUM), TEXT("AuthSuccess"));
+	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, FUniqueNetIdGOG{galaxy::api::User()->GetGalaxyID()}, TEXT(""));
+
+	UE_LOG_ONLINE(Display, TEXT("OnAuthSuccess() executed"));
 }
 
 void FOnlineIdentityGOG::OnAuthFailure(FailureReason failureReason)
 {
 	UE_LOG_ONLINE(Display, TEXT("GOGAuthListener::OnAuthFailure()"));
 
+	isAuthInProgress = false;
+
 	check(IsInGameThread());
 
-	ResetCachedAccountCredentials();
-	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, false, *GetUniquePlayerId(LOCAL_USER_NUM), FailureReasonToFString(failureReason));
+	UE_LOG_ONLINE(Error, TEXT("Failed to authenticate: %s"), *FailureReasonToFString(failureReason));
+
+	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, false, FUniqueNetIdGOG{}, FailureReasonToFString(failureReason));
 }
 
 void FOnlineIdentityGOG::OnAuthLost()
 {
 	UE_LOG_ONLINE(Display, TEXT("GOGAuthListener::OnAuthLost()"));
 
+	isAuthInProgress = false;
+
 	check(IsInGameThread());
 
-	ResetCachedAccountCredentials();
+	UE_LOG_ONLINE(Error, TEXT("Authentication lost"));
+
 	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::LoggedIn, ELoginStatus::NotLoggedIn, *GetUniquePlayerId(LOCAL_USER_NUM));
 }
 
@@ -536,7 +554,6 @@ FString FOnlineIdentityGOG::FailureReasonToFString(FailureReason failureReason)
 		case FAILURE_REASON_GALAXY_NOT_INITIALIZED:
 			return TEXT("Galaxy has not been initialized.");
 		case FAILURE_REASON_UNDEFINED:
-			// [[falltrough]]
 		default:
 			return TEXT("Undefined error.");
 	};
