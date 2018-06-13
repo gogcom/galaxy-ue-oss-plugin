@@ -37,7 +37,8 @@ public class OnlineSubsystemGOG : ModuleRules
 				"Sockets",
 				"OnlineSubsystem",
 				"Json",
-				"GalaxySDK"
+				"GalaxySDK",
+				"PacketHandler"
 			}
 		);
 

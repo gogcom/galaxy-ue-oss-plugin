@@ -5,6 +5,7 @@
 #include "RequestLobbyListListener.h"
 #include "JoinLobbyListener.h"
 #include "LobbyStartListener.h"
+#include "Network/InternetAddrGOG.h"
 
 #include "Online.h"
 #include "OnlineSubsystemUtils.h"
@@ -12,6 +13,7 @@
 #include <algorithm>
 
 FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem)
+	: subsystemGOG{InSubsystem}
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::ctor()"));
 }
@@ -99,7 +101,7 @@ FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, con
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
 
-	return CreateNamedSession(InSessionName, InSessionSettings);
+	return CreateNamedSession(std::move(InSessionName), InSessionSettings);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSession& InSession)
@@ -575,9 +577,14 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(const FUniqueNetId&, FName In
 
 bool FOnlineSessionGOG::GetResolvedConnectStringFromSession(const FOnlineSession& InSession, FString& OutConnectString) const
 {
-	// TODO: fix when transport layer is implemented
-	OutConnectString = FString(TEXT("127.0.0.1:17777"));
+	if (!InSession.SessionInfo.IsValid()
+		|| !InSession.SessionInfo->IsValid())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Invalid SessionInfo"));
+		return false;
+	}
 
+	OutConnectString = FInternetAddrGOG{InSession.SessionInfo->GetSessionId()}.ToString(true);
 	return true;
 }
 
@@ -732,6 +739,23 @@ int32 FOnlineSessionGOG::GetNumSessions()
 	UE_LOG_ONLINE(VeryVerbose, TEXT("GetNumSessions"));
 
 	return storedSessions.Num();
+}
+
+void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure)
+{
+	UE_LOG_ONLINE(Log, TEXT("FOnlineSessionGOG::OnLobbyLeft()"));
+
+	auto storedSession = FindSession(InLobbyID);
+	if (!storedSession)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Lobby left listener called for an unknown session. Ignoring"));
+		return;
+	}
+
+	subsystemGOG.TriggerOnConnectionStatusChangedDelegates(EOnlineServerConnectionStatus::Normal, EOnlineServerConnectionStatus::ConnectionDropped);
+
+	// Not sure if we have to clean this up, or developer/Engine will manage everything, but let's do it
+	DestroySession(storedSession->SessionName);
 }
 
 void FOnlineSessionGOG::DumpSessionState()

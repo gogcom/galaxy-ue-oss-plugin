@@ -7,7 +7,9 @@
 
 #include "OnlineSessionSettings.h"
 
-class FOnlineSessionGOG : public IOnlineSession
+class FOnlineSessionGOG
+	: public IOnlineSession
+	, public galaxy::api::GlobalLobbyLeftListener
 {
 public:
 
@@ -131,9 +133,11 @@ private:
 
 	const FNamedOnlineSession* FindSession(const FUniqueNetIdGOG& InSessionID) const;
 
+	void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure) override;
+
 	TArray<FNamedOnlineSession> storedSessions;
 
 	TSet<TUniquePtr<IListenerGOG>> listenerRegistry;
-};
 
-using FOnlineSessionGOGPtr = TSharedPtr<FOnlineSessionGOG, ESPMode::ThreadSafe>;
+	IOnlineSubsystem& subsystemGOG;
+};
