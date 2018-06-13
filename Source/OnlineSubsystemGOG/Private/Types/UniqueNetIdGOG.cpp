@@ -3,25 +3,21 @@
 FUniqueNetIdGOG::FUniqueNetIdGOG(uint64 InId)
 	: id{InId}
 {
-	check(IsValid());
 }
 
 FUniqueNetIdGOG::FUniqueNetIdGOG(const galaxy::api::GalaxyID& InGalaxyID)
 	: id{InGalaxyID.ToUint64()}
 {
-	check(IsValid());
 }
 
 FUniqueNetIdGOG::FUniqueNetIdGOG(const FString& InStr)
 	: id{static_cast<uint64>(FCString::Atoi64(*InStr))}
 {
-	check(IsValid());
 }
 
 FUniqueNetIdGOG::FUniqueNetIdGOG(const FUniqueNetIdGOG& InUniqueNetIdGOG)
 	: id{InUniqueNetIdGOG.id}
 {
-	check(IsValid());
 }
 
 FUniqueNetIdGOG::FUniqueNetIdGOG(const FUniqueNetId& InUniqueNetId)
@@ -33,7 +29,6 @@ FUniqueNetIdGOG::FUniqueNetIdGOG(const uint8* InBytes, int32 InSize)
 	: id{*reinterpret_cast<const uint64*>(InBytes)}
 {
 	check(InSize == GetSize());
-	check(IsValid());
 }
 
 const uint8* FUniqueNetIdGOG::GetBytes() const
