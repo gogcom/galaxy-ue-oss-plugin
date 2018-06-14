@@ -146,10 +146,8 @@ void FOnlineSubsystemGOG::ShutdownGalaxyPeer()
 	galaxy::api::Shutdown();
 }
 
-bool FOnlineSubsystemGOG::Shutdown()
+bool FOnlineSubsystemGOG::ShutdownImpl()
 {
-	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::Shutdown()"));
-
 	FOnlineSubsystemImpl::Shutdown();
 
 	// TODO: release interfaces here
@@ -162,6 +160,17 @@ bool FOnlineSubsystemGOG::Shutdown()
 	return true;
 }
 
+bool FOnlineSubsystemGOG::Shutdown()
+{
+	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::Shutdown()"));
+#if UE_EDITOR
+	return true;
+#else
+	return ShutdownImpl();
+#endif
+}
+
 FOnlineSubsystemGOG::~FOnlineSubsystemGOG()
 {
+	ShutdownImpl();
 };

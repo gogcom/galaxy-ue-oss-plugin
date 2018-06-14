@@ -111,6 +111,8 @@ private:
 
 	FString clientID;
 	FString clientSecret;
+
+	bool ShutdownImpl();
 };
 
 using FOnlineSubsystemGOGPtr = TSharedPtr<FOnlineSubsystemGOG, ESPMode::ThreadSafe> ;
