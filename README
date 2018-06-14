@@ -1,0 +1,46 @@
+This is an implementation of the OnlineSubsystem for GOG online platform.
+
+1. Installing plugin:
+
+	- Copy the plugin folder under "<GameFolder>/Plugins".
+
+	- Enable the plugin:
+		* either through UE4 Editor interface:
+			* go to Settings -> Plugins -> Online -> OnlineSubsystemGOG
+			* check "Enabled"
+			* save and close
+			* restart UE4 Editor
+
+		* or modifying "<Game>.uproject" file manually as follows:
+				"Plugins": [
+					{
+						"Name": "OnlineSubsystem",
+						"Enabled": true
+					},
+					{
+						"Name": "OnlineSubsystemGOG",
+						"Enabled": true
+					}
+				]
+
+	- Update default engine configuration file ("<GameFolder>/Config/DefaultEngine.ini") with ClientID* and ClientSecret*:
+
+		[OnlineSubsystem]
+		DefaultPlatformService=GOG
+
+		[OnlineSubsystemGOG]
+		ClientID=<ClientID>
+		ClientSecret=<ClientSecret>
+
+		[/Script/Engine.Engine]
+		!NetDriverDefinitions=ClearArray
+		NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSubsystemGOG.NetDriverGOG",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
+
+		[/Script/Engine.GameEngine]
+		!NetDriverDefinitions=ClearArray
+		NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSubsystemGOG.NetDriverGOG",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
+
+		[/Script/OnlineSubsystemGOG.NetDriverGOG]
+		NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
+
+		* Please contact your GOG.com tech representative for more info on how to obtain Client ID and Client Secret
