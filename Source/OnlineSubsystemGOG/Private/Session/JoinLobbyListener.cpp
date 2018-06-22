@@ -1,6 +1,7 @@
 #include "JoinLobbyListener.h"
 
 #include "OnlineSessionGOG.h"
+#include "LobbyData.h"
 
 #include "Online.h"
 
@@ -12,7 +13,7 @@ FJoinLobbyListener::FJoinLobbyListener(const FUniqueNetIdGOG& InLobbyID, FName I
 	check(IsInGameThread());
 }
 
-void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult)
+void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult) const
 {
 	auto onlineSessionInterface = StaticCastSharedPtr<FOnlineSessionGOG>(Online::GetSessionInterface());
 	if (!onlineSessionInterface.IsValid())

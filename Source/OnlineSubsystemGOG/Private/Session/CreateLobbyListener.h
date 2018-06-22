@@ -10,10 +10,11 @@ class FCreateLobbyListener
 	: public IListenerGOG
 	, public galaxy::api::GlobalLobbyCreatedListener
 	, public galaxy::api::GlobalLobbyEnteredListener
+	, public galaxy::api::GlobalLobbyDataListener
 {
 public:
 
-	FCreateLobbyListener(const FName& InSessionName, const FOnlineSessionSettings& InSettings);
+	FCreateLobbyListener(FName InSessionName, FOnlineSessionSettings InSettings);
 
 private:
 
@@ -21,7 +22,7 @@ private:
 
 	void OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)  override;
 
-	bool SetLobbyData();
+	void OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID) override;
 
 	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful) const;
 

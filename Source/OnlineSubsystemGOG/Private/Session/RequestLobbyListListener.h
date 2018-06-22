@@ -17,9 +17,9 @@ private:
 
 	void TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful) const;
 
-	bool FillSearchResult(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSearchResult* InSearchResult) const;
-
 	void OnLobbyList(uint32_t InlobbyCount, bool InIOFailure) override;
+
+	bool RequestLobbiesData(uint32_t InLobbyCount);
 
 	void OnLobbyDataRetrieveSuccess(const galaxy::api::GalaxyID& InLobbyID) override;
 

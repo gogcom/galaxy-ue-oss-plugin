@@ -20,7 +20,7 @@ private:
 
 	void OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult) override;
 
-	void TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult);
+	void TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult) const;
 
 	const FUniqueNetIdGOG lobbyID;
 	const FName sessionName;
