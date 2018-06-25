@@ -2,6 +2,7 @@
 
 #include "Identity/OnlineIdentityGOG.h"
 #include "Session/OnlineSessionGOG.h"
+#include "Achievements/AchievementsInterfaceGOG.h"
 
 #include "SharedPointer.h"
 
@@ -33,7 +34,7 @@ FString ReadStrFromConfig(const char* InKey)
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::ReadStrFromConfig(%s)"), ANSI_TO_TCHAR(InKey));
 
-	FString str = GConfig->GetStr(TEXT_ONLINE_SUBSYSTEM_GOG, ANSI_TO_TCHAR(InKey), GEngineIni);
+	FString str = GConfig->GetStr(TEXT_CONFIG_SECTION_GOG, ANSI_TO_TCHAR(InKey), GEngineIni);
 	if (str.IsEmpty())
 	{
 		UE_LOG_ONLINE(Error, TEXT("%s missing parameter: %s"), *GEngineIni, ANSI_TO_TCHAR(InKey));
@@ -107,13 +108,19 @@ bool FOnlineSubsystemGOG::Init()
 		return false;
 	}
 
-#define DEFINE_ONLINE_INTERFACE(interfaceName) \
+#define DEFINE_ONLINE_INTERFACE_WITH_THIS(interfaceName) \
 	galaxy##interfaceName##Interface = MakeShared<FOnline##interfaceName##GOG, ESPMode::ThreadSafe>(*this); \
 	\
 	check(galaxy##interfaceName##Interface.IsValid())
 
-	DEFINE_ONLINE_INTERFACE(Identity);
-	DEFINE_ONLINE_INTERFACE(Session);
+#define DEFINE_ONLINE_INTERFACE(interfaceName) \
+	galaxy##interfaceName##Interface = MakeShared<FOnline##interfaceName##GOG, ESPMode::ThreadSafe>(); \
+	\
+	check(galaxy##interfaceName##Interface.IsValid())
+
+	DEFINE_ONLINE_INTERFACE_WITH_THIS(Identity);
+	DEFINE_ONLINE_INTERFACE_WITH_THIS(Session);
+	DEFINE_ONLINE_INTERFACE_WITH_THIS(Achievements);
 
 	// TODO: create interfaces here
 
@@ -156,6 +163,7 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 
 	galaxyIdentityInterface.Reset();
 	galaxySessionInterface.Reset();
+	galaxyAchievementsInterface.Reset();
 
 	ShutdownGalaxyPeer();
 

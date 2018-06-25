@@ -35,6 +35,7 @@ public:
 
 	DECLARE_ONLINE_INTERFACE(Identity);
 	DECLARE_ONLINE_INTERFACE(Session);
+	DECLARE_ONLINE_INTERFACE(Achievements);
 
 	#define STUB_ONLINE_INTERFACE(interfaceName) \
 		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
@@ -49,8 +50,6 @@ public:
 	STUB_ONLINE_INTERFACE(Friends);
 
 	STUB_ONLINE_INTERFACE(UserCloud);
-
-	STUB_ONLINE_INTERFACE(Achievements);
 
 	STUB_ONLINE_INTERFACE(Presence);
 
@@ -92,9 +91,9 @@ PACKAGE_SCOPE:
 
 	FOnlineSubsystemGOG(FName InInstanceName);
 
-private:
+	bool Tick(float InDeltaTime) override;
 
-	virtual bool Tick(float InDeltaTime) override;
+private:
 
 	FString GetClientSecret() const;
 

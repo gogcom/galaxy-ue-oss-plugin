@@ -44,3 +44,9 @@ This is an implementation of the OnlineSubsystem for GOG online platform.
 		NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
 
 		* Please contact your GOG.com tech representative for more info on how to obtain Client ID and Client Secret
+2. Using the Achivements:
+
+	- Update engine configuration file with your achivements definitions. Those are the achivements "API Key" from Devportal.
+
+	- In UE4 methods (and blueprints) use above definitions as AchievementIds
+

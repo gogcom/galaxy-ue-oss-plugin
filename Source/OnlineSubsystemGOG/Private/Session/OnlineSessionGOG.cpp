@@ -121,7 +121,7 @@ FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName)
 
 const FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName) const
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::GetNamedSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE(VeryVerbose, TEXT("FOnlineSessionGOG::GetNamedSession('%s')"), *InSessionName.ToString());
 
 	return storedSessions.FindByPredicate([&](const auto& session) {
 		return session.SessionName == InSessionName;
