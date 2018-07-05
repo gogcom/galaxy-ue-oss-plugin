@@ -24,3 +24,8 @@ inline void CheckLocalUserNum(int32 InLocalUserNum)
 {
 	check(InLocalUserNum == LOCAL_USER_NUM && "Only single local player is supported")
 }
+
+inline uint64 CharLen(const FString& InString)
+{
+	return static_cast<uint64>(InString.Len()) * sizeof(FString::ElementType);
+}

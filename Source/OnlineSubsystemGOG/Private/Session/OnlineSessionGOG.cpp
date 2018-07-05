@@ -9,8 +9,26 @@
 
 #include "Online.h"
 #include "OnlineSubsystemUtils.h"
+#include "OnlineLeaderboardInterface.h"
 
 #include <algorithm>
+
+namespace
+{
+
+	void FlushLeaderboards(FName InSessionName)
+	{
+		auto onlineLeaderboardsInterface = Online::GetLeaderboardsInterface(TEXT_GOG);
+		if (!onlineLeaderboardsInterface.IsValid())
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Failed to flush leaderboards: NULL leaderboards interface"));
+			return;
+		}
+
+		onlineLeaderboardsInterface->FlushLeaderboards(InSessionName);
+	}
+
+}
 
 FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem)
 	: subsystemGOG{InSubsystem}
@@ -264,7 +282,7 @@ bool FOnlineSessionGOG::EndSession(FName InSessionName)
 
 	storedSession->SessionState = EOnlineSessionState::Ending;
 
-	// TODO: flush leaderboards. Then mark session as ended and trigger delegate
+	FlushLeaderboards(InSessionName);
 
 	storedSession->SessionState = EOnlineSessionState::Ended;
 
@@ -274,7 +292,7 @@ bool FOnlineSessionGOG::EndSession(FName InSessionName)
 
 bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySessionCompleteDelegate& InCompletionDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::EndSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::DestroySession('%s')"), *InSessionName.ToString());
 
 	FNamedOnlineSession* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
@@ -300,7 +318,7 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 
 	storedSession->SessionState = EOnlineSessionState::Destroying;
 
-	// TODO: flush leaderboards. Then mark session as destroyed and trigger delegate
+	FlushLeaderboards(InSessionName);
 
 	if (!storedSession->SessionInfo.IsValid()
 		|| !storedSession->SessionInfo->IsValid())

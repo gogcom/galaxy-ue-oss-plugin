@@ -13,12 +13,6 @@ class FOnlineSessionGOG
 {
 public:
 
-	FOnlineSessionGOG(IOnlineSubsystem& InSubsystem);
-
-	~FOnlineSessionGOG();
-
-public:
-
 	bool CreateSession(int32 InHostingPlayerNum, FName InSessionName, const FOnlineSessionSettings& InSessionSettings) override;
 
 	bool CreateSession(const FUniqueNetId& InHostingPlayerId, FName InSessionName, const FOnlineSessionSettings& InSessionSettings) override;
@@ -100,6 +94,10 @@ public:
 	void DumpSessionState() override;
 
 PACKAGE_SCOPE:
+
+	FOnlineSessionGOG(IOnlineSubsystem& InSubsystem);
+
+	~FOnlineSessionGOG();
 
 	void FreeListener(const FSetElementId& InListenerID)
 	{

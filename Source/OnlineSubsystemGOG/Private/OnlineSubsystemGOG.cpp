@@ -3,6 +3,7 @@
 #include "Identity/OnlineIdentityGOG.h"
 #include "Session/OnlineSessionGOG.h"
 #include "Achievements/AchievementsInterfaceGOG.h"
+#include "Leaderboards/OnlineLeaderboardsGOG.h"
 
 #include "SharedPointer.h"
 
@@ -121,6 +122,7 @@ bool FOnlineSubsystemGOG::Init()
 	DEFINE_ONLINE_INTERFACE_WITH_THIS(Identity);
 	DEFINE_ONLINE_INTERFACE_WITH_THIS(Session);
 	DEFINE_ONLINE_INTERFACE_WITH_THIS(Achievements);
+	DEFINE_ONLINE_INTERFACE_WITH_THIS(Leaderboards);
 
 	// TODO: create interfaces here
 
@@ -164,6 +166,7 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 	galaxyIdentityInterface.Reset();
 	galaxySessionInterface.Reset();
 	galaxyAchievementsInterface.Reset();
+	galaxyLeaderboardsInterface.Reset();
 
 	ShutdownGalaxyPeer();
 

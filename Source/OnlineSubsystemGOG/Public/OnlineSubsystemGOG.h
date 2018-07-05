@@ -36,14 +36,13 @@ public:
 	DECLARE_ONLINE_INTERFACE(Identity);
 	DECLARE_ONLINE_INTERFACE(Session);
 	DECLARE_ONLINE_INTERFACE(Achievements);
+	DECLARE_ONLINE_INTERFACE(Leaderboards);
 
 	#define STUB_ONLINE_INTERFACE(interfaceName) \
 		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
 		{ \
 			return nullptr; \
 		}
-
-	STUB_ONLINE_INTERFACE(Leaderboards);
 
 	STUB_ONLINE_INTERFACE(User);
 
