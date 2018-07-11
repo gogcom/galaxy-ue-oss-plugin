@@ -8,9 +8,9 @@
 
 class FCreateLobbyListener
 	: public IListenerGOG
-	, public galaxy::api::GlobalLobbyCreatedListener
-	, public galaxy::api::GlobalLobbyEnteredListener
-	, public galaxy::api::GlobalLobbyDataListener
+	, public galaxy::api::ILobbyCreatedListener
+	, public galaxy::api::ILobbyEnteredListener
+	, public galaxy::api::ILobbyDataUpdateListener
 {
 public:
 
@@ -22,7 +22,9 @@ private:
 
 	void OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)  override;
 
-	void OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID) override;
+	void OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& InLobbyID) override;
+
+	void OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason) override;
 
 	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful) const;
 

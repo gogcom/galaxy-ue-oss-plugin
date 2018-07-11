@@ -12,7 +12,6 @@
 namespace
 {
 
-
 	bool CreateOnlineSessionSettings(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSettings& OutOnlineSessionSettings)
 	{
 		auto lobbyDataCount = galaxy::api::Matchmaking()->GetLobbyDataCount(InLobbyID);
@@ -47,7 +46,6 @@ namespace
 		OutOnlineSessionSettings = OnlineSessionSettingsConverter::FromLobbyData(lobbyData);
 		return true;
 	}
-
 
 	bool GetSessionOwnerID(FOnlineSessionSettings &sessionSettings, const galaxy::api::GalaxyID &InLobbyID, FOnlineSessionSearchResult* InSearchResult)
 	{
@@ -134,10 +132,9 @@ namespace
 
 }
 
-FRequestLobbyListListener::FRequestLobbyListListener(const TSharedRef<FOnlineSessionSearch>& InOutSearchSettings)
-	: searchSettings{InOutSearchSettings}
+FRequestLobbyListListener::FRequestLobbyListListener(TSharedRef<FOnlineSessionSearch> InOutSearchSettings)
+	: searchSettings{MoveTemp(InOutSearchSettings)}
 {
-	check(IsInGameThread());
 }
 
 void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful) const
@@ -202,7 +199,7 @@ bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
 			continue;
 		}
 
-		galaxy::api::Matchmaking()->RequestLobbyData(lobbyID);
+		galaxy::api::Matchmaking()->RequestLobbyData(lobbyID, this);
 		err = galaxy::api::GetError();
 		if (err)
 		{
@@ -227,12 +224,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Ga
 {
 	UE_LOG_ONLINE(Display, TEXT("FRequestLobbyListListener::OnLobbyDataRetrieveSuccess()"), InLobbyID.ToUint64());
 
-	if (pendingLobbyList.Find(InLobbyID) == INDEX_NONE)
-	{
-		UE_LOG_ONLINE(Display, TEXT("Unknown lobby. Skipping: lobbyID=%llu"), InLobbyID.ToUint64());
-		return;
-	}
-	pendingLobbyList.RemoveSwap(InLobbyID);
+	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64())
 
 	auto* newSearchResult = new (searchSettings->SearchResults) FOnlineSessionSearchResult();
 	if (!newSearchResult)
@@ -256,11 +248,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Ga
 {
 	UE_LOG_ONLINE(Display, TEXT("OnLobbyDataRetrieveFailure, lobbyID=%llu"), InLobbyID.ToUint64());
 
-	if (pendingLobbyList.Find(InLobbyID) == INDEX_NONE)
-	{
-		UE_LOG_ONLINE(Display, TEXT("Unknown lobby. Skipping: lobbyID=%llu"), InLobbyID.ToUint64());
-		return;
-	}
+	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64())
 
 	switch (InFailureReason)
 	{
@@ -277,7 +265,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Ga
 		}
 		case galaxy::api::ILobbyDataRetrieveListener::FAILURE_REASON_UNDEFINED:
 		default:
-			UE_LOG_ONLINE(Error, TEXT("Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
+			UE_LOG_ONLINE(Error, TEXT("Unknown failure when retrieving lobby data: lobbyID=%llu"), InLobbyID.ToUint64());
 	}
 
 	TriggerOnFindSessionsCompleteDelegates(false);

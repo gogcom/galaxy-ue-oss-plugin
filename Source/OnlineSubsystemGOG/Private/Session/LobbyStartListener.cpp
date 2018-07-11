@@ -4,28 +4,17 @@
 
 #include "Online.h"
 
-FLobbyStartListener::FLobbyStartListener(const galaxy::api::GalaxyID& InLobbyID, const FName& InSessionName)
-	: lobbyID{InLobbyID}
-	, sessionName{InSessionName}
+FLobbyStartListener::FLobbyStartListener(galaxy::api::GalaxyID InLobbyID, FName InSessionName)
+	: lobbyID{MoveTemp(InLobbyID)}
+	, sessionName{MoveTemp(InSessionName)}
 {
-	check(IsInGameThread());
 }
 
-void FLobbyStartListener::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID)
+void FLobbyStartListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& InLobbyID)
 {
 	UE_LOG_ONLINE(Display, TEXT("OnLobbyDataUpdated: lobbyID=%llu"), InLobbyID.ToUint64());
 
-	if (InLobbyID != lobbyID)
-	{
-		UE_LOG_ONLINE(Display, TEXT("Unknown lobby. Ignoring: updatedLobbyID=%llu"), InLobbyID.ToUint64());
-		return;
-	}
-
-	if (InMemberID.IsValid())
-	{
-		UE_LOG_ONLINE(Display, TEXT("LobbyMemberData update. Ignoring"));
-		return;
-	}
+	checkf(lobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	auto isLobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(InLobbyID);
 	auto err = galaxy::api::GetError();
@@ -36,6 +25,19 @@ void FLobbyStartListener::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobb
 		UE_LOG_ONLINE(Error, TEXT("Failed to set Lobby as joinable"));
 
 	TriggerOnStartSessionCompleteDelegates(isLobbyJoinable);
+}
+
+void FLobbyStartListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason)
+{
+	UE_LOG_ONLINE(Display, TEXT("FLobbyStartListener::OnLobbyDataUpdateFailure: lobbyID=%llu"), InLobbyID.ToUint64());
+
+	checkf(lobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
+
+	UE_LOG_ONLINE(Error, InFailureReason == galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST
+		? TEXT("Specified lobby does not exists")
+		: TEXT("Unknown error"));
+
+	TriggerOnStartSessionCompleteDelegates(false);
 }
 
 bool FLobbyStartListener::MarkSessionStarted(bool IsJoinable) const

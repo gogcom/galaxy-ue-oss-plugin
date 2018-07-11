@@ -59,20 +59,23 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 		return false;
 	}
 
-	auto listener = CreateListener<FCreateLobbyListener>(InSessionName, InSessionSettings);
+	auto listenerID = CreateListener<FCreateLobbyListener>(InSessionName, InSessionSettings);
+	auto listener = GetListenerRawPtr<FCreateLobbyListener>(listenerID);
 
 	galaxy::api::Matchmaking()->CreateLobby(
 		GetLobbyType(InSessionSettings),
 		InSessionSettings.NumPublicConnections,
-		true,
-		galaxy::api::LOBBY_TOPOLOGY_TYPE_STAR);
+		false,
+		galaxy::api::LOBBY_TOPOLOGY_TYPE_STAR,
+		listener,
+		listener);
 
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to create lobby[0]: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 
-		FreeListener(listener);
+		FreeListener(listenerID);
 
 		TriggerOnCreateSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -213,15 +216,15 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 		return true;
 	}
 
-	auto listener = CreateListener<FLobbyStartListener>(lobbyID, InSessionName);
+	auto listenerID = CreateListener<FLobbyStartListener>(lobbyID, InSessionName);
 
-	galaxy::api::Matchmaking()->SetLobbyJoinable(lobbyID, storedSession->SessionSettings.bAllowJoinInProgress);
+	galaxy::api::Matchmaking()->SetLobbyJoinable(lobbyID, storedSession->SessionSettings.bAllowJoinInProgress, GetListenerRawPtr<FLobbyStartListener>(listenerID));
 	err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID=%llus, %s; %s"), lobbyID.ToUint64(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 
-		FreeListener(listener);
+		FreeListener(listenerID);
 		storedSession->SessionState = EOnlineSessionState::Pending;
 		TriggerOnStartSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -389,17 +392,17 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	// TODO: parse search settings and employ them as session filters when session settings
 	// TODO: handle default filters (SEARCH_DEDICATED_ONLY, SEARCH_EMPTY_SERVERS_ONLY, SEARCH_SECURE_SERVERS_ONLY e.t.c.) from OnlineSessionSettings.h
 
-	// TODO: Simultaneous search operation will fill improper search result. Fix by using specific listeners
-	auto listener = CreateListener<FRequestLobbyListListener>(InOutSearchSettings);
+	auto listenerID = CreateListener<FRequestLobbyListListener>(InOutSearchSettings);
 
-	galaxy::api::Matchmaking()->RequestLobbyList();
+	galaxy::api::Matchmaking()->RequestLobbyList(false, GetListenerRawPtr<FRequestLobbyListListener>(listenerID));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby list: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 
-		FreeListener(listener);
+		FreeListener(listenerID);
 
+		InOutSearchSettings->SearchState = EOnlineAsyncTaskState::Failed;
 		TriggerOnFindSessionsCompleteDelegates(false);
 		false;
 	}
@@ -466,17 +469,16 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 
 	const auto& sessionID = InDesiredSession.Session.SessionInfo->GetSessionId();
 
-	// TODO: Simultaneous create operation might call improper delegates. Fix by using specific listeners
-	auto listener = CreateListener<FJoinLobbyListener>(AsUniqueNetIDGOG(sessionID), InSessionName, InDesiredSession.Session);
+	auto listenerID = CreateListener<FJoinLobbyListener>(InSessionName, InDesiredSession.Session);
 
-	galaxy::api::Matchmaking()->JoinLobby(AsUniqueNetIDGOG(sessionID));
+	galaxy::api::Matchmaking()->JoinLobby(AsUniqueNetIDGOG(sessionID), GetListenerRawPtr<FJoinLobbyListener>(listenerID));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to join lobby: lobbyID=%s; %s; %s"), *sessionID.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 		TriggerOnJoinSessionCompleteDelegates(InSessionName, EOnJoinSessionCompleteResult::UnknownError);
 
-		FreeListener(listener);
+		FreeListener(listenerID);
 
 		return false;
 	}

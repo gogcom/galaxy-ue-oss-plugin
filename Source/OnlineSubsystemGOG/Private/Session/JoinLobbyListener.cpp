@@ -5,12 +5,10 @@
 
 #include "Online.h"
 
-FJoinLobbyListener::FJoinLobbyListener(const FUniqueNetIdGOG& InLobbyID, FName InSessionName, const FOnlineSession& InJoiningSession)
-	: lobbyID{InLobbyID}
-	, sessionName{InSessionName}
-	, joiningSession{InJoiningSession}
+FJoinLobbyListener::FJoinLobbyListener(FName InSessionName, FOnlineSession InJoiningSession)
+	: sessionName{MoveTemp(InSessionName)}
+	, joiningSession{MoveTemp(InJoiningSession)}
 {
-	check(IsInGameThread());
 }
 
 void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult) const

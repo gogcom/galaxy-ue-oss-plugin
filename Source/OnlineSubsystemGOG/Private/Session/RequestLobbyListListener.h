@@ -6,12 +6,12 @@
 
 class FRequestLobbyListListener
 	: public IListenerGOG
-	, public galaxy::api::GlobalLobbyListListener
-	, public galaxy::api::GlobalLobbyDataRetrieveListener
+	, public galaxy::api::ILobbyListListener
+	, public galaxy::api::ILobbyDataRetrieveListener
 {
 public:
 
-	FRequestLobbyListListener(const TSharedRef<FOnlineSessionSearch>& InOutSearchSettings);
+	FRequestLobbyListListener(TSharedRef<FOnlineSessionSearch> InOutSearchSettings);
 
 private:
 

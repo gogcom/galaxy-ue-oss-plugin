@@ -10,11 +10,11 @@
 
 class FJoinLobbyListener
 	: public IListenerGOG
-	, public galaxy::api::GlobalLobbyEnteredListener
+	, public galaxy::api::ILobbyEnteredListener
 {
 public:
 
-	FJoinLobbyListener(const FUniqueNetIdGOG& InLobbyID, FName InSessionName, const FOnlineSession& InJoiningSession);
+	FJoinLobbyListener(FName InSessionName, FOnlineSession InJoiningSession);
 
 private:
 
@@ -22,7 +22,6 @@ private:
 
 	void TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult) const;
 
-	const FUniqueNetIdGOG lobbyID;
 	const FName sessionName;
 	const FOnlineSession joiningSession;
 };

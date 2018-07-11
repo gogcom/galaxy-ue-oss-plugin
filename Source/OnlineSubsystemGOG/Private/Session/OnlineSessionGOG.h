@@ -114,6 +114,12 @@ PACKAGE_SCOPE:
 		return listenerID;
 	}
 
+	template<class Listener>
+	Listener* GetListenerRawPtr(const FSetElementId& InListenerID)
+	{
+		return dynamic_cast<Listener*>(listenerRegistry[InListenerID].Get());
+	}
+
 	FNamedOnlineSession* AddNamedSession(FName InSessionName, const FOnlineSessionSettings& InSessionSettings) override;
 
 	FNamedOnlineSession* AddNamedSession(FName InSessionName, const FOnlineSession& InSession) override;

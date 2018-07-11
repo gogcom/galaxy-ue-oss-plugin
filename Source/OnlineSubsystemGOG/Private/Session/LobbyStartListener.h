@@ -5,15 +5,17 @@
 
 class FLobbyStartListener
 	: public IListenerGOG
-	, public galaxy::api::GlobalLobbyDataListener
+	, public galaxy::api::ILobbyDataUpdateListener
 {
 public:
 
-	FLobbyStartListener(const galaxy::api::GalaxyID& InLobbyID, const FName& InSessionName);
+	FLobbyStartListener(galaxy::api::GalaxyID InLobbyID, FName InSessionName);
 
 private:
 
-	void OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID) override;
+	void OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& InLobbyID) override;
+
+	void OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason) override;
 
 	bool MarkSessionStarted(bool IsJoinable) const;
 
