@@ -2,6 +2,7 @@
 
 #include "OnlineSessionGOG.h"
 #include "LobbyData.h"
+#include "VariantDataUtils.h"
 
 #include "Online.h"
 
@@ -11,6 +12,82 @@
 
 namespace
 {
+
+	bool IsFilterEnabled(const FSearchParams& InSearchQueryParams, const FName& InParamName)
+	{
+		const auto* searchParam = InSearchQueryParams.Find(InParamName);
+
+		if (!searchParam
+			|| searchParam->Data.GetType() != EOnlineKeyValuePairDataType::Bool)
+			return false;
+
+		bool isEnabled;
+		searchParam->Data.GetValue(isEnabled);
+		return isEnabled;
+	}
+
+	bool MinSlotsAvailable(const FOnlineSessionSearchParam* const InSearchParam, int32 InOpenPublicConnections)
+	{
+		int32 minSlotsRequired;
+		if (!SafeGetInt32Value(InSearchParam->Data, minSlotsRequired))
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Invalid data type. Skipping SEARCH_MINSLOTSAVAILABLE filter: %s"), *InSearchParam->ToString());
+			return true;
+		};
+
+		return minSlotsRequired >= InOpenPublicConnections;
+	}
+
+	bool IsUserInLobby(const FOnlineSessionSearchParam* const InSearchParam, int32 InTotalUserCount, const FOnlineSessionSearchResult &InSearchResult)
+	{
+		FUniqueNetIdGOG userID{InSearchParam->Data.ToString()};
+		galaxy::api::GalaxyID galaxyUserID{userID};
+
+		if (!galaxyUserID.IsValid() || galaxyUserID.GetIDType() != galaxy::api::GalaxyID::ID_TYPE_USER)
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Invalid UserID. Skipping SEARCH_USER filter: userID=%llu"), *userID.ToString());
+			return true;
+		}
+
+		for (int32 playerID{0}; playerID < InTotalUserCount; ++playerID)
+		{
+			const auto lobbyMemberID = galaxy::api::Matchmaking()->GetLobbyMemberByIndex(AsUniqueNetIDGOG(InSearchResult.Session.SessionInfo->GetSessionId()), playerID);
+			auto err = galaxy::api::GetError();
+			if (err)
+			{
+				UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby members for lobby. Skipping SEARCH_USER filter: sessionID=%s; %s; %s"),
+					*InSearchResult.Session.GetSessionIdStr(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+				return true;
+			}
+
+			if (galaxyUserID == lobbyMemberID)
+				return true;
+		}
+
+		return false;
+	}
+
+	bool TestFilters(const FSearchParams& InSearchQueryParams, const FOnlineSessionSearchResult& InSearchResult)
+	{
+		int32 maxPublicConnections = InSearchResult.Session.SessionSettings.NumPublicConnections;
+		int32 openPublicConnections = InSearchResult.Session.NumOpenPublicConnections;
+
+		if (IsFilterEnabled(InSearchQueryParams, SEARCH_EMPTY_SERVERS_ONLY) && openPublicConnections != maxPublicConnections)
+			return false;
+
+		if (IsFilterEnabled(InSearchQueryParams, SEARCH_NONEMPTY_SERVERS_ONLY) && openPublicConnections == maxPublicConnections)
+			return false;
+
+		const auto* searchParam = InSearchQueryParams.Find(SEARCH_MINSLOTSAVAILABLE);
+		if (searchParam && !MinSlotsAvailable(searchParam, openPublicConnections))
+			return false;
+
+		searchParam = InSearchQueryParams.Find(SEARCH_USER);
+		if (searchParam && !IsUserInLobby(searchParam, maxPublicConnections - openPublicConnections, InSearchResult))
+			return false;
+
+		return true;
+	}
 
 	bool CreateOnlineSessionSettings(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSettings& OutOnlineSessionSettings)
 	{
@@ -47,7 +124,7 @@ namespace
 		return true;
 	}
 
-	bool GetSessionOwnerID(FOnlineSessionSettings &sessionSettings, const galaxy::api::GalaxyID &InLobbyID, FOnlineSessionSearchResult* InSearchResult)
+	bool GetSessionOwnerID(FOnlineSessionSettings &sessionSettings, const galaxy::api::GalaxyID &InLobbyID, FOnlineSessionSearchResult& InOutSearchResult)
 	{
 		auto setting = sessionSettings.Settings.Find(lobby_data::SESSION_OWNER_ID);
 		if (!setting)
@@ -58,9 +135,9 @@ namespace
 
 		FString sessionOwnerID;
 		setting->Data.GetValue(sessionOwnerID);
-		InSearchResult->Session.OwningUserId = MakeShared<FUniqueNetIdGOG>(sessionOwnerID);
+		InOutSearchResult.Session.OwningUserId = MakeShared<FUniqueNetIdGOG>(sessionOwnerID);
 
-		if (!InSearchResult->Session.OwningUserId->IsValid())
+		if (!InOutSearchResult.Session.OwningUserId->IsValid())
 		{
 			UE_LOG_ONLINE(Error, TEXT("Session owner ID is invalid; lobbyID=%llu"), InLobbyID.ToUint64());
 			return false;
@@ -69,7 +146,7 @@ namespace
 		return true;
 	}
 
-	bool GetSessionOwnerName(FOnlineSessionSettings &sessionSettings, const galaxy::api::GalaxyID &InLobbyID, FOnlineSessionSearchResult* InSearchResult)
+	bool GetSessionOwnerName(FOnlineSessionSettings &sessionSettings, const galaxy::api::GalaxyID &InLobbyID, FOnlineSessionSearchResult& InOutSearchResult)
 	{
 		auto setting = sessionSettings.Settings.Find(lobby_data::SESSION_OWNER_NAME);
 		if (!setting)
@@ -78,9 +155,9 @@ namespace
 			return false;
 		}
 
-		setting->Data.GetValue(InSearchResult->Session.OwningUserName);
+		setting->Data.GetValue(InOutSearchResult.Session.OwningUserName);
 
-		if (InSearchResult->Session.OwningUserName.IsEmpty())
+		if (InOutSearchResult.Session.OwningUserName.IsEmpty())
 		{
 			UE_LOG_ONLINE(Error, TEXT("Session owner name is empty; lobbyID=%llu"), InLobbyID.ToUint64());
 			return false;
@@ -89,19 +166,19 @@ namespace
 		return true;
 	}
 
-	bool CreateSearchResult(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSearchResult* InSearchResult)
+	bool CreateSearchResult(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSearchResult& InSearchResult)
 	{
 		FOnlineSessionSettings sessionSettings;
 		if (!CreateOnlineSessionSettings(InLobbyID, sessionSettings))
 			return false;
 
-		InSearchResult->PingInMs = 0;
+		InSearchResult.PingInMs = 0;
 
 		if (!GetSessionOwnerID(sessionSettings, InLobbyID, InSearchResult)
 			|| !GetSessionOwnerName(sessionSettings, InLobbyID, InSearchResult))
 			return false;
 
-		InSearchResult->Session.SessionInfo = MakeShared<FOnlineSessionInfoGOG>(InLobbyID);
+		InSearchResult.Session.SessionInfo = MakeShared<FOnlineSessionInfoGOG>(InLobbyID);
 
 		auto maxLobbyMembers = galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(InLobbyID);
 		auto err = galaxy::api::GetError();
@@ -122,19 +199,23 @@ namespace
 
 		check(sessionSettings.NumPrivateConnections == 0);
 
-		InSearchResult->Session.NumOpenPublicConnections = std::max(maxLobbyMembers - currentLobbySize, 0u);
-		InSearchResult->Session.NumOpenPrivateConnections = 0;
+		InSearchResult.Session.NumOpenPublicConnections = std::max(maxLobbyMembers - currentLobbySize, 0u);
+		InSearchResult.Session.NumOpenPrivateConnections = 0;
 
-		InSearchResult->Session.SessionSettings = sessionSettings;
+		InSearchResult.Session.SessionSettings = sessionSettings;
 
 		return true;
 	}
 
 }
 
-FRequestLobbyListListener::FRequestLobbyListListener(class FOnlineSessionGOG& InSessionInterface, TSharedRef<FOnlineSessionSearch> InOutSearchSettings)
+FRequestLobbyListListener::FRequestLobbyListListener(
+	class FOnlineSessionGOG& InSessionInterface,
+	TSharedRef<FOnlineSessionSearch> InOutSearchSettings,
+	FSearchParams InPostOperationSearchQueryParams)
 	: sessionInterface{InSessionInterface}
 	, searchSettings{MoveTemp(InOutSearchSettings)}
+	, postOperationSearchQueryParams{InPostOperationSearchQueryParams}
 {
 }
 
@@ -220,19 +301,16 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Ga
 
 	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
-	auto* newSearchResult = new (searchSettings->SearchResults) FOnlineSessionSearchResult();
-	if (!newSearchResult)
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to create new OnlineSessionSearchResult. Null object"));
-		return;
-	}
-
+	FOnlineSessionSearchResult newSearchResult;
 	if (!CreateSearchResult(InLobbyID, newSearchResult))
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to fill Session data: lobbyID=%llu"), InLobbyID.ToUint64());
 		TriggerOnFindSessionsCompleteDelegates(false);
 		return;
 	}
+
+	if (TestFilters(postOperationSearchQueryParams, newSearchResult))
+		searchSettings->SearchResults.Emplace(newSearchResult);
 
 	if (pendingLobbyList.Num() == 0)
 		TriggerOnFindSessionsCompleteDelegates(true);

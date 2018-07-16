@@ -6,10 +6,13 @@
 #include "JoinLobbyListener.h"
 #include "LobbyStartListener.h"
 #include "Network/InternetAddrGOG.h"
+#include "Converters/NamedVariantDataConverter.h"
+#include "VariantDataUtils.h"
 
 #include "Online.h"
 #include "OnlineSubsystemUtils.h"
 #include "OnlineLeaderboardInterface.h"
+#include "NumericLimits.h"
 
 #include <algorithm>
 
@@ -26,6 +29,205 @@ namespace
 		}
 
 		onlineLeaderboardsInterface->FlushLeaderboards(InSessionName);
+	}
+
+	bool ConvertToLobbySearchComparisonType(EOnlineComparisonOp::Type InComparisonType, galaxy::api::LobbyComparisonType& OutLobbyComparisonType)
+	{
+		switch (InComparisonType)
+		{
+			case EOnlineComparisonOp::Equals:
+			{
+				OutLobbyComparisonType = galaxy::api::LOBBY_COMPARISON_TYPE_EQUAL;
+				return true;
+			}
+			case EOnlineComparisonOp::NotEquals:
+			{
+				OutLobbyComparisonType = galaxy::api::LOBBY_COMPARISON_TYPE_NOT_EQUAL;
+				return true;
+			}
+			case EOnlineComparisonOp::GreaterThan:
+			{
+				OutLobbyComparisonType = galaxy::api::LOBBY_COMPARISON_TYPE_GREATER;
+				return true;
+			}
+			case EOnlineComparisonOp::GreaterThanEquals:
+			{
+				OutLobbyComparisonType = galaxy::api::LOBBY_COMPARISON_TYPE_GREATER_OR_EQUAL;
+				return true;
+			}
+			case EOnlineComparisonOp::LessThan:
+			{
+				OutLobbyComparisonType = galaxy::api::LOBBY_COMPARISON_TYPE_LOWER;
+				return true;
+			}
+			case EOnlineComparisonOp::LessThanEquals:
+			{
+				OutLobbyComparisonType = galaxy::api::LOBBY_COMPARISON_TYPE_LOWER_OR_EQUAL;
+				return true;
+			}
+			case EOnlineComparisonOp::Near:
+			case EOnlineComparisonOp::In:
+			case EOnlineComparisonOp::NotIn:
+			default:
+				UE_LOG_ONLINE(Error, TEXT("Unsupported comparison operation: type=%s"), EOnlineComparisonOp::ToString(InComparisonType));
+		}
+
+		return false;
+	}
+
+	template<typename IntType, typename = std::enable_if_t<std::is_integral<IntType>::value>>
+	void ApplyAsNumericalFilter(const FSearchParams::ElementType& InSearchQueryParam)
+	{
+		int32 filterValue;
+		if (!GetInt32ValueFromType<IntType>(InSearchQueryParam.Value.Data, filterValue))
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Numerical value for session search query param is out of int32 range. Skipping: searchParamName=%s, %s"),
+				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
+
+			return;
+		}
+
+		const auto filter = NamedVariantDataConverter::ToLobbyDataEntry(InSearchQueryParam.Key, InSearchQueryParam.Value.Data);
+
+		if (InSearchQueryParam.Value.ComparisonOp == EOnlineComparisonOp::Near)
+		{
+			galaxy::api::Matchmaking()->AddRequestLobbyListNearValueFilter(TCHAR_TO_UTF8(*filter.Key), filterValue);
+			auto err = galaxy::api::GetError();
+			if (err)
+			{
+				UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter near value: searchQueryhParamName=%s, %d; %s; %s"),
+					*filter.Key, filterValue, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+
+				return;
+			}
+		}
+
+		galaxy::api::LobbyComparisonType lobbyComparisonType;
+		if (!ConvertToLobbySearchComparisonType(InSearchQueryParam.Value.ComparisonOp, lobbyComparisonType))
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryhParamName=%s, %s"),
+				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
+
+			return;
+		}
+
+		galaxy::api::Matchmaking()->AddRequestLobbyListNumericalFilter(TCHAR_TO_UTF8(*filter.Key), filterValue, lobbyComparisonType);
+		auto err = galaxy::api::GetError();
+		if (err)
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for numerical value: searchQueryhParamName=%s, %d; %s: %s"),
+				*filter.Key, filterValue, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+
+			return;
+		}
+
+		return;
+	}
+
+	void ApplyAsStringFilter(const FSearchParams::ElementType& InSearchQueryParam)
+	{
+		const auto& filter = NamedVariantDataConverter::ToLobbyDataEntry(InSearchQueryParam.Key, InSearchQueryParam.Value.Data);
+		if (filter.Value.IsEmpty())
+		{
+			UE_LOG_ONLINE(Display, TEXT("Empty filter. Skipping: searchQueryhParamName=%s, %s"),
+				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
+			return;
+		}
+
+		galaxy::api::LobbyComparisonType lobbyComparisonType;
+		if (!ConvertToLobbySearchComparisonType(InSearchQueryParam.Value.ComparisonOp, lobbyComparisonType))
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryhParamName=%s, %s"),
+				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
+
+			return;
+		}
+
+		galaxy::api::Matchmaking()->AddRequestLobbyListStringFilter(TCHAR_TO_UTF8(*filter.Key), TCHAR_TO_UTF8(*filter.Value), lobbyComparisonType);
+		auto err = galaxy::api::GetError();
+		if (err)
+			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for string value: searchQueryhParamName=%s, %s; %s: %s"),
+				*filter.Key, *filter.Value, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+	}
+
+	bool ParseAndApplyPredefinedFilter(const FSearchParams::ElementType& InSearchQueryParam, FSearchParams& OutPostOperationSearchQueryParams)
+	{
+		// See OnlineSessionSettings.h for the full list of predefined settings
+
+		const auto& key = InSearchQueryParam.Key;
+
+		if (key == SEARCH_EMPTY_SERVERS_ONLY
+			|| key == SEARCH_NONEMPTY_SERVERS_ONLY
+			|| key == SEARCH_MINSLOTSAVAILABLE
+			|| key == SEARCH_USER)
+		{
+			OutPostOperationSearchQueryParams.Emplace(InSearchQueryParam.Key, InSearchQueryParam.Value);
+			return true;
+		}
+		else if (key == SEARCH_DEDICATED_ONLY
+			|| key == SEARCH_SECURE_SERVERS_ONLY
+			|| key == SEARCH_PRESENCE
+			|| key == SEARCH_EXCLUDE_UNIQUEIDS)
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Search param is not supported. Skipping: searchParamName=%s"), *key.ToString())
+			return true;
+		}
+
+		// Pass the rest of the settings as strings. Including the following: SEARCH_KEYWORDS, SEARCH_SWITCH_SELECTION_METHOD, SEARCH_XBOX_LIVE_SESSION_TEMPLATE_NAME, SEARCH_XBOX_LIVE_HOPPER_NAME
+		return false;
+	}
+
+	void ParseAndApplyLobbySearchFilters(const FOnlineSearchSettings& InSearchSettings, FSearchParams& OutPostOperationSearchQueryParams)
+	{
+		for (const auto& searchQueryParam : InSearchSettings.SearchParams)
+		{
+			if (ParseAndApplyPredefinedFilter(searchQueryParam, OutPostOperationSearchQueryParams))
+				continue;
+
+			switch (searchQueryParam.Value.Data.GetType())
+			{
+				case EOnlineKeyValuePairDataType::Empty:
+					continue;
+
+				case EOnlineKeyValuePairDataType::Bool:
+				case EOnlineKeyValuePairDataType::String:
+				{
+					ApplyAsStringFilter(searchQueryParam);
+					continue;
+				}
+
+				case EOnlineKeyValuePairDataType::UInt64:
+				{
+					ApplyAsNumericalFilter<uint64>(searchQueryParam);
+					continue;
+				}
+				case EOnlineKeyValuePairDataType::Int64:
+				{
+					ApplyAsNumericalFilter<int64>(searchQueryParam);
+					continue;
+				}
+				case EOnlineKeyValuePairDataType::UInt32:
+				{
+					ApplyAsNumericalFilter<uint32>(searchQueryParam);
+					continue;
+				}
+				case EOnlineKeyValuePairDataType::Int32:
+				{
+					ApplyAsNumericalFilter<int32>(searchQueryParam);
+					continue;
+				}
+
+				case EOnlineKeyValuePairDataType::Double:
+				case EOnlineKeyValuePairDataType::Float:
+				case EOnlineKeyValuePairDataType::Blob:
+				default:
+				{
+					UE_LOG_ONLINE(Warning, TEXT("Unsupported session search param type. Skipping: searchParamName=%s, %s"),
+						*searchQueryParam.Key.ToString(), *searchQueryParam.Value.ToString());
+					continue;
+				}
+			}
+		}
 	}
 
 }
@@ -407,10 +609,10 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	if (InOutSearchSettings->PingBucketSize > 0)
 		UE_LOG_ONLINE(Warning, TEXT("Ping-based search is not supported. Ignoring this value"));
 
-	// TODO: parse search settings and employ them as session filters when session settings
-	// TODO: handle default filters (SEARCH_DEDICATED_ONLY, SEARCH_EMPTY_SERVERS_ONLY, SEARCH_SECURE_SERVERS_ONLY e.t.c.) from OnlineSessionSettings.h
+	FSearchParams postOperationSearchQueryParams;
+	ParseAndApplyLobbySearchFilters(InOutSearchSettings->QuerySettings, postOperationSearchQueryParams);
 
-	auto listenerID = CreateListener<FRequestLobbyListListener>(*this, InOutSearchSettings);
+	auto listenerID = CreateListener<FRequestLobbyListListener>(*this, InOutSearchSettings, MoveTemp(postOperationSearchQueryParams));
 
 	galaxy::api::Matchmaking()->RequestLobbyList(false, GetListenerRawPtr<FRequestLobbyListListener>(listenerID));
 	auto err = galaxy::api::GetError();

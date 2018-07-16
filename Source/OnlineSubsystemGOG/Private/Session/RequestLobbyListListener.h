@@ -11,7 +11,10 @@ class FRequestLobbyListListener
 {
 public:
 
-	FRequestLobbyListListener(class FOnlineSessionGOG& InSessionInterface, TSharedRef<FOnlineSessionSearch> InOutSearchSettings);
+	FRequestLobbyListListener(
+		class FOnlineSessionGOG& InSessionInterface,
+		TSharedRef<FOnlineSessionSearch> InOutSearchSettings,
+		FSearchParams InPostOperationSearchQueryParams);
 
 private:
 
@@ -28,4 +31,5 @@ private:
 	class FOnlineSessionGOG& sessionInterface;
 	TArray<galaxy::api::GalaxyID> pendingLobbyList;
 	TSharedRef<FOnlineSessionSearch> searchSettings;
+	FSearchParams postOperationSearchQueryParams;
 };
