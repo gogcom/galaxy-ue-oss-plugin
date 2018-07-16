@@ -1,6 +1,6 @@
 #include "SessionSettingsConverter.h"
 
-#include "OnlineSessionSettingConverter.h"
+#include "NamedVariantDataConverter.h"
 
 namespace SessionSettingsConverter
 {
@@ -11,20 +11,24 @@ namespace SessionSettingsConverter
 
 		for (const auto& setting : InSessionSettings)
 		{
-			if (setting.Value.AdvertisementType == EOnlineDataAdvertisementType::ViaOnlineService
-				|| setting.Value.AdvertisementType == EOnlineDataAdvertisementType::ViaOnlineServiceAndPing)
+			const auto& value = setting.Value;
+			if ((value.AdvertisementType == EOnlineDataAdvertisementType::ViaOnlineService
+				|| value.AdvertisementType == EOnlineDataAdvertisementType::ViaOnlineServiceAndPing)
+				&& value.Data.GetType() != EOnlineKeyValuePairDataType::Empty)
 			{
-				convertedSettings.Emplace(setting.Key, OnlineSessionSettingConverter::ToLobbyDataEntry(setting.Value.Data));
+				auto convertedData = NamedVariantDataConverter::ToLobbyDataEntry(setting.Key, value.Data);
+				convertedSettings.Add(convertedData.Key, convertedData.Value);
 			}
 		}
 
 		return convertedSettings;
 	}
 
-	FSessionSettings FromLobbyDataRow(const FLobbyData::ElementType& InLobbyData)
+	FSessionSettings FromLobbyDataEntry(const FLobbyDataEntry& InLobbyData)
 	{
+		auto convertedData = NamedVariantDataConverter::FromLobbyDataEntry(InLobbyData);
 		FSessionSettings ret;
-		ret.Emplace(InLobbyData.Key, OnlineSessionSettingConverter::FromLobbyDataEntry(InLobbyData.Value));
+		ret.Emplace(convertedData.Key, FOnlineSessionSetting{convertedData.Value, EOnlineDataAdvertisementType::ViaOnlineService});
 		return ret;
 	}
 

@@ -9,5 +9,5 @@ namespace SessionSettingsConverter
 
 	FLobbyData ToLobbyData(const FSessionSettings& InSessionSettings);
 
-	FSessionSettings FromLobbyDataRow(const FLobbyData::ElementType& InLobbyData);
+	FSessionSettings FromLobbyDataEntry(const FLobbyDataEntry& InLobbyData);
 }

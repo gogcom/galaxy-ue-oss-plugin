@@ -49,12 +49,12 @@ namespace
 		for (auto& lobbySetting : OnlineSessionSettingsConverter::ToLobbyData(InOutSessionSettings))
 		{
 			// Will wait for result of SetLobbyJoinable() as a confirmation that all LobbyData is set on the backend
-			galaxy::api::Matchmaking()->SetLobbyData(InLobbyID, TCHAR_TO_UTF8(*lobbySetting.Key.ToString()), TCHAR_TO_UTF8(*lobbySetting.Value));
+			galaxy::api::Matchmaking()->SetLobbyData(InLobbyID, TCHAR_TO_UTF8(*lobbySetting.Key), TCHAR_TO_UTF8(*lobbySetting.Value));
 			auto err = galaxy::api::GetError();
 			if (err)
 			{
 				UE_LOG_ONLINE(Error, TEXT("Failed to set lobby setting: lobbyID=%llu, settingName='%s'; %s; %s"),
-					InLobbyID.ToUint64(), *lobbySetting.Key.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+					InLobbyID.ToUint64(), *lobbySetting.Key, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 				return false;
 			}

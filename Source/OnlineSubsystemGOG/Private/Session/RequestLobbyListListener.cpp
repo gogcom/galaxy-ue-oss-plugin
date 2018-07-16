@@ -40,7 +40,7 @@ namespace
 				false;
 			}
 
-			lobbyData.Emplace(FName{UTF8_TO_TCHAR(lobbyDataKeyBuffer.data())}, FString{UTF8_TO_TCHAR(lobbyDataValueBuffer.data())});
+			lobbyData.Emplace(UTF8_TO_TCHAR(lobbyDataKeyBuffer.data()), UTF8_TO_TCHAR(lobbyDataValueBuffer.data()));
 		}
 
 		OutOnlineSessionSettings = OnlineSessionSettingsConverter::FromLobbyData(lobbyData);

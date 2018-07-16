@@ -1,7 +1,6 @@
 #include "OnlineSessionSettingsConverter.h"
 
 #include "SessionSettingsConverter.h"
-#include "OnlineSessionSettingConverter.h"
 
 #include "OnlineSubsystem.h"
 
@@ -34,12 +33,12 @@ namespace OnlineSessionSettingsConverter
 
 		using SessionFlags = std::bitset<TOTAL_COUNT>;
 
-		FLobbyDataEntry SerializeToLobbyDataEntry(SessionFlags InSessionFlags)
+		FLobbyDataValue SerializeToLobbyDataValue(SessionFlags InSessionFlags)
 		{
-			return FLobbyDataEntry::FromInt(InSessionFlags.to_ulong());
+			return FLobbyDataValue::FromInt(InSessionFlags.to_ulong());
 		}
 
-		SessionFlags DeserializeFromLobbyDataEntry(const FLobbyDataEntry& InString)
+		SessionFlags DeserializeFromLobbyDataEntry(const FLobbyDataValue& InString)
 		{
 			return SessionFlags{static_cast<bit_flag_type>(FCString::Strtoui64(*InString, nullptr, 10))};
 		}
@@ -64,10 +63,10 @@ namespace OnlineSessionSettingsConverter
 			sessionFlags[B_ALLOWJOINVIAPRESENCEFRIENDSONLY] = InSessionSettings.bAllowJoinViaPresenceFriendsOnly;
 			sessionFlags[B_ANTICHEATPROTECTED] = InSessionSettings.bAntiCheatProtected;
 
-			convertedSettings.Emplace(lobby_data::SESSION_FLAGS, SerializeToLobbyDataEntry(sessionFlags));
+			convertedSettings.Emplace(lobby_data::SESSION_FLAGS, SerializeToLobbyDataValue(sessionFlags));
 		}
 
-		convertedSettings.Emplace(lobby_data::BUILD_ID, FLobbyDataEntry::FromInt(InSessionSettings.BuildUniqueId));
+		convertedSettings.Emplace(lobby_data::BUILD_ID, FLobbyDataValue::FromInt(InSessionSettings.BuildUniqueId));
 
 		convertedSettings.Append(SessionSettingsConverter::ToLobbyData(InSessionSettings.Settings));
 
@@ -78,11 +77,11 @@ namespace OnlineSessionSettingsConverter
 	{
 		FOnlineSessionSettings convertedSettings;
 
-		for (const auto& lobbyDataRow : InLobbyData)
+		for (const auto& lobbyDataEntry : InLobbyData)
 		{
-			if (lobbyDataRow.Key == lobby_data::SESSION_FLAGS)
+			if (lobbyDataEntry.Key == lobby_data::SESSION_FLAGS)
 			{
-				auto sessionFlags = DeserializeFromLobbyDataEntry(lobbyDataRow.Value);
+				auto sessionFlags = DeserializeFromLobbyDataEntry(lobbyDataEntry.Value);
 
 				convertedSettings.bShouldAdvertise = sessionFlags[B_SHOULDADVERTISE];
 				convertedSettings.bAllowJoinInProgress = sessionFlags[B_ALLOWJOININPROGRESS];
@@ -98,16 +97,16 @@ namespace OnlineSessionSettingsConverter
 				continue;
 			}
 
-			if (lobbyDataRow.Key == lobby_data::BUILD_ID)
+			if (lobbyDataEntry.Key == lobby_data::BUILD_ID)
 			{
-				convertedSettings.BuildUniqueId = FCString::Atoi(*lobbyDataRow.Value);
+				convertedSettings.BuildUniqueId = FCString::Atoi(*lobbyDataEntry.Value);
 				continue;
 			}
 
-			convertedSettings.Settings.Append(SessionSettingsConverter::FromLobbyDataRow(lobbyDataRow));
+			convertedSettings.Settings.Append(SessionSettingsConverter::FromLobbyDataEntry(lobbyDataEntry));
 		}
 
-		return std::move(convertedSettings);
+		return convertedSettings;
 	}
 
 }
