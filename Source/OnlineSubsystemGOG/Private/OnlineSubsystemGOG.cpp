@@ -109,22 +109,12 @@ bool FOnlineSubsystemGOG::Init()
 		return false;
 	}
 
-#define DEFINE_ONLINE_INTERFACE_WITH_THIS(interfaceName) \
-	galaxy##interfaceName##Interface = MakeShared<FOnline##interfaceName##GOG, ESPMode::ThreadSafe>(*this); \
-	\
-	check(galaxy##interfaceName##Interface.IsValid())
+	galaxyIdentityInterface = MakeShared<FOnlineIdentityGOG, ESPMode::ThreadSafe>(*this);
+	galaxySessionInterface = MakeShared<FOnlineSessionGOG, ESPMode::ThreadSafe>(*this);
+	galaxyAchievementsInterface = MakeShared<FOnlineAchievementsGOG, ESPMode::ThreadSafe>(*this);
+	galaxyLeaderboardsInterface = MakeShared<FOnlineLeaderboardsGOG, ESPMode::ThreadSafe>(*this);
 
-#define DEFINE_ONLINE_INTERFACE(interfaceName) \
-	galaxy##interfaceName##Interface = MakeShared<FOnline##interfaceName##GOG, ESPMode::ThreadSafe>(); \
-	\
-	check(galaxy##interfaceName##Interface.IsValid())
-
-	DEFINE_ONLINE_INTERFACE_WITH_THIS(Identity);
-	DEFINE_ONLINE_INTERFACE_WITH_THIS(Session);
-	DEFINE_ONLINE_INTERFACE_WITH_THIS(Achievements);
-	DEFINE_ONLINE_INTERFACE_WITH_THIS(Leaderboards);
-
-	// TODO: create interfaces here
+	// TODO: create more interfaces here
 
 	bGalaxyPeerInitialized = true;
 	return bGalaxyPeerInitialized;
@@ -142,7 +132,7 @@ bool FOnlineSubsystemGOG::Exec(UWorld* InWorld, const TCHAR* InCmd, FOutputDevic
 	return FOnlineSubsystemImpl::Exec(InWorld, InCmd, Ar);
 }
 
-bool FOnlineSubsystemGOG::FOnlineSubsystemGOG::IsInitialized()
+bool FOnlineSubsystemGOG::IsInitialized()
 {
 	return bGalaxyPeerInitialized;
 }
@@ -161,7 +151,7 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 {
 	FOnlineSubsystemImpl::Shutdown();
 
-	// TODO: release interfaces here
+	// TODO: release all interfaces before shutting down
 
 	galaxyIdentityInterface.Reset();
 	galaxySessionInterface.Reset();

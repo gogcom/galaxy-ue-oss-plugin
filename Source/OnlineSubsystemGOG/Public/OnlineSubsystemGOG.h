@@ -25,9 +25,11 @@ public:
 
 	// Implementation of the IOnlineSubsystem
 
-	#define DECLARE_ONLINE_INTERFACE(interfaceName) \
+#define DECLARE_ONLINE_INTERFACE(interfaceName) \
+	private: \
 		IOnline##interfaceName##Ptr galaxy##interfaceName##Interface; \
 		\
+	public: \
 		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
 		{ \
 			return galaxy##interfaceName##Interface; \
@@ -38,11 +40,11 @@ public:
 	DECLARE_ONLINE_INTERFACE(Achievements);
 	DECLARE_ONLINE_INTERFACE(Leaderboards);
 
-	#define STUB_ONLINE_INTERFACE(interfaceName) \
-		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
-		{ \
-			return nullptr; \
-		}
+#define STUB_ONLINE_INTERFACE(interfaceName) \
+	virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
+	{ \
+		return nullptr; \
+	}
 
 	STUB_ONLINE_INTERFACE(User);
 
@@ -112,4 +114,4 @@ private:
 	bool ShutdownImpl();
 };
 
-using FOnlineSubsystemGOGPtr = TSharedPtr<FOnlineSubsystemGOG, ESPMode::ThreadSafe> ;
+using FOnlineSubsystemGOGPtr = TSharedPtr<FOnlineSubsystemGOG, ESPMode::ThreadSafe>;
