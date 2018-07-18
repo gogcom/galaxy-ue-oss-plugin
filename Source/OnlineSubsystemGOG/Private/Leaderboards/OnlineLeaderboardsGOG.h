@@ -57,7 +57,7 @@ private:
 
 	bool MarkLeaderboardStarted(FOnlineLeaderboardReadRef& InOutReadLeaderboard, IOnlineLeaderboards* onlineLeaderboardsInterface) const;
 
-	void UpdateWriteCache(const FName& InSessionName, FOnlineLeaderboardWrite &InWriteLeaderboard);
+	bool UpdateWriteCache(const FName& InSessionName, FOnlineLeaderboardWrite &InWriteLeaderboard);
 
 	TSet<TUniquePtr<IListenerGOG>> listenerRegistry;
 

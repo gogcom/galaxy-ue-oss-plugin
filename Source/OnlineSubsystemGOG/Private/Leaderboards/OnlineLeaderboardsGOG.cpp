@@ -7,6 +7,7 @@
 #include "FlushLeaderboardsListener.h"
 #include "Converters/OnlineLeaderboardConverter.h"
 #include "Types/UniqueNetIdGOG.h"
+#include "VariantDataUtils.h"
 
 #include "OnlineSubsystemUtils.h"
 
@@ -85,33 +86,16 @@ namespace
 		return galaxy::api::LEADERBOARD_DISPLAY_TYPE_NONE;
 	}
 
-	int32 GetMainLeaderboardScore(FOnlineLeaderboardWrite& InWriteLeaderboard)
+	bool GetMainLeaderboardScore(FOnlineLeaderboardWrite& InWriteLeaderboard, int32& OutMainScore)
 	{
 		auto ratedStat = InWriteLeaderboard.FindStatByName(InWriteLeaderboard.RatedStat);
-		check(ratedStat != nullptr && "Rated stat not found");
-
-		switch (ratedStat->GetType())
+		if (!ratedStat)
 		{
-			case EOnlineKeyValuePairDataType::Int32:
-			{
-				int32 convertedScore;
-				ratedStat->GetValue(convertedScore);
-				return convertedScore;
-			}
-			case EOnlineKeyValuePairDataType::UInt32:
-			{
-				uint32 convertedScore;
-				ratedStat->GetValue(convertedScore);
-				return static_cast<int32>(convertedScore);
-			}
-			default:
-			{
-				UE_LOG_ONLINE(Error, TEXT("Invalid type: ratedStatType='%s'"), EOnlineKeyValuePairDataType::ToString(ratedStat->GetType()));
-				check(false);
-			}
+			UE_LOG_ONLINE(Error, TEXT("Rated stat not found in leaderboard data"));
+			return false;
 		}
 
-		return 0;
+		return SafeGetInt32Value(*ratedStat, OutMainScore);
 	}
 
 	auto GetStatsForLeaderboardDetails(const FName& InRatedStatName, FStatPropertyArray InLeaderboardStats)
@@ -141,39 +125,6 @@ namespace
 		return InUpdateMethod == ELeaderboardUpdateMethod::Force
 			|| (InSortMethod == ELeaderboardSort::Descending && InOldScore < InNewScore)
 			|| (InSortMethod == ELeaderboardSort::Ascending && InOldScore > InNewScore);
-	}
-
-	template <typename IntType>
-	inline bool IsInInt32Range(const FVariantData& InVariantData)
-	{
-		IntType value;
-		InVariantData.GetValue(value);
-
-		using min_t = int64;
-		using max_t = uint64;
-
-		return static_cast<min_t>(value) >= static_cast<min_t>(TNumericLimits<int32>::Min())
-			&& static_cast<max_t>(value) <= static_cast<max_t>(TNumericLimits<int32>::Max());
-	}
-
-	bool IsInInt32Range(const FVariantData& InVariantData)
-	{
-		switch (InVariantData.GetType())
-		{
-			case EOnlineKeyValuePairDataType::Int32:
-				return true;
-
-			case EOnlineKeyValuePairDataType::UInt32:
-				return IsInInt32Range<uint32>(InVariantData);
-
-			case EOnlineKeyValuePairDataType::Int64:
-				return IsInInt32Range<int64>(InVariantData);
-
-			case EOnlineKeyValuePairDataType::UInt64:
-				return IsInInt32Range<uint64>(InVariantData);
-		}
-
-		return false;
 	}
 
 }
@@ -369,28 +320,18 @@ bool FOnlineLeaderboardsGOG::WriteLeaderboards(const FName& InSessionName, const
 		return false;
 	}
 
-	auto ratedStat = InWriteLeaderboard.FindStatByName(InWriteLeaderboard.RatedStat);
-	if (!ratedStat)
-	{
-		UE_LOG_ONLINE(Error, TEXT("Rated stat not found in leaderboard data"));
-		return false;
-	}
-
-	// See galaxy::api::IStats::SetLeaderboardScore()
-	if (!IsInInt32Range(*ratedStat))
-	{
-		UE_LOG_ONLINE(Error, TEXT("Rated stats shall only be a numerical value in range of Int32: statName=%s, statType=%s, statValue=%s"),
-			*InWriteLeaderboard.RatedStat.ToString(), EOnlineKeyValuePairDataType::ToString(ratedStat->GetType()), *ratedStat->ToString());
-		return false;
-	}
-
-	UpdateWriteCache(InSessionName, InWriteLeaderboard);
-	return true;
+	return UpdateWriteCache(InSessionName, InWriteLeaderboard);
 }
 
-void FOnlineLeaderboardsGOG::UpdateWriteCache(const FName& InSessionName, FOnlineLeaderboardWrite &InWriteLeaderboard)
+bool FOnlineLeaderboardsGOG::UpdateWriteCache(const FName& InSessionName, FOnlineLeaderboardWrite &InWriteLeaderboard)
 {
-	auto newScore = GetMainLeaderboardScore(InWriteLeaderboard);
+	int32 newScore;
+	if (!GetMainLeaderboardScore(InWriteLeaderboard, newScore))
+	{
+		UE_LOG_ONLINE(Error, TEXT("Rated stat must be an integer value in Int32 range"));
+		return false;
+	}
+
 	auto details = GetSerializedDetails(InWriteLeaderboard);
 
 	auto& sessionCache = writeLeaderboardCache.FindOrAdd(InSessionName);
@@ -414,6 +355,8 @@ void FOnlineLeaderboardsGOG::UpdateWriteCache(const FName& InSessionName, FOnlin
 			cachedLeadeboard->DisplayFormat = InWriteLeaderboard.DisplayFormat;
 		}
 	}
+
+	return true;
 }
 
 bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
