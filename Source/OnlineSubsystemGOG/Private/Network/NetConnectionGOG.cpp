@@ -105,7 +105,7 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBits*/, int32 
 	galaxyNetworking->SendP2PPacket(remotePeerID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_TRAFFIC(Error, TEXT("Failed to send data: remote='%s'; %s; %s"), *LowLevelGetRemoteAddress(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_TRAFFIC(Error, TEXT("Failed to send data: remote='%s'; %s; %s"), *LowLevelGetRemoteAddress(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 }
 
 FString UNetConnectionGOG::LowLevelGetRemoteAddress(bool InAppendPort)

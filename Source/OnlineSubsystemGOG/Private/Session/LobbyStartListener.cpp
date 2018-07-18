@@ -19,7 +19,7 @@ void FLobbyStartListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& 
 	auto isLobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(InLobbyID);
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s, %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s, %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	if (!isLobbyJoinable)
 		UE_LOG_ONLINE(Error, TEXT("Failed to set Lobby as joinable"));

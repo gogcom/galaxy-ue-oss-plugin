@@ -54,7 +54,7 @@ namespace
 			if (err)
 			{
 				UE_LOG_ONLINE(Error, TEXT("Failed to set lobby setting: lobbyID=%llu, settingName='%s'; %s; %s"),
-					InLobbyID.ToUint64(), *lobbySetting.Key.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+					InLobbyID.ToUint64(), *lobbySetting.Key.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 				return false;
 			}
@@ -91,7 +91,7 @@ namespace
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to make session joinable: lobbyID=%llu; %s; %s"), InLobbyID.ToUint64(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to make session joinable: lobbyID=%llu; %s; %s"), InLobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 
@@ -176,7 +176,7 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 	auto isLobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(InLobbyID);
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s, %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s, %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	if (!isLobbyJoinable)
 		UE_LOG_ONLINE(Error, TEXT("Failed to prepare lobby"));

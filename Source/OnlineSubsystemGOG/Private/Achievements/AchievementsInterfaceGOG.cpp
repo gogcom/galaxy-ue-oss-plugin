@@ -101,12 +101,12 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 		// Ignore achievements progress value and consider all provided achievements as unlocked.
 		// TBD: alternatively implement achievements progress as user stats (then ignore them when processing normal stats)
 		// or create new Galaxy "progressable" achievements
-		galaxy::api::Stats()->SetAchievement(TCHAR_TO_ANSI(*achievement.Key.ToString()));
+		galaxy::api::Stats()->SetAchievement(TCHAR_TO_UTF8(*achievement.Key.ToString()));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
 			UE_LOG_ONLINE(Error, TEXT("Failed to unlock player achievement: playerID='%s'; achivementID='%s'; %s; %s"),
-				*InPlayerId.ToString(), *achievement.Key.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+				*InPlayerId.ToString(), *achievement.Key.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 			InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 			InDelegate.ExecuteIfBound(InPlayerId, false);
@@ -121,7 +121,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 	if (err)
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to store unlocked player achievements: playerID='%s'; %s; %s"),
-			*InPlayerId.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			*InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 
 		FreeListener(listenerID);
@@ -144,7 +144,7 @@ void FOnlineAchievementsGOG::QueryAchievements(const FUniqueNetId& InPlayerId, c
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to query player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Failed to query player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(listenerID);
 
@@ -263,12 +263,12 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 
 	for (const auto& achivement : *playerCachedAchievements)
 	{
-		galaxy::api::Stats()->ClearAchievement(TCHAR_TO_ANSI(*achivement.Id));
+		galaxy::api::Stats()->ClearAchievement(TCHAR_TO_UTF8(*achivement.Id));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
 			UE_LOG_ONLINE(Error, TEXT("Failed to reset player achievements: playerID='%s'; achivementID='%s'; %s; %s"),
-				*InPlayerId.ToString(), *achivement.Id, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+				*InPlayerId.ToString(), *achivement.Id, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 			continue;
 		}
@@ -278,7 +278,7 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to reset player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Failed to reset player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
@@ -332,7 +332,7 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::OnAchievementUnlocked()"));
 
-	FString achievementName{ANSI_TO_TCHAR(InName)};
+	FString achievementName{UTF8_TO_TCHAR(InName)};
 
 	auto localUserID = GetLocalPlayerID();
 	if (!localUserID.IsValid() || !localUserID->IsValid())
@@ -351,7 +351,7 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 
 	auto playerCachedAchievement = playerCachedAchievements->FindByPredicate([&](const auto& playerAchievement)
 	{
-		return playerAchievement.Id == ANSI_TO_TCHAR(InName);
+		return playerAchievement.Id == UTF8_TO_TCHAR(InName);
 	});
 
 	if (!playerCachedAchievement)
@@ -382,13 +382,13 @@ void FOnlineAchievementsGOG::AddOrReplacePlayerAchievements(const FUniqueNetIdGO
 	decltype(galaxy::api::GetError()) err;
 	for (const auto& achievementID : achievementIDs)
 	{
-		galaxy::api::Stats()->GetAchievement(TCHAR_TO_ANSI(*achievementID), isUnlocked, unlockTime, InPlayerID);
+		galaxy::api::Stats()->GetAchievement(TCHAR_TO_UTF8(*achievementID), isUnlocked, unlockTime, InPlayerID);
 		playerCachedAchivements.Emplace(FOnlineAchievement{achievementID, isUnlocked ? ACHIVEMENT_PROGRESS_UNLOCKED : ACHIVEMENT_PROGRESS_LOCKED});
 		err = galaxy::api::GetError();
 		if (err)
 		{
 			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement for player: achievementID='%s'; playerID='%s'; %s; %s"),
-				*achievementID, *InPlayerID.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+				*achievementID, *InPlayerID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return;
 		}
 	}
@@ -410,31 +410,31 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 
 	for (const auto& achievementID : achievementIDs)
 	{
-		const auto* achievementIDAsANSI = TCHAR_TO_UTF8(*achievementID);
+		const auto* achievementIDAsUTF8 = TCHAR_TO_UTF8(*achievementID);
 
-		galaxy::api::Stats()->GetAchievementDisplayNameCopy(achievementIDAsANSI, achivementInfoBuffer.data(), achivementInfoBuffer.size());
+		galaxy::api::Stats()->GetAchievementDisplayNameCopy(achievementIDAsUTF8, achivementInfoBuffer.data(), achivementInfoBuffer.size());
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement title: achievementID='%s'; %s; %s"), *achievementID, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement title: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 		title = UTF8_TO_TCHAR(achivementInfoBuffer.data());
 
-		galaxy::api::Stats()->GetAchievementDescriptionCopy(achievementIDAsANSI, achivementInfoBuffer.data(), achivementInfoBuffer.size());
+		galaxy::api::Stats()->GetAchievementDescriptionCopy(achievementIDAsUTF8, achivementInfoBuffer.data(), achivementInfoBuffer.size());
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement description: achievementID='%s'; %s; %s"), *achievementID, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement description: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 		description = UTF8_TO_TCHAR(achivementInfoBuffer.data());
 
-		isHidden = !galaxy::api::Stats()->IsAchievementVisible(achievementIDAsANSI);
+		isHidden = !galaxy::api::Stats()->IsAchievementVisible(achievementIDAsUTF8);
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get achievement visibility: achievementID='%s'; %s; %s"), *achievementID, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to get achievement visibility: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 

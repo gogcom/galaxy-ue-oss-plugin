@@ -47,11 +47,11 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	if (accountType == "steam")
 	{
 		UE_LOG_ONLINE(Display, TEXT("Trying to log in as Steam user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignIn(TCHAR_TO_ANSI(*InAccountCredentials.Token), InAccountCredentials.Token.Len(), TCHAR_TO_UTF8(*InAccountCredentials.Id));
+		galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Token), CharLen(InAccountCredentials.Token), TCHAR_TO_UTF8(*InAccountCredentials.Id));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 
@@ -66,7 +66,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 
@@ -79,7 +79,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
@@ -93,7 +93,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
@@ -103,11 +103,11 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 #elif PLATFORM_PS4
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with PS4 ClientID '%s'"), *InAccountCredentials.Id);
-	galaxy::api::User()->SignIn(TCHAR_TO_ANSI(*InAccountCredentials.Id), nullptr, nullptr, 0);
+	galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Id), nullptr, nullptr, 0);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
@@ -181,18 +181,18 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueN
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get persona state: userID='%s'; %s; %s"), *InUserId.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to get persona state: userID='%s'; %s; %s"), *InUserId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		}
 		else
 		{
-			constexpr char* PERSONAME_STATE_KEY = "persona_state";
-			constexpr char* PERSONAME_STATE_ONLINE = "online";
-			constexpr char* PERSONAME_STATE_OFFLINE = "offline";
+			constexpr auto PERSONAME_STATE_KEY = TEXT("persona_state");
+			constexpr auto PERSONAME_STATE_ONLINE = TEXT("online");
+			constexpr auto PERSONAME_STATE_OFFLINE = TEXT("offline");
 
-			userInfo->SetUserAttribute(ANSI_TO_TCHAR(PERSONAME_STATE_KEY),
+			userInfo->SetUserAttribute(PERSONAME_STATE_KEY,
 				personaState == galaxy::api::PERSONA_STATE_ONLINE
-				? ANSI_TO_TCHAR(PERSONAME_STATE_ONLINE)
-				: ANSI_TO_TCHAR(PERSONAME_STATE_OFFLINE));
+				? PERSONAME_STATE_ONLINE
+				: PERSONAME_STATE_OFFLINE);
 		}
 	}
 
@@ -204,14 +204,13 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueN
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get avatar url: userID='%s'; %s; %s"), *InUserId.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to get avatar url: userID='%s'; %s; %s"), *InUserId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		}
 		else
 		{
-			constexpr char* AVATAR_LARGE_KEY = "avatar_large";
+			constexpr auto AVATAR_LARGE_KEY = TEXT("avatar_large");
 
-			userInfo->SetUserAttribute(ANSI_TO_TCHAR(AVATAR_LARGE_KEY),
-				ANSI_TO_TCHAR(avatarUrlBuffer.data()));
+			userInfo->SetUserAttribute(AVATAR_LARGE_KEY, UTF8_TO_TCHAR(avatarUrlBuffer.data()));
 		}
 	}
 
@@ -232,7 +231,7 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::FillUserData(TSharedPtr<FUser
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user data count: userID='%s'; %s; %s"), *InUserInfo->GetUserId()->ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get user data count: userID='%s'; %s; %s"), *InUserInfo->GetUserId()->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return InUserInfo;
 	}
 
@@ -247,11 +246,11 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::FillUserData(TSharedPtr<FUser
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get user name: userID='%s'; %s; %s"), *InUserInfo->GetUserId()->ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to get user name: userID='%s'; %s; %s"), *InUserInfo->GetUserId()->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return InUserInfo;
 		}
 
-		InUserInfo->SetUserAttribute(ANSI_TO_TCHAR(keyBuffer.data()), ANSI_TO_TCHAR(valueBuffer.data()));
+		InUserInfo->SetUserAttribute(UTF8_TO_TCHAR(keyBuffer.data()), UTF8_TO_TCHAR(valueBuffer.data()));
 	}
 
 	return InUserInfo;
@@ -274,7 +273,7 @@ TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::GetUniquePlayerId(int32 InLoc
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user ID: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get user ID: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return nullptr;
 	}
 
@@ -366,11 +365,11 @@ FString FOnlineIdentityGOG::GetPlayerNickname(int32 InLocalUserNum) const
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get players user name: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get players user name: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return {};
 	}
 
-	return FString{ANSI_TO_TCHAR(usernameBuffer.data())};
+	return FString{UTF8_TO_TCHAR(usernameBuffer.data())};
 }
 
 FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) const
@@ -384,11 +383,11 @@ FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) cons
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user name: userID='%s'; %s; %s"), *InUserId.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get user name: userID='%s'; %s; %s"), *InUserId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return {};
 	}
 
-	return FString{ANSI_TO_TCHAR(usernameBuffer.data())};
+	return FString{UTF8_TO_TCHAR(usernameBuffer.data())};
 }
 
 FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
@@ -407,12 +406,12 @@ FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user access token: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get user access token: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return {};
 	}
 
 
-	return FString(ANSI_TO_TCHAR(accessTokenBuffer.data()));
+	return FString(UTF8_TO_TCHAR(accessTokenBuffer.data()));
 }
 
 void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPrivileges::Type InPrivilege, const FOnGetUserPrivilegeCompleteDelegate& InDelegate)
@@ -481,11 +480,11 @@ void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOn
 		return;
 	}
 
-	galaxy::api::User()->ReportInvalidAccessToken(TCHAR_TO_ANSI(*accessToken));
+	galaxy::api::User()->ReportInvalidAccessToken(TCHAR_TO_UTF8(*accessToken));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to get access token: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Failed to get access token: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InDelegate.ExecuteIfBound(InUserId, FOnlineError{501});
 	}
 
@@ -503,7 +502,7 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	galaxy::api::User()->RequestUserData();
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Warning, TEXT("Failed to request user data: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request user data: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
 	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, FUniqueNetIdGOG{galaxy::api::User()->GetGalaxyID()}, TEXT(""));

@@ -20,7 +20,7 @@ namespace
 	{
 		if (InParam == 0.0)
 		{
-			UE_LOG_NETWORKING(Log, TEXT("%s is reset to %f"), ANSI_TO_TCHAR(InParamName), InInitialValue);
+			UE_LOG_NETWORKING(Log, TEXT("%s is reset to %f"), UTF8_TO_TCHAR(InParamName), InInitialValue);
 			InParam = InInitialValue;
 		}
 	}
@@ -208,7 +208,7 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_TRAFFIC(Warning, TEXT("Failed to check for packet availability: '%s'; '%s'"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_TRAFFIC(Warning, TEXT("Failed to check for packet availability: '%s'; '%s'"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return;
 		}
 
@@ -222,7 +222,7 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_TRAFFIC(Error, TEXT("Failed to read incoming packet: '%s'; '%s'"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_TRAFFIC(Error, TEXT("Failed to read incoming packet: '%s'; '%s'"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			continue;
 		}
 
@@ -399,7 +399,7 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_TRAFFIC(Error, TEXT("Failed to send packet: remoteID='%s'; %s; %s"), *remoteID.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_TRAFFIC(Error, TEXT("Failed to send packet: remoteID='%s'; %s; %s"), *remoteID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 }
 
 FString UNetDriverGOG::LowLevelGetNetworkNumber()
@@ -410,7 +410,7 @@ FString UNetDriverGOG::LowLevelGetNetworkNumber()
 	auto err = galaxy::api::GetError();
 	if (err || !galaxyID.IsValid())
 	{
-		UE_LOG_NETWORKING(Error, TEXT("Failed to get GOG UserId: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_NETWORKING(Error, TEXT("Failed to get GOG UserId: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return{};
 	}
 

@@ -91,7 +91,7 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to create lobby[0]: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to create lobby[0]: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(listenerID);
 
@@ -220,7 +220,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby joinability: sessionName='%s', lobbyID=%llus, %s; %s"),
-			*InSessionName.ToString(), lobbyID.ToUint64(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			*InSessionName.ToString(), lobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		storedSession->SessionState = EOnlineSessionState::Pending;
 		TriggerOnStartSessionCompleteDelegates(InSessionName, false);
@@ -240,7 +240,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 	err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID=%llus, %s; %s"), lobbyID.ToUint64(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID=%llus, %s; %s"), lobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(listenerID);
 		storedSession->SessionState = EOnlineSessionState::Pending;
@@ -332,7 +332,7 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 	galaxy::api::Matchmaking()->LeaveLobby(AsUniqueNetIDGOG(storedSession->SessionInfo->GetSessionId()));
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Error, TEXT("Failed to leave lobby: lobbyID=%llu, %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Failed to leave lobby: lobbyID=%llu, %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	RemoveNamedSession(InSessionName);
 
@@ -416,7 +416,7 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby list: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby list: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(listenerID);
 
@@ -493,7 +493,7 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to join lobby: lobbyID=%s; %s; %s"), *sessionID.ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to join lobby: lobbyID=%s; %s; %s"), *sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		TriggerOnJoinSessionCompleteDelegates(InSessionName, EOnJoinSessionCompleteResult::UnknownError);
 
 		FreeListener(listenerID);
@@ -578,11 +578,11 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName I
 	bool invitationSentSuccessfully = true;
 	for (auto invitedFriend : InFriends)
 	{
-		galaxy::api::Friends()->SendInvitation(FUniqueNetIdGOG(*invitedFriend), TCHAR_TO_ANSI(*connectString));
+		galaxy::api::Friends()->SendInvitation(FUniqueNetIdGOG(*invitedFriend), TCHAR_TO_UTF8(*connectString));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s; %s"), *invitedFriend->ToDebugString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s; %s"), *invitedFriend->ToDebugString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			invitationSentSuccessfully = false;
 		}
 	}
@@ -691,7 +691,7 @@ bool FOnlineSessionGOG::RegisterPlayers(FName InSessionName, const TArray< TShar
 		galaxy::api::Friends()->RequestUserInformation(AsUniqueNetIDGOG(*playerID));
 		auto err = galaxy::api::GetError();
 		if (err)
-			UE_LOG_ONLINE(Warning, TEXT("Failed to request information for user: userID='%s'; '%s'; '%s'"), *playerID->ToString(), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to request information for user: userID='%s'; '%s'; '%s'"), *playerID->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 	}
 
 	TriggerOnRegisterPlayersCompleteDelegates(InSessionName, InPlayers, true);

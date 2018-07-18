@@ -33,12 +33,12 @@ FString FOnlineSubsystemGOG::GetClientSecret() const
 
 FString ReadStrFromConfig(const char* InKey)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::ReadStrFromConfig(%s)"), ANSI_TO_TCHAR(InKey));
+	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::ReadStrFromConfig(%s)"), UTF8_TO_TCHAR(InKey));
 
-	FString str = GConfig->GetStr(TEXT_CONFIG_SECTION_GOG, ANSI_TO_TCHAR(InKey), GEngineIni);
+	FString str = GConfig->GetStr(TEXT_CONFIG_SECTION_GOG, UTF8_TO_TCHAR(InKey), GEngineIni);
 	if (str.IsEmpty())
 	{
-		UE_LOG_ONLINE(Error, TEXT("%s missing parameter: %s"), *GEngineIni, ANSI_TO_TCHAR(InKey));
+		UE_LOG_ONLINE(Error, TEXT("%s missing parameter: %s"), *GEngineIni, UTF8_TO_TCHAR(InKey));
 		check(false && "Missing configuration parameter");
 	}
 
@@ -84,11 +84,11 @@ bool FOnlineSubsystemGOG::InitGalaxyPeer()
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::InitGalaxyPeer()"));
 
-	galaxy::api::Init(galaxy::api::InitOptions{TCHAR_TO_ANSI(*GetAppId()), TCHAR_TO_ANSI(*GetClientSecret())});
+	galaxy::api::Init(galaxy::api::InitOptions{TCHAR_TO_UTF8(*GetAppId()), TCHAR_TO_UTF8(*GetClientSecret())});
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Galaxy SDK failed to initialize: %s; %s"), ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Galaxy SDK failed to initialize: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 

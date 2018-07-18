@@ -107,7 +107,7 @@ namespace
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get maximum lobby size: lobbyID=%llu; %s; %s"), maxLobbyMembers, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to get maximum lobby size: lobbyID=%llu; %s; %s"), maxLobbyMembers, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 		sessionSettings.NumPublicConnections = maxLobbyMembers;
@@ -116,7 +116,7 @@ namespace
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get current lobby size: lobbyID=%llu; %s; %s"), maxLobbyMembers, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to get current lobby size: lobbyID=%llu; %s; %s"), maxLobbyMembers, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 
@@ -195,7 +195,7 @@ bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby from list. Ignoring: lobbyIdx=%u, %s; %s"), lobbbyIdx, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby from list. Ignoring: lobbyIdx=%u, %s; %s"), lobbbyIdx, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			continue;
 		}
 
@@ -203,7 +203,7 @@ bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data. Ignoring: lobbyID=%llu; %s; %s"), lobbbyIdx, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data. Ignoring: lobbyID=%llu; %s; %s"), lobbbyIdx, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			continue;
 		}
 
