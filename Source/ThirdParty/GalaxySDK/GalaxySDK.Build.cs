@@ -61,7 +61,6 @@ public class GalaxySDK : ModuleRules
 			string galaxyDLLPath = Path.Combine(LibrariesPath, galaxyDLLName);
 			PublicAdditionalShadowFiles.Add(galaxyDLLPath);
 			PublicDelayLoadDLLs.Add(galaxyDLLPath);
-			PublicLibraryPaths.Add(LibrariesPath);
 			AdditionalBundleResources.Add(new UEBuildBundleResource(galaxyDLLPath, "MacOS"));
 		}
 		else
