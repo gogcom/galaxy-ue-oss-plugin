@@ -504,10 +504,12 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	if (err)
 		UE_LOG_ONLINE(Warning, TEXT("Failed to request user data: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
-	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, FUniqueNetIdGOG{galaxy::api::User()->GetGalaxyID()}, TEXT(""));
+	auto userID = GetUniquePlayerId(LOCAL_USER_NUM);
 
-	UE_LOG_ONLINE(Display, TEXT("OnAuthSuccess() executed"));
+	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
+	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, *userID, TEXT(""));
+
+	UE_LOG_ONLINE(Display, TEXT("Successfully logged in: name=%s, userID=%s"), *GetPlayerNickname(LOCAL_USER_NUM), *userID->ToString());
 }
 
 void FOnlineIdentityGOG::OnAuthFailure(FailureReason failureReason)
