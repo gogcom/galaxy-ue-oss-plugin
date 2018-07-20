@@ -3,7 +3,7 @@
 
 	"FriendlyName": "Online Subsystem GOG",
 	"Version": 1,
-	"VersionName": "1.0",
+	"VersionName": "0.1",
 	"Description": "GOG online features",
 	"Category": "Online Platform",
 	"CreatedBy": "GOG Galaxy SDK Dev Team",
@@ -23,8 +23,7 @@
 			"LoadingPhase": "Default",
 			"WhitelistPlatforms":
 			[
-				"Win64",
-				"Mac"
+				"Win64"
 			]
 		}
 	],
