@@ -79,13 +79,9 @@ namespace NamedVariantDataConverter
 			return{};
 		}
 
-		const auto& convertedName = FString::Printf(CONVERTED_NAME_FORMAT, GetKeyPrefixFromType(InData.GetType()), *InName.ToString());
-		const auto& convertedData = InData.ToString();
-
-		if (convertedData.IsEmpty())
-			UE_LOG_ONLINE(Error, TEXT("Failed to serialize data"));
-
-		return MakeTuple(convertedName, convertedData);
+		return MakeTuple(
+			FString::Printf(CONVERTED_NAME_FORMAT, GetKeyPrefixFromType(InData.GetType()), *InName.ToString()),
+			InData.ToString());
 	}
 
 	TPair<FName, FVariantData> FromLobbyDataEntry(const FLobbyDataEntry& InLobbyDataEntry)
