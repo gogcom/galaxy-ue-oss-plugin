@@ -4,8 +4,12 @@
 
 #include "Online.h"
 
-FQueryAchievementsListener::FQueryAchievementsListener(const FUniqueNetIdGOG& InPlayerId, const FOnQueryAchievementsCompleteDelegate& InDelegate)
-	: playerId{InPlayerId}
+FQueryAchievementsListener::FQueryAchievementsListener(
+	FOnlineAchievementsGOG& InAchivementsInterface,
+	const FUniqueNetIdGOG& InPlayerId,
+	const FOnQueryAchievementsCompleteDelegate& InDelegate)
+	: achivementsInterface{InAchivementsInterface}
+	, playerId{InPlayerId}
 	, queryAchievementsCompleteDelegate{InDelegate}
 {
 }
@@ -16,15 +20,7 @@ void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveSuccess(galax
 
 	check(InUserID == playerId && "Achievements retrieved for unknown user. This shall not be happening with Galaxy specific listeners");
 
-	auto onlineAchivementsInterface = StaticCastSharedPtr<FOnlineAchievementsGOG>(Online::GetAchievementsInterface());
-	if (!onlineAchivementsInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed update player achivements. OnlineAchievements interface is NULL: playerID='%s'"), *playerId.ToString());
-		TriggerOnQueryAchievementsCompleteDelegate(false);
-		return;
-	}
-
-	onlineAchivementsInterface->OnAchivementsRetrieved(InUserID);
+	achivementsInterface.OnAchivementsRetrieved(InUserID);
 
 	TriggerOnQueryAchievementsCompleteDelegate(true);
 }
@@ -42,12 +38,5 @@ void FQueryAchievementsListener::TriggerOnQueryAchievementsCompleteDelegate(bool
 {
 	queryAchievementsCompleteDelegate.ExecuteIfBound(playerId, InResult);
 
-	auto onlineAchivementsInterface = StaticCastSharedPtr<FOnlineAchievementsGOG>(Online::GetAchievementsInterface());
-	if (!onlineAchivementsInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to clear query achivements listener. Possible memory leak: playerID='%s'"), *playerId.ToString());
-		return;
-	}
-
-	onlineAchivementsInterface->FreeListener(ListenerID);
+	achivementsInterface.FreeListener(ListenerID);
 }

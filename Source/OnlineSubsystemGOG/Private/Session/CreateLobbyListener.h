@@ -14,7 +14,7 @@ class FCreateLobbyListener
 {
 public:
 
-	FCreateLobbyListener(FName InSessionName, FOnlineSessionSettings InSettings);
+	FCreateLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSessionSettings InSettings);
 
 private:
 
@@ -28,6 +28,7 @@ private:
 
 	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful) const;
 
+	class FOnlineSessionGOG& sessionInterface;
 	const FName sessionName;
 	FOnlineSessionSettings sessionSettings;
 

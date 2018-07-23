@@ -11,7 +11,7 @@ class FRequestLobbyListListener
 {
 public:
 
-	FRequestLobbyListListener(TSharedRef<FOnlineSessionSearch> InOutSearchSettings);
+	FRequestLobbyListListener(class FOnlineSessionGOG& InSessionInterface, TSharedRef<FOnlineSessionSearch> InOutSearchSettings);
 
 private:
 
@@ -25,6 +25,7 @@ private:
 
 	void OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataRetrieveListener::FailureReason InFailureReason) override;
 
+	class FOnlineSessionGOG& sessionInterface;
 	TArray<galaxy::api::GalaxyID> pendingLobbyList;
 	TSharedRef<FOnlineSessionSearch> searchSettings;
 };

@@ -2,8 +2,11 @@
 
 #include "Types/UniqueNetIdGOG.h"
 
-FReadLeaderboardForUsersListener::FReadLeaderboardForUsersListener(TArray<TSharedRef<const FUniqueNetId>> InPlayers, FOnlineLeaderboardReadRef InOutReadLeaderboard)
-	: FLeaderboardRetriever{MoveTemp(InOutReadLeaderboard)}
+FReadLeaderboardForUsersListener::FReadLeaderboardForUsersListener(
+	class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
+	TArray<TSharedRef<const FUniqueNetId>> InPlayers,
+	FOnlineLeaderboardReadRef InOutReadLeaderboard)
+	: FLeaderboardRetriever{InLeaderboardsInterface, MoveTemp(InOutReadLeaderboard)}
 	, players{MoveTemp(InPlayers)}
 {
 }

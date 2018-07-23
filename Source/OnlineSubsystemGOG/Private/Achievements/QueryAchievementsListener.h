@@ -11,7 +11,7 @@ class FQueryAchievementsListener
 {
 public:
 
-	FQueryAchievementsListener(const FUniqueNetIdGOG& InPlayerId, const FOnQueryAchievementsCompleteDelegate& InDelegate);
+	FQueryAchievementsListener(class FOnlineAchievementsGOG& InAchivementsInterface, const FUniqueNetIdGOG& InPlayerId, const FOnQueryAchievementsCompleteDelegate& InDelegate);
 
 private:
 
@@ -20,6 +20,8 @@ private:
 	void OnUserStatsAndAchievementsRetrieveFailure(galaxy::api::GalaxyID InUserID, galaxy::api::IUserStatsAndAchievementsRetrieveListener::FailureReason InFailureReason) override;
 
 	void TriggerOnQueryAchievementsCompleteDelegate(bool InResult);
+
+	class FOnlineAchievementsGOG& achivementsInterface;
 
 	const FUniqueNetIdGOG playerId;
 

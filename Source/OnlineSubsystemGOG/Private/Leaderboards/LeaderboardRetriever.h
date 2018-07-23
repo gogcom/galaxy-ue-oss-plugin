@@ -12,7 +12,7 @@ class FLeaderboardRetriever
 {
 PACKAGE_SCOPE:
 
-	FLeaderboardRetriever::FLeaderboardRetriever(FOnlineLeaderboardReadRef InInOutReadLeaderboard);
+	FLeaderboardRetriever::FLeaderboardRetriever(class FOnlineLeaderboardsGOG& InLeaderboardsInterface, FOnlineLeaderboardReadRef InInOutReadLeaderboard);
 
 protected:
 
@@ -28,5 +28,6 @@ protected:
 
 	void TriggerOnLeaderboardReadCompleteDelegates(bool InResult);
 
+	class FOnlineLeaderboardsGOG& leaderboardsInterface;
 	FOnlineLeaderboardReadRef readLeaderboard;
 };

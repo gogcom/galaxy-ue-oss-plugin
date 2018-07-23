@@ -14,7 +14,7 @@ class FJoinLobbyListener
 {
 public:
 
-	FJoinLobbyListener(FName InSessionName, FOnlineSession InJoiningSession);
+	FJoinLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSession InJoiningSession);
 
 private:
 
@@ -22,6 +22,7 @@ private:
 
 	void TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult) const;
 
+	class FOnlineSessionGOG& sessionInterface;
 	const FName sessionName;
 	const FOnlineSession joiningSession;
 };

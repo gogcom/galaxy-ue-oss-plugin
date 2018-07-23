@@ -3,8 +3,12 @@
 #include <limits>
 #include <algorithm>
 
-FReadLeaderboardAroundRankListener::FReadLeaderboardAroundRankListener(int32 InRank, uint32 InRange, FOnlineLeaderboardReadRef InOutReadLeaderboard)
-	: FLeaderboardRetriever{MoveTemp(InOutReadLeaderboard)}
+FReadLeaderboardAroundRankListener::FReadLeaderboardAroundRankListener(
+	class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
+	int32 InRank,
+	uint32 InRange,
+	FOnlineLeaderboardReadRef InOutReadLeaderboard)
+	: FLeaderboardRetriever{InLeaderboardsInterface, MoveTemp(InOutReadLeaderboard)}
 	, rank{InRank}
 	, range{InRange}
 {

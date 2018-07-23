@@ -9,7 +9,7 @@ class FLobbyStartListener
 {
 public:
 
-	FLobbyStartListener(galaxy::api::GalaxyID InLobbyID, FName InSessionName);
+	FLobbyStartListener(class FOnlineSessionGOG& InSessionInterface, galaxy::api::GalaxyID InLobbyID, FName InSessionName);
 
 private:
 
@@ -21,6 +21,7 @@ private:
 
 	void TriggerOnStartSessionCompleteDelegates(bool InResult);
 
+	class FOnlineSessionGOG& sessionInterface;
 	const galaxy::api::GalaxyID lobbyID;
 	const FName sessionName;
 };

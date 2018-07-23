@@ -9,7 +9,10 @@ class FReadLeaderboardForUsersListener
 {
 PACKAGE_SCOPE:
 
-	FReadLeaderboardForUsersListener(TArray<TSharedRef<const FUniqueNetId>> InPlayers, FOnlineLeaderboardReadRef InInOutReadLeaderboard);
+	FReadLeaderboardForUsersListener(
+		class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
+		TArray<TSharedRef<const FUniqueNetId>> InPlayers,
+		FOnlineLeaderboardReadRef InInOutReadLeaderboard);
 
 	void RequestLeaderboardEntries() override;
 

@@ -10,7 +10,11 @@ class FReadLeaderboardAroundUserListener
 {
 PACKAGE_SCOPE:
 
-	FReadLeaderboardAroundUserListener(TSharedRef<const FUniqueNetIdGOG> InPlayer, uint32 InRange, FOnlineLeaderboardReadRef& InOutReadLeaderboard);
+	FReadLeaderboardAroundUserListener(
+		class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
+		TSharedRef<const FUniqueNetIdGOG> InPlayer,
+		uint32 InRange,
+		FOnlineLeaderboardReadRef& InOutReadLeaderboard);
 
 	void RequestLeaderboardEntries() override;
 

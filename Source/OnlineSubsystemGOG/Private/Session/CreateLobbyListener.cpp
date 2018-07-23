@@ -14,7 +14,7 @@ namespace
 	{
 		// Store Session owner name and ID to avoid additional Galaxy async request
 
-		auto onlineIdentityInterface = Online::GetIdentityInterface();
+		auto onlineIdentityInterface = Online::GetIdentityInterface(TEXT_GOG);
 		if (!onlineIdentityInterface.IsValid())
 		{
 			UE_LOG_ONLINE(Error, TEXT("Failed to get Session owner data. OnlineIdentity interface is NULL"));
@@ -63,16 +63,9 @@ namespace
 		return true;
 	}
 
-	bool AddLocalSession(const galaxy::api::GalaxyID& InLobbyID, const FName& InSessionName, const FOnlineSessionSettings& InSessionSettings)
+	bool AddLocalSession(FOnlineSessionGOG& InSessionInterface, const galaxy::api::GalaxyID& InLobbyID, const FName& InSessionName, const FOnlineSessionSettings& InSessionSettings)
 	{
-		auto onlineSessionInterface = StaticCastSharedPtr<FOnlineSessionGOG>(Online::GetSessionInterface());
-		if (!onlineSessionInterface.IsValid())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to add local session as OnlineSession interface is invalid"));
-			return false;
-		}
-
-		auto newSession = dynamic_cast<FOnlineSessionGOG*>(onlineSessionInterface.Get())->AddNamedSession(InSessionName, InSessionSettings);
+		auto newSession = InSessionInterface.AddNamedSession(InSessionName, InSessionSettings);
 		if (!newSession)
 		{
 			UE_LOG_ONLINE(Error, TEXT("Failed to create new local session (NULL)"));
@@ -100,8 +93,9 @@ namespace
 
 }
 
-FCreateLobbyListener::FCreateLobbyListener(FName InSessionName, FOnlineSessionSettings InSettings)
-	: sessionName{MoveTemp(InSessionName)}
+FCreateLobbyListener::FCreateLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSessionSettings InSettings)
+	: sessionInterface{InSessionInterface}
+	, sessionName{MoveTemp(InSessionName)}
 	, sessionSettings{MoveTemp(InSettings)}
 {
 }
@@ -181,7 +175,7 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 	if (!isLobbyJoinable)
 		UE_LOG_ONLINE(Error, TEXT("Failed to prepare lobby"));
 
-	TriggerOnCreateSessionCompleteDelegates(isLobbyJoinable && AddLocalSession(newLobbyID, sessionName, sessionSettings));
+	TriggerOnCreateSessionCompleteDelegates(isLobbyJoinable && AddLocalSession(sessionInterface, newLobbyID, sessionName, sessionSettings));
 }
 
 void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason)
@@ -199,21 +193,13 @@ void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID&
 
 void FCreateLobbyListener::TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful) const
 {
-	auto onlineSessionInterface = StaticCastSharedPtr<FOnlineSessionGOG>(Online::GetSessionInterface());
-	if (!onlineSessionInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to finalize session creation as OnlineSession interface is invalid"));
-		galaxy::api::Matchmaking()->LeaveLobby(newLobbyID);
-		return;
-	}
-
 	if (!InIsSuccessful)
 	{
 		galaxy::api::Matchmaking()->LeaveLobby(newLobbyID);
-		onlineSessionInterface->RemoveNamedSession(sessionName);
+		sessionInterface.RemoveNamedSession(sessionName);
 	}
 
-	onlineSessionInterface->TriggerOnCreateSessionCompleteDelegates(sessionName, InIsSuccessful);
+	sessionInterface.TriggerOnCreateSessionCompleteDelegates(sessionName, InIsSuccessful);
 
-	onlineSessionInterface->FreeListener(ListenerID);
+	sessionInterface.FreeListener(ListenerID);
 }

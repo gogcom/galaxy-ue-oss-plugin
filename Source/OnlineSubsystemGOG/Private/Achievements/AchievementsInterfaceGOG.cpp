@@ -11,19 +11,7 @@
 namespace
 {
 
-	TSharedPtr<const FUniqueNetId> GetLocalPlayerID()
-	{
-		auto onlineIdentityInterface = Online::GetIdentityInterface();
-		if (!onlineIdentityInterface.IsValid())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Online identity interface is invalid"));
-			return{};
-		}
-
-		return onlineIdentityInterface->GetUniquePlayerId(LOCAL_USER_NUM);
-	}
-
-	bool CheckPlayerID(const FUniqueNetId& InPlayerId)
+	bool CheckPlayerID(const FOnlineSubsystemGOG& InSubsystem, const FUniqueNetId& InPlayerId)
 	{
 		if (!InPlayerId.IsValid())
 		{
@@ -31,7 +19,7 @@ namespace
 			return false;
 		}
 
-		if (InPlayerId != *GetLocalPlayerID())
+		if (InPlayerId != *GetLocalPlayerID(InSubsystem))
 		{
 			UE_LOG_ONLINE(Error, TEXT("Achievements can only be modified for first local player"));
 			return false;
@@ -62,7 +50,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 	if (!AssertAchievementsCount())
 		return;
 
-	if (!CheckPlayerID(InPlayerId))
+	if (!CheckPlayerID(subsystemGOG, InPlayerId))
 	{
 		InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 		InDelegate.ExecuteIfBound(InPlayerId, false);
@@ -114,7 +102,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 		}
 	}
 
-	auto listenerID = CreateListener<FWriteAchievementsListener>(InPlayerId, InWriteObject, InDelegate);
+	auto listenerID = CreateListener<FWriteAchievementsListener>(*this, InPlayerId, InWriteObject, InDelegate);
 
 	galaxy::api::Stats()->StoreStatsAndAchievements(GetListenerRawPtr<FWriteAchievementsListener>(listenerID));
 	auto err = galaxy::api::GetError();
@@ -138,7 +126,7 @@ void FOnlineAchievementsGOG::QueryAchievements(const FUniqueNetId& InPlayerId, c
 	if (!AssertAchievementsCount())
 		return;
 
-	auto listenerID = CreateListener<FQueryAchievementsListener>(InPlayerId, InDelegate);
+	auto listenerID = CreateListener<FQueryAchievementsListener>(*this, InPlayerId, InDelegate);
 
 	galaxy::api::Stats()->RequestUserStatsAndAchievements(AsUniqueNetIDGOG(InPlayerId), GetListenerRawPtr<FQueryAchievementsListener>(listenerID));
 	auto err = galaxy::api::GetError();
@@ -253,7 +241,7 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 	if (!AssertAchievementsCount())
 		return false;
 
-	if (!CheckPlayerID(InPlayerId))
+	if (!CheckPlayerID(subsystemGOG, InPlayerId))
 		return false;
 
 	auto playerCachedAchievements = cachedAchievements.Find(InPlayerId);
@@ -334,7 +322,7 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 
 	FString achievementName{UTF8_TO_TCHAR(InName)};
 
-	auto localUserID = GetLocalPlayerID();
+	auto localUserID = GetLocalPlayerID(subsystemGOG);
 	if (!localUserID.IsValid() || !localUserID->IsValid())
 	{
 		UE_LOG_ONLINE(Error, TEXT("Cannot unlock player achivement. Invalid local user ID: achivementName='%s'"), *achievementName);

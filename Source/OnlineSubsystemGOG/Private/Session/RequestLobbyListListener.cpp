@@ -132,8 +132,9 @@ namespace
 
 }
 
-FRequestLobbyListListener::FRequestLobbyListListener(TSharedRef<FOnlineSessionSearch> InOutSearchSettings)
-	: searchSettings{MoveTemp(InOutSearchSettings)}
+FRequestLobbyListListener::FRequestLobbyListListener(class FOnlineSessionGOG& InSessionInterface, TSharedRef<FOnlineSessionSearch> InOutSearchSettings)
+	: sessionInterface{InSessionInterface}
+	, searchSettings{MoveTemp(InOutSearchSettings)}
 {
 }
 
@@ -143,16 +144,9 @@ void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIs
 		? EOnlineAsyncTaskState::Done
 		: EOnlineAsyncTaskState::Failed;
 
-	auto onlineSessionInterface = StaticCastSharedPtr<FOnlineSessionGOG>(Online::GetSessionInterface());
-	if (!onlineSessionInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to finalize session searching as OnlineSession interface is invalid"));
-		return;
-	}
+	sessionInterface.TriggerOnFindSessionsCompleteDelegates(InIsSuccessful);
 
-	onlineSessionInterface->TriggerOnFindSessionsCompleteDelegates(InIsSuccessful);
-
-	onlineSessionInterface->FreeListener(ListenerID);
+	sessionInterface.FreeListener(ListenerID);
 }
 
 void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, bool InIOFailure)
@@ -224,7 +218,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Ga
 {
 	UE_LOG_ONLINE(Display, TEXT("FRequestLobbyListListener::OnLobbyDataRetrieveSuccess()"), InLobbyID.ToUint64());
 
-	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64())
+	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	auto* newSearchResult = new (searchSettings->SearchResults) FOnlineSessionSearchResult();
 	if (!newSearchResult)
@@ -248,7 +242,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Ga
 {
 	UE_LOG_ONLINE(Display, TEXT("OnLobbyDataRetrieveFailure, lobbyID=%llu"), InLobbyID.ToUint64());
 
-	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64())
+	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	switch (InFailureReason)
 	{

@@ -4,8 +4,9 @@
 
 #include "Online.h"
 
-FLobbyStartListener::FLobbyStartListener(galaxy::api::GalaxyID InLobbyID, FName InSessionName)
-	: lobbyID{MoveTemp(InLobbyID)}
+FLobbyStartListener::FLobbyStartListener(class FOnlineSessionGOG& InSessionInterface, galaxy::api::GalaxyID InLobbyID, FName InSessionName)
+	: sessionInterface{InSessionInterface}
+	, lobbyID{MoveTemp(InLobbyID)}
 	, sessionName{MoveTemp(InSessionName)}
 {
 }
@@ -42,13 +43,7 @@ void FLobbyStartListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& 
 
 bool FLobbyStartListener::MarkSessionStarted(bool IsJoinable) const
 {
-	auto onlineSessionInterface = Online::GetSessionInterface();
-	if (!onlineSessionInterface.IsValid())
-	{
-		return false;
-	}
-
-	auto storedSession = onlineSessionInterface->GetNamedSession(sessionName);
+	auto storedSession = sessionInterface.GetNamedSession(sessionName);
 	if (!storedSession)
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to finalize session stating as OnlineSession interface is invalid: sessionName='%s'"), *sessionName.ToString());
@@ -61,13 +56,6 @@ bool FLobbyStartListener::MarkSessionStarted(bool IsJoinable) const
 
 void FLobbyStartListener::TriggerOnStartSessionCompleteDelegates(bool InResult)
 {
-	auto onlineSessionInterface = StaticCastSharedPtr<FOnlineSessionGOG>(Online::GetSessionInterface());
-	if (!onlineSessionInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to finalize session stating as OnlineSession interface is invalid: sessionName='%s'"), *sessionName.ToString());
-		return;
-	}
-
-	onlineSessionInterface->TriggerOnStartSessionCompleteDelegates(sessionName, MarkSessionStarted(InResult));
-	onlineSessionInterface->FreeListener(ListenerID);
+	sessionInterface.TriggerOnStartSessionCompleteDelegates(sessionName, MarkSessionStarted(InResult));
+	sessionInterface.FreeListener(ListenerID);
 }

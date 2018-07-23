@@ -12,7 +12,11 @@ class FWriteAchievementsListener
 {
 public:
 
-	FWriteAchievementsListener(const FUniqueNetIdGOG& InPlayerId, FOnlineAchievementsWriteRef& InWriteObject, const FOnAchievementsWrittenDelegate& InDelegate);
+	FWriteAchievementsListener(
+		class FOnlineAchievementsGOG& InAchivementsInterface,
+		const FUniqueNetIdGOG& InPlayerId,
+		FOnlineAchievementsWriteRef& InWriteObject,
+		const FOnAchievementsWrittenDelegate& InDelegate);
 
 private:
 
@@ -22,6 +26,7 @@ private:
 
 	void TriggerOnAchievementsWrittenDelegate(bool InResult);
 
+	class FOnlineAchievementsGOG& achivementsInterface;
 	const FUniqueNetIdGOG playerId;
 	FOnlineAchievementsWriteRef achievementsWriteObject;
 	const FOnAchievementsWrittenDelegate achievementsWrittenDelegate;

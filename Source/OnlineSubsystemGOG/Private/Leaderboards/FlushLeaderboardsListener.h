@@ -12,7 +12,11 @@ class FFlushLeaderboardsListener
 {
 PACKAGE_SCOPE:
 
-	FFlushLeaderboardsListener(FName InSessionName, TMap<const FName, CachedLeaderboardDetails> InLeaderboardsDetails);
+	FFlushLeaderboardsListener(
+		class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
+		FName InSessionName,
+		TMap<const FName,
+		CachedLeaderboardDetails> InLeaderboardsDetails);
 
 private:
 
@@ -28,6 +32,7 @@ private:
 
 private:
 
+	class FOnlineLeaderboardsGOG& leaderboardsInterface;
 	const FName sessionName;
 	TMap<const FName, CachedLeaderboardDetails> leaderboardsDetails;
 };

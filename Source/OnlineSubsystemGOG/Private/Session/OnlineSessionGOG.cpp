@@ -16,9 +16,9 @@
 namespace
 {
 
-	void FlushLeaderboards(FName InSessionName)
+	void FlushLeaderboards(IOnlineSubsystem& InSubsystem, FName InSessionName)
 	{
-		auto onlineLeaderboardsInterface = Online::GetLeaderboardsInterface(TEXT_GOG);
+		auto onlineLeaderboardsInterface = InSubsystem.GetLeaderboardsInterface();
 		if (!onlineLeaderboardsInterface.IsValid())
 		{
 			UE_LOG_ONLINE(Warning, TEXT("Failed to flush leaderboards: NULL leaderboards interface"));
@@ -77,7 +77,7 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 		return false;
 	}
 
-	auto listenerID = CreateListener<FCreateLobbyListener>(InSessionName, InSessionSettings);
+	auto listenerID = CreateListener<FCreateLobbyListener>(*this, InSessionName, InSessionSettings);
 	auto listener = GetListenerRawPtr<FCreateLobbyListener>(listenerID);
 
 	galaxy::api::Matchmaking()->CreateLobby(
@@ -234,7 +234,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 		return true;
 	}
 
-	auto listenerID = CreateListener<FLobbyStartListener>(lobbyID, InSessionName);
+	auto listenerID = CreateListener<FLobbyStartListener>(*this, lobbyID, InSessionName);
 
 	galaxy::api::Matchmaking()->SetLobbyJoinable(lobbyID, storedSession->SessionSettings.bAllowJoinInProgress, GetListenerRawPtr<FLobbyStartListener>(listenerID));
 	err = galaxy::api::GetError();
@@ -282,7 +282,7 @@ bool FOnlineSessionGOG::EndSession(FName InSessionName)
 
 	storedSession->SessionState = EOnlineSessionState::Ending;
 
-	FlushLeaderboards(InSessionName);
+	FlushLeaderboards(subsystemGOG, InSessionName);
 
 	storedSession->SessionState = EOnlineSessionState::Ended;
 
@@ -318,7 +318,7 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 
 	storedSession->SessionState = EOnlineSessionState::Destroying;
 
-	FlushLeaderboards(InSessionName);
+	FlushLeaderboards(subsystemGOG, InSessionName);
 
 	if (!storedSession->SessionInfo.IsValid()
 		|| !storedSession->SessionInfo->IsValid())
@@ -410,7 +410,7 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	// TODO: parse search settings and employ them as session filters when session settings
 	// TODO: handle default filters (SEARCH_DEDICATED_ONLY, SEARCH_EMPTY_SERVERS_ONLY, SEARCH_SECURE_SERVERS_ONLY e.t.c.) from OnlineSessionSettings.h
 
-	auto listenerID = CreateListener<FRequestLobbyListListener>(InOutSearchSettings);
+	auto listenerID = CreateListener<FRequestLobbyListListener>(*this, InOutSearchSettings);
 
 	galaxy::api::Matchmaking()->RequestLobbyList(false, GetListenerRawPtr<FRequestLobbyListListener>(listenerID));
 	auto err = galaxy::api::GetError();
@@ -487,7 +487,7 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 
 	const auto& sessionID = InDesiredSession.Session.SessionInfo->GetSessionId();
 
-	auto listenerID = CreateListener<FJoinLobbyListener>(InSessionName, InDesiredSession.Session);
+	auto listenerID = CreateListener<FJoinLobbyListener>(*this, InSessionName, InDesiredSession.Session);
 
 	galaxy::api::Matchmaking()->JoinLobby(AsUniqueNetIDGOG(sessionID), GetListenerRawPtr<FJoinLobbyListener>(listenerID));
 	auto err = galaxy::api::GetError();

@@ -9,7 +9,7 @@ class FReadLeaderboardAroundRankListener
 {
 PACKAGE_SCOPE:
 
-	FReadLeaderboardAroundRankListener(int32 InRank, uint32 InRange, FOnlineLeaderboardReadRef InOutReadLeaderboard);
+	FReadLeaderboardAroundRankListener(class FOnlineLeaderboardsGOG& InLeaderboardsInterface, int32 InRank, uint32 InRange, FOnlineLeaderboardReadRef InOutReadLeaderboard);
 
 	void RequestLeaderboardEntries() override;
 

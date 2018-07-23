@@ -5,27 +5,21 @@
 
 #include "Online.h"
 
-FJoinLobbyListener::FJoinLobbyListener(FName InSessionName, FOnlineSession InJoiningSession)
-	: sessionName{MoveTemp(InSessionName)}
+FJoinLobbyListener::FJoinLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSession InJoiningSession)
+	: sessionInterface{InSessionInterface}
+	, sessionName{MoveTemp(InSessionName)}
 	, joiningSession{MoveTemp(InJoiningSession)}
 {
 }
 
 void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult) const
 {
-	auto onlineSessionInterface = StaticCastSharedPtr<FOnlineSessionGOG>(Online::GetSessionInterface());
-	if (!onlineSessionInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to finalize session joining as OnlineSession interface is invalid: sessionName='%s'"), *sessionName.ToString());
-		return;
-	}
-
 	// Save local copy of the session
-	onlineSessionInterface->AddNamedSession(sessionName, joiningSession);
+	sessionInterface.AddNamedSession(sessionName, joiningSession);
 
-	onlineSessionInterface->TriggerOnJoinSessionCompleteDelegates(sessionName, InResult);
+	sessionInterface.TriggerOnJoinSessionCompleteDelegates(sessionName, InResult);
 
-	onlineSessionInterface->FreeListener(ListenerID);
+	sessionInterface.FreeListener(ListenerID);
 }
 
 void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)

@@ -44,8 +44,9 @@ namespace
 
 }
 
-FLeaderboardRetriever::FLeaderboardRetriever(FOnlineLeaderboardReadRef InInOutReadLeaderboard)
-	: readLeaderboard{MoveTemp(InInOutReadLeaderboard)}
+FLeaderboardRetriever::FLeaderboardRetriever(class FOnlineLeaderboardsGOG& InLeaderboardsInterface, FOnlineLeaderboardReadRef InInOutReadLeaderboard)
+	: leaderboardsInterface{InLeaderboardsInterface}
+	, readLeaderboard{MoveTemp(InInOutReadLeaderboard)}
 {
 	UE_LOG_ONLINE(Display, TEXT("Retrieving leaderboard: name=%s, sortedColumn=%s, readState=%s"),
 		*readLeaderboard->LeaderboardName.ToString(),
@@ -122,18 +123,11 @@ void FLeaderboardRetriever::OnLeaderboardEntriesRetrieveFailure(const char* InNa
 
 void FLeaderboardRetriever::TriggerOnLeaderboardReadCompleteDelegates(bool InResult)
 {
-	auto onlineLeaderboardInterface = StaticCastSharedPtr<FOnlineLeaderboardsGOG>(Online::GetLeaderboardsInterface());
-	if (!onlineLeaderboardInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to clear ReadLeaderboard listener. Possible memory leak: leaderboardName='%s'"), *readLeaderboard->LeaderboardName.ToString());
-		return;
-	}
-
 	readLeaderboard->ReadState = InResult
 		? EOnlineAsyncTaskState::Done
 		: EOnlineAsyncTaskState::Failed;
 
-	onlineLeaderboardInterface->TriggerOnLeaderboardReadCompleteDelegates(InResult);
+	leaderboardsInterface.TriggerOnLeaderboardReadCompleteDelegates(InResult);
 
-	onlineLeaderboardInterface->FreeListener(ListenerID);
+	leaderboardsInterface.FreeListener(ListenerID);
 }

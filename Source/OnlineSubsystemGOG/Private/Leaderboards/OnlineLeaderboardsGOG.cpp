@@ -16,18 +16,6 @@
 namespace
 {
 
-	inline TSharedPtr<const FUniqueNetId> GetLocalPlayerID(const FOnlineSubsystemGOG& InOnlineSubsystem)
-	{
-		auto onlineIdentityInterface = InOnlineSubsystem.GetIdentityInterface();
-		if (!onlineIdentityInterface.IsValid())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Online identity interface is invalid"));
-			return{};
-		}
-
-		return onlineIdentityInterface->GetUniquePlayerId(LOCAL_USER_NUM);
-	}
-
 	// TODO: replace with IOnlineFriends::GetFriendsList() when implemented
 	bool GetFriendsList(TArray<TSharedRef<const FUniqueNetId>>& OutFriends)
 	{
@@ -170,7 +158,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboards(const TArray<TSharedRef<const FUni
 	if (!MarkLeaderboardStarted(InOutReadLeaderboard, this))
 		return false;
 
-	auto listenerID = CreateListener<FReadLeaderboardForUsersListener>(InPlayers, InOutReadLeaderboard);
+	auto listenerID = CreateListener<FReadLeaderboardForUsersListener>(*this, InPlayers, InOutReadLeaderboard);
 
 	galaxy::api::Stats()->FindLeaderboard(
 		TCHAR_TO_UTF8(*InOutReadLeaderboard->LeaderboardName.ToString()),
@@ -235,7 +223,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InR
 	if (!MarkLeaderboardStarted(InOutReadLeaderboard, this))
 		return false;
 
-	auto listenerID = CreateListener<FReadLeaderboardAroundRankListener>(InRank, InRange, InOutReadLeaderboard);
+	auto listenerID = CreateListener<FReadLeaderboardAroundRankListener>(*this, InRank, InRange, InOutReadLeaderboard);
 	galaxy::api::Stats()->FindLeaderboard(
 		TCHAR_TO_UTF8(*InOutReadLeaderboard->LeaderboardName.ToString()),
 		GetListenerRawPtr<FReadLeaderboardAroundRankListener>(listenerID));
@@ -272,7 +260,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser(TSharedRef<const FUnique
 	if (!MarkLeaderboardStarted(InOutReadLeaderboard, this))
 		return false;
 
-	auto listenerID = CreateListener<FReadLeaderboardAroundUserListener>(StaticCastSharedRef<const FUniqueNetIdGOG>(InPlayer), InRange, InOutReadLeaderboard);
+	auto listenerID = CreateListener<FReadLeaderboardAroundUserListener>(*this, StaticCastSharedRef<const FUniqueNetIdGOG>(InPlayer), InRange, InOutReadLeaderboard);
 	galaxy::api::Stats()->FindLeaderboard(
 		TCHAR_TO_UTF8(*InOutReadLeaderboard->LeaderboardName.ToString()),
 		GetListenerRawPtr<FReadLeaderboardAroundUserListener>(listenerID));
@@ -371,7 +359,7 @@ bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 		return false;
 	}
 
-	auto listenerID = CreateListener<FFlushLeaderboardsListener>(InSessionName, *cachedLeaderboards);
+	auto listenerID = CreateListener<FFlushLeaderboardsListener>(*this, InSessionName, *cachedLeaderboards);
 
 	for (const auto& cachedLeaderboard : *cachedLeaderboards)
 	{

@@ -1,7 +1,11 @@
 #include "ReadLeaderboardAroundUserListener.h"
 
-FReadLeaderboardAroundUserListener::FReadLeaderboardAroundUserListener(TSharedRef<const FUniqueNetIdGOG> InPlayer, uint32 InRange, FOnlineLeaderboardReadRef& InOutReadLeaderboard)
-	: FLeaderboardRetriever{MoveTemp(InOutReadLeaderboard)}
+FReadLeaderboardAroundUserListener::FReadLeaderboardAroundUserListener(
+	class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
+	TSharedRef<const FUniqueNetIdGOG> InPlayer,
+	uint32 InRange,
+	FOnlineLeaderboardReadRef& InOutReadLeaderboard)
+	: FLeaderboardRetriever{InLeaderboardsInterface, MoveTemp(InOutReadLeaderboard)}
 	, player{InPlayer}
 	, range{InRange}
 {

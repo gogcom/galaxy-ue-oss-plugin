@@ -4,8 +4,12 @@
 
 #include "OnlineSubsystemUtils.h"
 
-FFlushLeaderboardsListener::FFlushLeaderboardsListener(FName InSessionName, TMap<const FName, CachedLeaderboardDetails> InLeaderboardsDetails)
-	: sessionName{MoveTemp(InSessionName)}
+FFlushLeaderboardsListener::FFlushLeaderboardsListener(
+	class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
+	FName InSessionName,
+	TMap<const FName, CachedLeaderboardDetails> InLeaderboardsDetails)
+	: leaderboardsInterface{InLeaderboardsInterface}
+	, sessionName{MoveTemp(InSessionName)}
 	, leaderboardsDetails{MoveTemp(InLeaderboardsDetails)}
 {
 }
@@ -80,18 +84,11 @@ void FFlushLeaderboardsListener::OnLeaderboardScoreUpdateFailure(const char* InN
 
 void FFlushLeaderboardsListener::TriggerOnLeaderboardFlushComplete(bool InResult) const
 {
-	auto onlineLeaderboardsInterface = StaticCastSharedPtr<FOnlineLeaderboardsGOG>(Online::GetLeaderboardsInterface());
-	if (!onlineLeaderboardsInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to clear FlushLeaderboard listener. Possible memory leak: sessoinName='%s'"), *sessionName.ToString());
-		return;
-	}
-
 	if (InResult)
 		// TBD: should we keep it in case of failure?
-		onlineLeaderboardsInterface->RemoveCachedLeaderboard(sessionName);
+		leaderboardsInterface.RemoveCachedLeaderboard(sessionName);
 
-	onlineLeaderboardsInterface->TriggerOnLeaderboardFlushCompleteDelegates(sessionName, InResult);
+	leaderboardsInterface.TriggerOnLeaderboardFlushCompleteDelegates(sessionName, InResult);
 
-	onlineLeaderboardsInterface->FreeListener(ListenerID);
+	leaderboardsInterface.FreeListener(ListenerID);
 }
