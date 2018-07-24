@@ -48,9 +48,3 @@ private:
 
 	uint64 id;
 };
-
-// Used to avoid temporary object creation
-inline const FUniqueNetIdGOG& AsUniqueNetIDGOG(const FUniqueNetId& InUniqueNetID)
-{
-	return dynamic_cast<const FUniqueNetIdGOG&>(InUniqueNetID);
-}

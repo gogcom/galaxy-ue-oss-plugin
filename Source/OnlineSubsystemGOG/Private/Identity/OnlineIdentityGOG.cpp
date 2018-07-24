@@ -159,7 +159,7 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::GetUserAccount(const FUniqueN
 
 TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueNetId &InUserId) const
 {
-	const auto galaxyID = galaxy::api::GalaxyID(AsUniqueNetIDGOG(InUserId));
+	const auto galaxyID = galaxy::api::GalaxyID{FUniqueNetIdGOG{InUserId}};
 
 	if (!galaxy::api::Friends()->IsUserInformationAvailable(galaxyID))
 	{
@@ -173,7 +173,7 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueN
 
 	auto userInfo = MakeShared<FUserOnlineAccountGOG>(
 		InUserId,
-		std::move(displayName),
+		MoveTemp(displayName),
 		onlineSubsystemGOG.IsLocalPlayer(InUserId) ? GetAuthToken(LOCAL_USER_NUM) : FString{});
 
 	{
@@ -219,7 +219,7 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueN
 
 TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::FillUserData(TSharedPtr<FUserOnlineAccount> InUserInfo) const
 {
-	const auto galaxyID = galaxy::api::GalaxyID(AsUniqueNetIDGOG(*InUserInfo->GetUserId()));
+	const auto galaxyID = galaxy::api::GalaxyID(FUniqueNetIdGOG{*InUserInfo->GetUserId()});
 
 	if (!galaxy::api::User()->IsUserDataAvailable(galaxyID))
 	{
@@ -379,7 +379,7 @@ FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) cons
 	constexpr uint32_t MAX_USERNAME_LENGHT = 1024;
 	std::array<char, MAX_USERNAME_LENGHT> usernameBuffer;
 
-	galaxy::api::Friends()->GetFriendPersonaNameCopy(AsUniqueNetIDGOG(InUserId), usernameBuffer.data(), usernameBuffer.size());
+	galaxy::api::Friends()->GetFriendPersonaNameCopy(FUniqueNetIdGOG{InUserId}, usernameBuffer.data(), usernameBuffer.size());
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -409,7 +409,6 @@ FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
 		UE_LOG_ONLINE(Warning, TEXT("Failed to get user access token: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return {};
 	}
-
 
 	return FString(UTF8_TO_TCHAR(accessTokenBuffer.data()));
 }

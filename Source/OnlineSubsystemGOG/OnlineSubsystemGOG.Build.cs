@@ -6,7 +6,6 @@ public class OnlineSubsystemGOG : ModuleRules
 	public OnlineSubsystemGOG(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		bUseRTTI = true;
 
 		PublicIncludePaths.AddRange(
 			new string[] {

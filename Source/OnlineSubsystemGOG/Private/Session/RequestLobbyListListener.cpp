@@ -51,7 +51,7 @@ namespace
 
 		for (int32 playerID{0}; playerID < InTotalUserCount; ++playerID)
 		{
-			const auto lobbyMemberID = galaxy::api::Matchmaking()->GetLobbyMemberByIndex(AsUniqueNetIDGOG(InSearchResult.Session.SessionInfo->GetSessionId()), playerID);
+			const auto lobbyMemberID = galaxy::api::Matchmaking()->GetLobbyMemberByIndex(FUniqueNetIdGOG{InSearchResult.Session.SessionInfo->GetSessionId()}, playerID);
 			auto err = galaxy::api::GetError();
 			if (err)
 			{
