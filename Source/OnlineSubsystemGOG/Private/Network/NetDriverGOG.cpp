@@ -11,7 +11,6 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
-#include <xutility>
 
 namespace
 {

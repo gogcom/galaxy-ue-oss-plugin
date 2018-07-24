@@ -199,7 +199,7 @@ namespace
 
 		check(sessionSettings.NumPrivateConnections == 0);
 
-		InSearchResult.Session.NumOpenPublicConnections = std::max(maxLobbyMembers - currentLobbySize, 0u);
+		InSearchResult.Session.NumOpenPublicConnections = std::max<int64>(maxLobbyMembers - currentLobbySize, 0u);
 		InSearchResult.Session.NumOpenPrivateConnections = 0;
 
 		InSearchResult.Session.SessionSettings = sessionSettings;
