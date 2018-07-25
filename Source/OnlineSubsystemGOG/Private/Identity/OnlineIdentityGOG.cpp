@@ -32,7 +32,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 
 	CheckLocalUserNum(InLocalUserNum);
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_MAC
 
 	auto accountType = InAccountCredentials.Type.ToLower();
 
