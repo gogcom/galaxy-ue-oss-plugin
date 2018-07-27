@@ -88,7 +88,7 @@ uint32 GetTypeHash(const FUniqueNetIdGOG& InUniqueNetId)
 
 FUniqueNetIdGOG::operator galaxy::api::GalaxyID() const
 {
-	return galaxy::api::GalaxyID(id);
+	return galaxy::api::GalaxyID{id};
 }
 
 FUniqueNetIdGOG& FUniqueNetIdGOG::operator=(const galaxy::api::GalaxyID& InGalaxyID)

@@ -51,8 +51,6 @@ public:
 
 private:
 
-	TSharedPtr<FUserOnlineAccount> CreateUserInfo(const FUniqueNetId& InUserId) const;
-
 	// IAuthListener
 
 	void OnAuthSuccess() override;

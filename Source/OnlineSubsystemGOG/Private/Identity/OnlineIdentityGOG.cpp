@@ -149,62 +149,10 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::GetUserAccount(const FUniqueN
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetUserAccount()"));
 
-	auto userInfo = CreateUserInfo(InUserId);
-
-	if (!userInfo.IsValid())
-		return userInfo;
-
-	for (const auto& userAttribute : UserInfoUtils::GetUserAttributes(InUserId))
-	{
-		userInfo->SetUserAttribute(userAttribute.Key, userAttribute.Value);
-	}
-	
-	return userInfo;
-}
-
-TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueNetId &InUserId) const
-{
-	const auto galaxyID = galaxy::api::GalaxyID{FUniqueNetIdGOG{InUserId}};
-
-	if (!galaxy::api::Friends()->IsUserInformationAvailable(galaxyID))
-	{
-		UE_LOG_ONLINE(Warning, TEXT("No user information available: userID='%s'"), *InUserId.ToString());
-		return nullptr;
-	}
-
-	auto displayName = GetPlayerNickname(InUserId);
-	if (displayName.IsEmpty())
+	if (!UserInfoUtils::IsUserInfoAvailable(InUserId))
 		return nullptr;
 
-	auto userInfo = MakeShared<FUserOnlineAccountGOG>(
-		InUserId,
-		MoveTemp(displayName),
-		onlineSubsystemGOG.IsLocalPlayer(InUserId) ? GetAuthToken(LOCAL_USER_NUM) : FString{});
-
-	{
-		auto personaState = galaxy::api::Friends()->GetFriendPersonaState(galaxyID);
-		auto err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get persona state: userID='%s'; %s; %s"), *InUserId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		}
-		else
-		{
-			constexpr auto PERSONAME_STATE_KEY = TEXT("persona_state");
-			constexpr auto PERSONAME_STATE_ONLINE = TEXT("online");
-			constexpr auto PERSONAME_STATE_OFFLINE = TEXT("offline");
-
-			userInfo->SetUserAttribute(PERSONAME_STATE_KEY,
-				personaState == galaxy::api::PERSONA_STATE_ONLINE
-				? PERSONAME_STATE_ONLINE
-				: PERSONAME_STATE_OFFLINE);
-		}
-	}
-
-
-	userInfo->SetUserAttribute(AVATAR_LARGE_KEY, UserInfoUtils::GetPlayerAvatarUrl(galaxyID, galaxy::api::AVATAR_TYPE_LARGE));
-
-	return userInfo;
+	return MakeShared<FUserOnlineAccountGOG>(InUserId);
 }
 
 TArray<TSharedPtr<FUserOnlineAccount>> FOnlineIdentityGOG::GetAllUserAccounts() const
@@ -239,9 +187,16 @@ TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::CreateUniquePlayerId(uint8* I
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::CreateUniquePlayerId()"));
 
 	auto newGalaxyID = MakeShared<FUniqueNetIdGOG>(InBytes, InSize);
+
 	if (!newGalaxyID->IsValid())
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to create unique playerID: bytes=%u, size=%u"), InBytes, InSize);
+		return nullptr;
+	}
+
+	if (galaxy::api::GalaxyID{*newGalaxyID}.GetIDType() != galaxy::api::GalaxyID::ID_TYPE_USER)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Created PlayerID is not a UserID: bytes=%u, size=%u"), InBytes, InSize);
 		return nullptr;
 	}
 
@@ -280,11 +235,11 @@ ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(int32 InLocalUserNum) cons
 	return ELoginStatus::NotLoggedIn;
 }
 
-ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(const FUniqueNetId& userId) const
+ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(const FUniqueNetId& InUserId) const
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetLoginStatus()"));
 
-	check(userId == *GetUniquePlayerId(LOCAL_USER_NUM) && "Only single local user is supported by GOG platform");
+	checkf(InUserId == *GetUniquePlayerId(LOCAL_USER_NUM), TEXT("Only single local user is supported by GOG platform"));
 
 	return GetLoginStatus(LOCAL_USER_NUM);
 }

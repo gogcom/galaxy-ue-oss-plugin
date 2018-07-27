@@ -8,6 +8,7 @@ namespace UserInfoUtils
 	namespace
 	{
 
+		constexpr uint32_t MAX_USERNAME_LENGHT = 1024;
 		constexpr uint32_t MAX_USERDATA_KEY_LENGHT = 1024;
 		constexpr uint32_t MAX_USERDATA_VALUE_LENGHT = 1024;
 
@@ -45,22 +46,22 @@ namespace UserInfoUtils
 			}
 		}
 
-	}
-
-	FString GetPlayerAvatarUrl(const galaxy::api::GalaxyID& InUserID, galaxy::api::AvatarType InAvatarType)
-	{
-		std::array<char, MAX_AVATAR_URL_LENGHT> avatarUrlBuffer;
-
-		galaxy::api::Friends()->GetFriendAvatarUrlCopy(InUserID, InAvatarType, avatarUrlBuffer.data(), avatarUrlBuffer.size());
-		auto err = galaxy::api::GetError();
-		if (err)
+		FString GetPlayerAvatarUrl(const galaxy::api::GalaxyID& InUserID, galaxy::api::AvatarType InAvatarType)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get avatar url: userID='%llu'; %s: %s"),
-				InUserID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			return{};
+			std::array<char, MAX_AVATAR_URL_LENGHT> avatarUrlBuffer;
+
+			galaxy::api::Friends()->GetFriendAvatarUrlCopy(InUserID, InAvatarType, avatarUrlBuffer.data(), avatarUrlBuffer.size());
+			auto err = galaxy::api::GetError();
+			if (err)
+			{
+				UE_LOG_ONLINE(Warning, TEXT("Failed to get avatar url: userID='%llu'; %s: %s"),
+					InUserID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+				return{};
+			}
+
+			return  UTF8_TO_TCHAR(avatarUrlBuffer.data());
 		}
 
-		return  UTF8_TO_TCHAR(avatarUrlBuffer.data());
 	}
 
 	FString GetOwnPlayerNickname()
