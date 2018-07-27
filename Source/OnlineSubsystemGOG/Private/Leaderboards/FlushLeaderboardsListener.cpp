@@ -82,7 +82,7 @@ void FFlushLeaderboardsListener::OnLeaderboardScoreUpdateFailure(const char* InN
 	TriggerOnLeaderboardFlushComplete(false);
 }
 
-void FFlushLeaderboardsListener::TriggerOnLeaderboardFlushComplete(bool InResult) const
+void FFlushLeaderboardsListener::TriggerOnLeaderboardFlushComplete(bool InResult)
 {
 	if (InResult)
 		// TBD: should we keep it in case of failure?
@@ -90,5 +90,5 @@ void FFlushLeaderboardsListener::TriggerOnLeaderboardFlushComplete(bool InResult
 
 	leaderboardsInterface.TriggerOnLeaderboardFlushCompleteDelegates(sessionName, InResult);
 
-	leaderboardsInterface.FreeListener(ListenerID);
+	leaderboardsInterface.FreeListener(MoveTemp(ListenerID));
 }

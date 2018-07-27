@@ -58,5 +58,5 @@ bool FLobbyStartListener::MarkSessionStarted(bool IsJoinable) const
 void FLobbyStartListener::TriggerOnStartSessionCompleteDelegates(bool InResult)
 {
 	sessionInterface.TriggerOnStartSessionCompleteDelegates(sessionName, MarkSessionStarted(InResult));
-	sessionInterface.FreeListener(ListenerID);
+	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }

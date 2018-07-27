@@ -3,11 +3,14 @@
 #include "CommonGOG.h"
 #include "CachedLeaderboardsDetails.h"
 #include "Types/IListenerGOG.h"
+#include "ListenerManager.h"
 
 #include "Interfaces/OnlineLeaderboardInterface.h"
 #include "OnlineStats.h"
 
-class FOnlineLeaderboardsGOG : public IOnlineLeaderboards
+class FOnlineLeaderboardsGOG
+	: public IOnlineLeaderboards
+	, public FListenerManager
 {
 public:
 
@@ -32,26 +35,6 @@ PACKAGE_SCOPE:
 	FOnlineLeaderboardsGOG(const class FOnlineSubsystemGOG& InOnlineSubsystemGOG);
 
 	void RemoveCachedLeaderboard(FName InSessionName);
-
-	// TBD: Introduce listener manager ("SDK-2232: Employ matchmaking specific listeners in UE plugin")
-	void FreeListener(const FSetElementId& InListenerID)
-	{
-		listenerRegistry.Remove(InListenerID);
-	}
-
-	template<class Listener, typename... Args>
-	FSetElementId CreateListener(Args&&... args)
-	{
-		auto listenerID = listenerRegistry.Add(MakeUnique<Listener>(Forward<Args>(args)...));
-		listenerRegistry[listenerID]->ListenerID = listenerID;
-		return listenerID;
-	}
-
-	template<class Listener>
-	Listener* GetListenerRawPtr(FSetElementId InListenerID)
-	{
-		return dynamic_cast<Listener*>(listenerRegistry[InListenerID].Get());
-	}
 
 private:
 

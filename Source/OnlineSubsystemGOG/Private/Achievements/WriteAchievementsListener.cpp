@@ -37,7 +37,7 @@ void FWriteAchievementsListener::TriggerOnAchievementsWrittenDelegate(bool InRes
 		: EOnlineAsyncTaskState::Failed;
 
 	achievementsWrittenDelegate.ExecuteIfBound(playerId, InResult);
-	achivementsInterface.FreeListener(ListenerID);
+	achivementsInterface.FreeListener(MoveTemp(ListenerID));
 
 	// Unlocked achivements are handled in FOnlineAchievementsGOG::OnAchievementUnlocked()
 }

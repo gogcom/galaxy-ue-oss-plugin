@@ -191,7 +191,7 @@ void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID&
 	TriggerOnCreateSessionCompleteDelegates(false);
 }
 
-void FCreateLobbyListener::TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful) const
+void FCreateLobbyListener::TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful)
 {
 	if (!InIsSuccessful)
 	{
@@ -201,5 +201,5 @@ void FCreateLobbyListener::TriggerOnCreateSessionCompleteDelegates(bool InIsSucc
 
 	sessionInterface.TriggerOnCreateSessionCompleteDelegates(sessionName, InIsSuccessful);
 
-	sessionInterface.FreeListener(ListenerID);
+	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }

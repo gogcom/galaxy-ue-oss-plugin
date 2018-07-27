@@ -129,5 +129,5 @@ void FLeaderboardRetriever::TriggerOnLeaderboardReadCompleteDelegates(bool InRes
 
 	leaderboardsInterface.TriggerOnLeaderboardReadCompleteDelegates(InResult);
 
-	leaderboardsInterface.FreeListener(ListenerID);
+	leaderboardsInterface.FreeListener(MoveTemp(ListenerID));
 }

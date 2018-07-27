@@ -28,7 +28,7 @@ private:
 
 	void OnLeaderboardScoreUpdateFailure(const char* InName, int32_t InScore, galaxy::api::ILeaderboardScoreUpdateListener::FailureReason InFailureReason) override;
 
-	void TriggerOnLeaderboardFlushComplete(bool InResult) const;
+	void TriggerOnLeaderboardFlushComplete(bool InResult);
 
 private:
 

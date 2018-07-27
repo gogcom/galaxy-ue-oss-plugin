@@ -26,7 +26,7 @@ private:
 
 	void OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason) override;
 
-	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful) const;
+	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful);
 
 	class FOnlineSessionGOG& sessionInterface;
 	const FName sessionName;

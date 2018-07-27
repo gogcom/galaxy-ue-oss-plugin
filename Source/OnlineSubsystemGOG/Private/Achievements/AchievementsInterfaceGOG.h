@@ -3,11 +3,13 @@
 #include "CommonGOG.h"
 #include "Types/IListenerGOG.h"
 #include "Types/UniqueNetIdGOG.h"
+#include "ListenerManager.h"
 
 #include "Interfaces/OnlineAchievementsInterface.h"
 
 class FOnlineAchievementsGOG
 	: public IOnlineAchievements
+	, public FListenerManager
 	, public galaxy::api::GlobalAchievementChangeListener
 #if !UE_BUILD_SHIPPING
 	, public galaxy::api::IStatsAndAchievementsStoreListener
@@ -47,27 +49,7 @@ PACKAGE_SCOPE:
 	FOnlineAchievementsGOG() = delete;
 	FOnlineAchievementsGOG(class FOnlineSubsystemGOG& InSubsystem);
 
-	void OnAchivementsRetrieved(const FUniqueNetIdGOG& InPlayerID);
-
-	// TBD: It's time to introduce "listener manager". Will do it as a part of "SDK-2232: Employ matchmaking specific listeners in UE plugin"
-	void FreeListener(const FSetElementId& InListenerID)
-	{
-		listenerRegistry.Remove(InListenerID);
-	}
-
-	template<class Listener, typename... Args>
-	FSetElementId CreateListener(Args&&... args)
-	{
-		auto listenerID = listenerRegistry.Add(MakeUnique<Listener>(Forward<Args>(args)...));
-		listenerRegistry[listenerID]->ListenerID = listenerID;
-		return listenerID;
-	}
-
-	template<class Listener>
-	Listener* GetListenerRawPtr(FSetElementId InListenerID)
-	{
-		return dynamic_cast<Listener*>(listenerRegistry[InListenerID].Get());
-	}
+	void OnAchievementsRetrieved(const FUniqueNetIdGOG& InPlayerID);
 
 private:
 
@@ -86,8 +68,6 @@ private:
 	TArray<FString> achievementIDs;
 	TMap<FString, FOnlineAchievementDesc> cachedAchievementDescriptions;
 	TMap<FUniqueNetIdGOG, TArray<FOnlineAchievement>> cachedAchievements;
-
-	TSet<TUniquePtr<IListenerGOG>> listenerRegistry;
 
 #if !UE_BUILD_SHIPPING
 	void OnUserStatsAndAchievementsStoreSuccess() override;

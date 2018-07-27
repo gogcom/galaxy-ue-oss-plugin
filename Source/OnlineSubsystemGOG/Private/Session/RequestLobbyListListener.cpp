@@ -219,7 +219,7 @@ FRequestLobbyListListener::FRequestLobbyListListener(
 {
 }
 
-void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful) const
+void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful)
 {
 	searchSettings->SearchState = InIsSuccessful
 		? EOnlineAsyncTaskState::Done
@@ -227,7 +227,7 @@ void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIs
 
 	sessionInterface.TriggerOnFindSessionsCompleteDelegates(InIsSuccessful);
 
-	sessionInterface.FreeListener(ListenerID);
+	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }
 
 void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, bool InIOFailure)

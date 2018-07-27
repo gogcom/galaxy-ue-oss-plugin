@@ -20,7 +20,7 @@ void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveSuccess(galax
 
 	check(InUserID == playerId && "Achievements retrieved for unknown user. This shall not be happening with Galaxy specific listeners");
 
-	achivementsInterface.OnAchivementsRetrieved(InUserID);
+	achivementsInterface.OnAchievementsRetrieved(InUserID);
 
 	TriggerOnQueryAchievementsCompleteDelegate(true);
 }
@@ -38,5 +38,5 @@ void FQueryAchievementsListener::TriggerOnQueryAchievementsCompleteDelegate(bool
 {
 	queryAchievementsCompleteDelegate.ExecuteIfBound(playerId, InResult);
 
-	achivementsInterface.FreeListener(ListenerID);
+	achivementsInterface.FreeListener(MoveTemp(ListenerID));
 }

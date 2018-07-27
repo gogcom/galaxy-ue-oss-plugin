@@ -102,9 +102,9 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 		}
 	}
 
-	auto listenerID = CreateListener<FWriteAchievementsListener>(*this, InPlayerId, InWriteObject, InDelegate);
+	auto listener = CreateListener<FWriteAchievementsListener>(*this, InPlayerId, InWriteObject, InDelegate);
 
-	galaxy::api::Stats()->StoreStatsAndAchievements(GetListenerRawPtr<FWriteAchievementsListener>(listenerID));
+	galaxy::api::Stats()->StoreStatsAndAchievements(listener.Value);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -112,7 +112,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 			*InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		InDelegate.ExecuteIfBound(InPlayerId, false);
 		return;
@@ -126,15 +126,15 @@ void FOnlineAchievementsGOG::QueryAchievements(const FUniqueNetId& InPlayerId, c
 	if (!AssertAchievementsCount())
 		return;
 
-	auto listenerID = CreateListener<FQueryAchievementsListener>(*this, InPlayerId, InDelegate);
+	auto listener = CreateListener<FQueryAchievementsListener>(*this, InPlayerId, InDelegate);
 
-	galaxy::api::Stats()->RequestUserStatsAndAchievements(AsUniqueNetIDGOG(InPlayerId), GetListenerRawPtr<FQueryAchievementsListener>(listenerID));
+	galaxy::api::Stats()->RequestUserStatsAndAchievements(FUniqueNetIdGOG{InPlayerId}, listener.Value);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to query player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		InDelegate.ExecuteIfBound(InPlayerId, false);
 	}
@@ -352,7 +352,7 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 	TriggerOnAchievementUnlockedDelegates(*localUserID, playerCachedAchievement->Id);
 }
 
-void FOnlineAchievementsGOG::OnAchivementsRetrieved(const FUniqueNetIdGOG& InPlayerID)
+void FOnlineAchievementsGOG::OnAchievementsRetrieved(const FUniqueNetIdGOG& InPlayerID)
 {
 	UpdateAchievementDescriptions();
 	AddOrReplacePlayerAchievements(InPlayerID);
