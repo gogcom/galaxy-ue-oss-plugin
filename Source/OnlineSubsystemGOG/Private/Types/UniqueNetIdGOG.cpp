@@ -46,6 +46,16 @@ bool FUniqueNetIdGOG::IsValid() const
 	return galaxy::api::GalaxyID{id}.IsValid();
 }
 
+bool FUniqueNetIdGOG::IsUser() const
+{
+	return galaxy::api::GalaxyID{id}.GetIDType() == galaxy::api::GalaxyID::ID_TYPE_USER;
+}
+
+bool FUniqueNetIdGOG::IsLobby() const
+{
+	return galaxy::api::GalaxyID{id}.GetIDType() == galaxy::api::GalaxyID::ID_TYPE_LOBBY;
+}
+
 FString FUniqueNetIdGOG::ToString() const
 {
 	return FString::Printf(TEXT("%llu"), id);
@@ -88,4 +98,9 @@ FUniqueNetIdGOG& FUniqueNetIdGOG::operator=(const galaxy::api::GalaxyID& InGalax
 	id = InGalaxyID.ToUint64();
 
 	return *this;
+}
+
+bool FUniqueNetIdGOG::operator==(const galaxy::api::GalaxyID& InGalaxyID) const
+{
+	return id == InGalaxyID.ToUint64();
 }

@@ -16,8 +16,6 @@ class UNetConnectionGOG
 
 public:
 
-	FUniqueNetIdGOG remotePeerID{0};
-
 	void InitBase(UNetDriver* InDriver, class FSocket* InSocket, const FURL& InURL, EConnectionState InState, int32 InMaxPacket = 0, int32 InPacketOverhead = 0) override;
 
 	void InitRemoteConnection(UNetDriver* InDriver, class FSocket* InSocket, const FURL& InURL, const class FInternetAddr& InRemoteAddr, EConnectionState InState, int32 InMaxPacket = 0, int32 InPacketOverhead = 0) override;
@@ -31,8 +29,6 @@ public:
 	FString LowLevelDescribe() override;
 
 	FString RemoteAddressToString() override;
-
-	void FinishDestroy() override;
 
 private:
 
@@ -48,12 +44,11 @@ private:
 		UNetConnectionGOG& connection;
 	};
 
+	FUniqueNetIdGOG remotePeerID;
+
 	TUniquePtr<LobbyMemberStateListener> serverMemberStateListener;
 
 	galaxy::api::INetworking* galaxyNetworking{nullptr};
 };
 
-inline UNetConnectionGOG* AsNetConnectionGOG(UNetConnection* InConnection)
-{
-	return dynamic_cast<UNetConnectionGOG*>(InConnection);
-}
+

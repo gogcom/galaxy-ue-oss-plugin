@@ -1,7 +1,7 @@
 #include "NetConnectionGOG.h"
 
-#include "InternetAddrGOG.h"
 #include "CommonGOG.h"
+#include "Types/UrlGOG.h"
 #include "Loggers.h"
 
 #include "Net/DataChannel.h"
@@ -24,15 +24,13 @@ void UNetConnectionGOG::InitLocalConnection(UNetDriver* InDriver, class FSocket*
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitLocalConnection()"));
 
+	remotePeerID = FUniqueNetIdGOG{InURL.Host};
+
+	checkf(remotePeerID.IsValid() && remotePeerID.IsLobby(), TEXT("Remote PeerID expected to be a lobby: remotePeerID='%s', remoteUrl='%s'"),
+		*remotePeerID.ToString(), *InURL.ToString(true));
+
 	galaxyNetworking = galaxy::api::Networking();
 	check(galaxyNetworking);
-
-	remotePeerID = FInternetAddrGOG{InURL}.GetUniqueNetIdGOG();
-	if (!remotePeerID.IsValid())
-	{
-		UE_LOG_NETWORKING(Error, TEXT("Failed to parse GOG LobbyID from connect url: host='%s'"), *InURL.Host);
-		return;
-	}
 
 	InitBase(InDriver, InSocket, InURL, InState, InMaxPacket, InPacketOverhead);
 }
@@ -41,15 +39,12 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitRemoteConnection()"));
 
+	remotePeerID = FUniqueNetIdGOG{InURL.Host};
+	checkf(remotePeerID.IsValid() && remotePeerID.IsUser(), TEXT("Remote PeerID expected to be an user: remotePeerID='%s', remoteUrl='%s'"),
+		*remotePeerID.ToString(), *InURL.ToString(true));
+
 	galaxyNetworking = galaxy::api::ServerNetworking();
 	check(galaxyNetworking);
-
-	remotePeerID = dynamic_cast<const FInternetAddrGOG&>(InRemoteAddr).GetUniqueNetIdGOG();
-	if (!remotePeerID.IsValid())
-	{
-		UE_LOG_NETWORKING(Error, TEXT("Failed to parse GOG LobbyID from connect url: host='%s'"), *InURL.Host);
-		return;
-	}
 
 	InitBase(InDriver, InSocket, InURL, InState, InMaxPacket, InPacketOverhead);
 
@@ -64,7 +59,10 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBits*/, int32 
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::LowLevelSend()"));
 
 	if (!remotePeerID.IsValid())
-		UE_LOG_TRAFFIC(Error, TEXT("Remote peer ID is invalid"));
+	{
+		UE_LOG_TRAFFIC(Error, TEXT("Invalid remote PeerID: peerID=%s, URL=%s"), *remotePeerID.ToString(), *URL.ToString(true));
+		return;
+	}
 
 	auto dataToSend = reinterpret_cast<uint8*>(InData);
 
@@ -112,7 +110,7 @@ FString UNetConnectionGOG::LowLevelGetRemoteAddress(bool InAppendPort)
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::LowLevelGetRemoteAddress()"));
 
-	return FInternetAddrGOG{remotePeerID}.ToString(InAppendPort);
+	return URL.ToString(InAppendPort);
 }
 
 FString UNetConnectionGOG::LowLevelDescribe()
@@ -122,20 +120,11 @@ FString UNetConnectionGOG::LowLevelDescribe()
 	return LowLevelGetRemoteAddress();
 }
 
-void UNetConnectionGOG::FinishDestroy()
-{
-	UNetConnection::FinishDestroy();
-
-	UE_LOG_NETWORKING(Verbose, TEXT("GOG Net Connection closed to %s"), *LowLevelGetRemoteAddress());
-
-	remotePeerID = FUniqueNetIdGOG{0};
-}
-
 FString UNetConnectionGOG::RemoteAddressToString()
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::LowLevelSend()"));
 
-	return LowLevelGetRemoteAddress(/* bAppendPort */ false);
+	return LowLevelGetRemoteAddress(/* bAppendPort */ true);
 }
 
 UNetConnectionGOG::LobbyMemberStateListener::LobbyMemberStateListener(UNetConnectionGOG& InConnection)
@@ -148,8 +137,6 @@ UNetConnectionGOG::LobbyMemberStateListener::LobbyMemberStateListener(UNetConnec
 void UNetConnectionGOG::LobbyMemberStateListener::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID, galaxy::api::LobbyMemberStateChange InMemberStateChange)
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::OnLobbyMemberStateChanged()"));
-
-	check(connection.remotePeerID.IsValid() && "Remote peer ID is invalid. Connection not established?");
 
 	if (InMemberID != connection.remotePeerID)
 	{

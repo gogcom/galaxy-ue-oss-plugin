@@ -18,21 +18,27 @@ public:
 
 	FUniqueNetIdGOG(const FUniqueNetId& InUniqueNetId);
 
-	virtual const uint8* GetBytes() const override;
+	const uint8* GetBytes() const override;
 
-	virtual int32 GetSize() const override;
+	int32 GetSize() const override;
 
-	virtual bool IsValid() const override;
+	bool IsValid() const override;
 
-	virtual FString ToString() const override;
+	bool IsUser() const;
 
-	virtual FString ToDebugString() const override;
+	bool IsLobby() const;
+
+	FString ToString() const override;
+
+	FString ToDebugString() const override;
 
 	friend uint32 GetTypeHash(const FUniqueNetIdGOG& InUniqueNetIdGOG);
 
 	operator galaxy::api::GalaxyID() const;
 
 	FUniqueNetIdGOG& operator=(const galaxy::api::GalaxyID& InGalaxyID);
+
+	bool operator==(const galaxy::api::GalaxyID& InGalaxyID) const;
 
 PACKAGE_SCOPE:
 

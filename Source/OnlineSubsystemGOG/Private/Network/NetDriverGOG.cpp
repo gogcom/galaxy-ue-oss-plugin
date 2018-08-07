@@ -1,17 +1,17 @@
 #include "NetDriverGOG.h"
-#include "Network/InternetAddrGOG.h"
+#include "Types/UrlGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 #include "Loggers.h"
 
 #include "PacketHandlers/StatelessConnectHandlerComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/ChildConnection.h"
+#include "SocketSubsystem.h"
 
 #include <vector>
 #include <algorithm>
 #include <iterator>
 #include <xutility>
-
 
 namespace
 {
@@ -89,7 +89,7 @@ bool UNetDriverGOG::InitConnect(FNetworkNotify* InNotify, const FURL& InConnectU
 	ServerConnection = NewObject<UNetConnectionGOG>(NetConnectionClass);
 	check(ServerConnection);
 
-	ServerConnection->InitLocalConnection(this, nullptr, InConnectURL, USOCK_Open);
+	ServerConnection->InitLocalConnection(this, /*no socket*/ nullptr, InConnectURL, USOCK_Open);
 
 	ServerConnection->CreateChannel(CHTYPE_Control, true, INDEX_NONE);
 
@@ -168,7 +168,7 @@ void UNetDriverGOG::ProcessRemoteFunction(class AActor* InActor, class UFunction
 			}
 
 			if (clientConnection->GetUChildConnection() != nullptr)
-				clientConnection = ((UChildConnection*)clientConnection)->Parent;
+				clientConnection = static_cast<UChildConnection*>(clientConnection)->Parent;
 
 			InternalProcessRemoteFunction(InActor, InSubObject, clientConnection, InFunction, InParameters, OutParms, InStack, true);
 		}
@@ -236,28 +236,30 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			UE_LOG_TRAFFIC(Warning, TEXT("Actual packet size is different from expected packet size: expected='%u', actual='%u'"), expectedPacketSize, actualPacketSize);
 
 		auto senderID = FUniqueNetIdGOG{senderGalaxyID};
+		auto remoteURL = FUrlGOG{senderID};
 
 		UNetConnection* connection{nullptr};
 		if (IsServer())
 		{
-			connection = FindEstablishedConnection(senderID);
+			connection = FindEstablishedConnection(remoteURL);
 			if (!connection)
 			{
-				if (!ChallengeConnectingClient(senderID, inPacketBuffer.data(), actualPacketSize))
+				if (!ChallengeConnectingClient(remoteURL, inPacketBuffer.data(), actualPacketSize))
 					return;
 
-				connection = EstablishIncomingConnection(senderID);
+				connection = EstablishIncomingConnection(remoteURL);
 			}
 		}
 		else
 		{
-			if (AsNetConnectionGOG(ServerConnection)->remotePeerID != senderID)
+			if (remoteURL != ServerConnection->URL)
 			{
-				UE_LOG_TRAFFIC(Error, TEXT("Client recieved packet from an unknown source: serverID='%s', packetSenderID='%s'"),
-					*AsNetConnectionGOG(ServerConnection)->remotePeerID.ToString(), *senderID.ToString());
+				UE_LOG_TRAFFIC(Error, TEXT("Client recieved packet from an unknown source: serverAddress='%s', senderAddress='%s'"),
+					*ServerConnection->RemoteAddressToString(), *remoteURL.ToString());
 				continue;
 			}
-			check(ServerConnection && "Received a packet yet server connection is NULL");
+
+			check(ServerConnection && "Client received a packet yet server connection is NULL");
 			connection = ServerConnection;
 		}
 
@@ -271,54 +273,54 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 	}
 }
 
-bool UNetDriverGOG::ChallengeConnectingClient(const FUniqueNetIdGOG& InSenderID, void* InData, uint32_t InDataSize)
+bool UNetDriverGOG::ChallengeConnectingClient(const FUrlGOG& InRemoteUrl, void* InData, uint32_t InDataSize)
 {
-	auto incomingAddress = FInternetAddrGOG{InSenderID}.ToString(true);
+	const auto& inRemoteAddress = InRemoteUrl.ToString();
 
 	if (Notify->NotifyAcceptingConnection() != EAcceptConnection::Accept)
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("New incoming connections denied: senderID='%s'"), *incomingAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("New incoming connections denied: remoteAddress='%s'"), *inRemoteAddress);
 		return false;
 	}
 
 	if (!ConnectionlessHandler.IsValid())
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet ConnectionlessHandler is invalid: remoteID='%s'"), *incomingAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet ConnectionlessHandler is invalid: remoteAddress='%s'"), *inRemoteAddress);
 		return false;
 	}
 
 	auto dataToSend = reinterpret_cast<uint8*>(InData);
 
-	const auto unprocessedPacket = ConnectionlessHandler->IncomingConnectionless(incomingAddress, dataToSend, InDataSize);
+	const auto unprocessedPacket = ConnectionlessHandler->IncomingConnectionless(inRemoteAddress, dataToSend, InDataSize);
 	if (unprocessedPacket.bError)
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Failed to process incoming handshake packet: remoteID='%s'"), *incomingAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Failed to process incoming handshake packet: remoteAddress='%s'"), *inRemoteAddress);
 		return false;
 	}
 
 	auto statelessHandshakeComponent = StatelessConnectComponent.Pin();
 	if (!statelessHandshakeComponent.IsValid())
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet StatelessHandshakeComponent is invalid: remoteID='%s'"), *incomingAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet StatelessHandshakeComponent is invalid: remoteAddress='%s'"), *inRemoteAddress);
 		return false;
 	}
 
-	if (!statelessHandshakeComponent->HasPassedChallenge(incomingAddress))
+	if (!statelessHandshakeComponent->HasPassedChallenge(inRemoteAddress))
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Client failed handshake challenge: remoteID='%s'"), *incomingAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Client failed handshake challenge: remoteAddress='%s'"), *inRemoteAddress);
 		return false;
 	}
 
-	UE_LOG_NETWORKING(Log, TEXT("Client passed handshake challenge: remoteID='%s'"), *incomingAddress);
+	UE_LOG_NETWORKING(Log, TEXT("Client passed handshake challenge: remoteAddress='%s'"), *inRemoteAddress);
 	return true;
 }
 
-UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetIdGOG& InSenderID)
+UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUrlGOG& InRemoteUrl)
 {
 	auto statelessHandshakeHandler = StatelessConnectComponent.Pin();
 	if (!statelessHandshakeHandler.IsValid())
 	{
-		UE_LOG_NETWORKING(Log, TEXT("Stateless connection handshake handler is invalid. Cannot accept connection: remoteID='%s'"), *InSenderID.ToString());
+		UE_LOG_NETWORKING(Log, TEXT("Stateless connection handshake handler is invalid. Cannot accept connection: remoteAddress='%s'"), *InRemoteUrl.ToString());
 		return nullptr;
 	}
 
@@ -332,7 +334,7 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetId
 	statelessHandshakeHandler->GetChallengeSequence(serverSequence, clientSequence);
 	newIncomingConnection->InitSequence(clientSequence, serverSequence);
 
-	newIncomingConnection->InitRemoteConnection(this, nullptr, FURL(), FInternetAddrGOG{InSenderID}, USOCK_Open);
+	newIncomingConnection->InitRemoteConnection(this, nullptr, InRemoteUrl, /*not used*/*ISocketSubsystem::Get()->CreateInternetAddr(), USOCK_Open);
 
 	if (newIncomingConnection->Handler.IsValid())
 		newIncomingConnection->Handler->BeginHandshaking();
@@ -343,10 +345,10 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetId
 	return newIncomingConnection;
 }
 
-UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUniqueNetIdGOG& senderID)
+UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUrlGOG& InRemoteUrl)
 {
 	auto storedConnectionIt = ClientConnections.FindByPredicate([&](auto storedConnection) {
-		return AsNetConnectionGOG(storedConnection)->remotePeerID == senderID;
+		return InRemoteUrl == storedConnection->URL;
 	});
 
 	if (!storedConnectionIt)
@@ -358,17 +360,6 @@ UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUniqueNetIdGOG& 
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits)
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend()"));
-
-	auto remoteID = FUniqueNetIdGOG{InAddress};
-	if (!remoteID.IsValid())
-	{
-		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress);
-		return;
-	}
-
-	auto connection = FindEstablishedConnection(remoteID);
-	if (connection == nullptr)
-		UE_LOG_TRAFFIC(Error, TEXT("Trying to send packet to an unknown peer: remotePeerID='%s'"), *remoteID.ToString());
 
 	auto dataToSend = reinterpret_cast<uint8*>(InData);
 
@@ -393,6 +384,13 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 		return;
 	}
 
+	auto remoteID = FUniqueNetIdGOG{InAddress};
+	if (!remoteID.IsValid())
+	{
+		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress);
+		return;
+	}
+
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("Low level send: remoteID='%s'; dataSize='%d' bytes"), *remoteID.ToString(), bytesToSend);
 
 	galaxyNetworking->SendP2PPacket(remoteID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
@@ -414,7 +412,7 @@ FString UNetDriverGOG::LowLevelGetNetworkNumber()
 		return{};
 	}
 
-	return FInternetAddrGOG{galaxyID}.ToString(true);
+	return FUniqueNetIdGOG{galaxyID}.ToString();
 }
 
 ISocketSubsystem* UNetDriverGOG::GetSocketSubsystem()
@@ -441,7 +439,7 @@ void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& 
 	}
 	else
 	{
-		if (InLobbyID != AsNetConnectionGOG(driver.ServerConnection)->remotePeerID)
+		if (FUrlGOG{InLobbyID} != driver.ServerConnection->URL)
 		{
 			UE_LOG_NETWORKING(Log, TEXT("Unknown lobby. Skipping"));
 			return;

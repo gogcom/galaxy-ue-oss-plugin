@@ -5,7 +5,7 @@
 #include "RequestLobbyListListener.h"
 #include "JoinLobbyListener.h"
 #include "LobbyStartListener.h"
-#include "Network/InternetAddrGOG.h"
+#include "Types/UrlGOG.h"
 #include "Converters/NamedVariantDataConverter.h"
 #include "VariantDataUtils.h"
 
@@ -806,7 +806,7 @@ bool FOnlineSessionGOG::GetResolvedConnectStringFromSession(const FOnlineSession
 		return false;
 	}
 
-	OutConnectString = FInternetAddrGOG{InSession.SessionInfo->GetSessionId()}.ToString(true);
+	OutConnectString = FUrlGOG{InSession.SessionInfo->GetSessionId()}.ToString();
 	return true;
 }
 
