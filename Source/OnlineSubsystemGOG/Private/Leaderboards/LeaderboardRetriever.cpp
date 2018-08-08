@@ -3,6 +3,7 @@
 #include "Converters/OnlineLeaderboardConverter.h"
 #include "OnlineLeaderboardsGOG.h"
 #include "Types/UniqueNetIdGOG.h"
+#include "UserInfoUtils.h"
 
 #include "Online.h"
 
@@ -19,19 +20,7 @@ namespace
 		const char* InDetailsBuffer,
 		uint32_t InDetailsSize)
 	{
-		constexpr uint32_t MAX_USERNAME_LENGHT = 1024;
-		std::array<char, MAX_USERNAME_LENGHT> usernameBuffer;
-
-		galaxy::api::Friends()->GetFriendPersonaNameCopy(InUserID, usernameBuffer.data(), usernameBuffer.size());
-		auto err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to read player name for retrieved leaderboard entry: leaderboardName='%s', playerId=%llu, %s; %s"),
-				*InOutReadLeaderboard->LeaderboardName.ToString(), InUserID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			return false;
-		}
-
-		auto& newEntry = InOutReadLeaderboard->Rows.Emplace_GetRef(UTF8_TO_TCHAR(usernameBuffer.data()), MakeShared<FUniqueNetIdGOG>(InUserID));
+		auto& newEntry = InOutReadLeaderboard->Rows.Emplace_GetRef(UserInfoUtils::GetPlayerNickname(InUserID), MakeShared<FUniqueNetIdGOG>(InUserID));
 		newEntry.Rank = InRank;
 
 		newEntry.Columns.Add(InOutReadLeaderboard->SortedColumn, InScore);

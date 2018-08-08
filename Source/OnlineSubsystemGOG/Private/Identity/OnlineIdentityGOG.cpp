@@ -3,6 +3,8 @@
 #include "OnlineSubsystemGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 #include "Types/UserOnlineAccountGOG.h"
+#include "UserInfoUtils.h"
+
 #include "OnlineError.h"
 
 #include <array>
@@ -152,8 +154,11 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::GetUserAccount(const FUniqueN
 	if (!userInfo.IsValid())
 		return userInfo;
 
-	FillUserData(userInfo);
-
+	for (const auto& userAttribute : UserInfoUtils::GetUserAttributes(InUserId))
+	{
+		userInfo->SetUserAttribute(userAttribute.Key, userAttribute.Value);
+	}
+	
 	return userInfo;
 }
 
@@ -196,64 +201,10 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::CreateUserInfo(const FUniqueN
 		}
 	}
 
-	{
-		constexpr uint32_t MAX_AVATAR_URL_LENGHT = 2048;
-		std::array<char, MAX_AVATAR_URL_LENGHT> avatarUrlBuffer;
 
-		galaxy::api::Friends()->GetFriendAvatarUrlCopy(galaxyID, galaxy::api::AVATAR_TYPE_LARGE, avatarUrlBuffer.data(), avatarUrlBuffer.size());
-		auto err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get avatar url: userID='%s'; %s; %s"), *InUserId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		}
-		else
-		{
-			constexpr auto AVATAR_LARGE_KEY = TEXT("avatar_large");
-
-			userInfo->SetUserAttribute(AVATAR_LARGE_KEY, UTF8_TO_TCHAR(avatarUrlBuffer.data()));
-		}
-	}
+	userInfo->SetUserAttribute(AVATAR_LARGE_KEY, UserInfoUtils::GetPlayerAvatarUrl(galaxyID, galaxy::api::AVATAR_TYPE_LARGE));
 
 	return userInfo;
-}
-
-TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::FillUserData(TSharedPtr<FUserOnlineAccount> InUserInfo) const
-{
-	const auto galaxyID = galaxy::api::GalaxyID(FUniqueNetIdGOG{*InUserInfo->GetUserId()});
-
-	if (!galaxy::api::User()->IsUserDataAvailable(galaxyID))
-	{
-		UE_LOG_ONLINE(Display, TEXT("No user data available: userID='%s'"), *InUserInfo->GetUserId()->ToString());
-		return InUserInfo;
-	}
-
-	auto userDataCount = galaxy::api::User()->GetUserDataCount(galaxyID);
-	auto err = galaxy::api::GetError();
-	if (err)
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user data count: userID='%s'; %s; %s"), *InUserInfo->GetUserId()->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		return InUserInfo;
-	}
-
-	constexpr uint32_t MAX_USERDATA_KEY_LENGHT = 1024;
-	constexpr uint32_t MAX_USERDATA_VALUE_LENGHT = 1024;
-	std::array<char, MAX_USERDATA_KEY_LENGHT> keyBuffer;
-	std::array<char, MAX_USERDATA_VALUE_LENGHT> valueBuffer;
-
-	for (uint32_t i = 0; i < userDataCount; ++i)
-	{
-		galaxy::api::User()->GetUserDataByIndex(i, keyBuffer.data(), keyBuffer.size(), valueBuffer.data(), valueBuffer.size(), galaxyID);
-		err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get user name: userID='%s'; %s; %s"), *InUserInfo->GetUserId()->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			return InUserInfo;
-		}
-
-		InUserInfo->SetUserAttribute(UTF8_TO_TCHAR(keyBuffer.data()), UTF8_TO_TCHAR(valueBuffer.data()));
-	}
-
-	return InUserInfo;
 }
 
 TArray<TSharedPtr<FUserOnlineAccount>> FOnlineIdentityGOG::GetAllUserAccounts() const
@@ -269,19 +220,9 @@ TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::GetUniquePlayerId(int32 InLoc
 
 	CheckLocalUserNum(InLocalUserNum);
 
-	auto userID = galaxy::api::User()->GetGalaxyID();
-	auto err = galaxy::api::GetError();
-	if (err)
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user ID: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		return nullptr;
-	}
-
+	auto userID = UserInfoUtils::GetOwnUserID();
 	if (!userID.IsValid())
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user ID"));
 		return nullptr;
-	}
 
 	return MakeShared<FUniqueNetIdGOG>(userID);
 }
@@ -358,36 +299,14 @@ FString FOnlineIdentityGOG::GetPlayerNickname(int32 InLocalUserNum) const
 		return FString(TEXT(""));
 	}
 
-	constexpr uint32_t MAX_USERNAME_LENGHT = 1024;
-	std::array<char, MAX_USERNAME_LENGHT> usernameBuffer;
-
-	galaxy::api::Friends()->GetPersonaNameCopy(usernameBuffer.data(), usernameBuffer.size());
-	auto err = galaxy::api::GetError();
-	if (err)
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get players user name: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		return {};
-	}
-
-	return FString{UTF8_TO_TCHAR(usernameBuffer.data())};
+	return UserInfoUtils::GetOwnPlayerNickname();
 }
 
 FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) const
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetPlayerNickname()"));
 
-	constexpr uint32_t MAX_USERNAME_LENGHT = 1024;
-	std::array<char, MAX_USERNAME_LENGHT> usernameBuffer;
-
-	galaxy::api::Friends()->GetFriendPersonaNameCopy(FUniqueNetIdGOG{InUserId}, usernameBuffer.data(), usernameBuffer.size());
-	auto err = galaxy::api::GetError();
-	if (err)
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user name: userID='%s'; %s; %s"), *InUserId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		return {};
-	}
-
-	return FString{UTF8_TO_TCHAR(usernameBuffer.data())};
+	return UserInfoUtils::GetPlayerNickname(InUserId);
 }
 
 FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
