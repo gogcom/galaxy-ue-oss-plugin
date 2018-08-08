@@ -4,6 +4,7 @@
 #include "Session/OnlineSessionGOG.h"
 #include "Achievements/AchievementsInterfaceGOG.h"
 #include "Leaderboards/OnlineLeaderboardsGOG.h"
+#include "Friends/OnlineFriendsGOG.h"
 
 #include "SharedPointer.h"
 
@@ -116,6 +117,7 @@ bool FOnlineSubsystemGOG::Init()
 	galaxySessionInterface = MakeShared<FOnlineSessionGOG, ESPMode::ThreadSafe>(*this);
 	galaxyAchievementsInterface = MakeShared<FOnlineAchievementsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyLeaderboardsInterface = MakeShared<FOnlineLeaderboardsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
+	galaxyFriendsInterface = MakeShared<FOnlineFriendsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 
 	// TODO: create more interfaces here
 
@@ -160,6 +162,7 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 	galaxySessionInterface.Reset();
 	galaxyAchievementsInterface.Reset();
 	galaxyLeaderboardsInterface.Reset();
+	galaxyFriendsInterface.Reset();
 
 	ShutdownGalaxyPeer();
 
