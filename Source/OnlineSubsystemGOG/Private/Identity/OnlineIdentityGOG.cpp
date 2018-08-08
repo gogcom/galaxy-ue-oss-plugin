@@ -11,6 +11,7 @@
 
 FOnlineIdentityGOG::FOnlineIdentityGOG(FOnlineSubsystemGOG& InOnlineSubsystemGOG)
 	: onlineSubsystemGOG{InOnlineSubsystemGOG}
+	, ownUserOnlineAccount{MakeShared<FUserOnlineAccountGOG>(FUniqueNetIdGOG{})}
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::ctor()"));
 }
@@ -62,7 +63,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 		{
 			const auto& errorMessage = FString::Printf(TEXT("%s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s"), *errorMessage);
-			TriggerOnLoginCompleteDelegates(InLocalUserNum, false, *GetUniquePlayerId(InLocalUserNum), errorMessage);
+			TriggerOnLoginCompleteDelegates(InLocalUserNum, false, FUniqueNetIdGOG{}, errorMessage);
 			return false;
 		}
 
@@ -77,7 +78,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	{
 		const auto& errorMessage = FString::Printf(TEXT("%s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s"), *errorMessage);
-		TriggerOnLoginCompleteDelegates(InLocalUserNum, false, *GetUniquePlayerId(InLocalUserNum), errorMessage);
+		TriggerOnLoginCompleteDelegates(InLocalUserNum, false, FUniqueNetIdGOG{}, errorMessage);
 		return false;
 	}
 
@@ -93,7 +94,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	{
 		const auto& errorMessage = FString::Printf(TEXT("%s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s"), *errorMessage);
-		TriggerOnLoginCompleteDelegates(InLocalUserNum, false, *GetUniquePlayerId(InLocalUserNum), errorMessage);
+		TriggerOnLoginCompleteDelegates(InLocalUserNum, false, FUniqueNetIdGOG{}, errorMessage);
 		return false;
 	}
 
@@ -109,7 +110,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	{
 		const auto& errorMessage = FString::Printf(TEXT("%s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		UE_LOG_ONLINE(Warning, TEXT("Failed to sign in: %s"), *errorMessage);
-		TriggerOnLoginCompleteDelegates(InLocalUserNum, false, *GetUniquePlayerId(InLocalUserNum), errorMessage);
+		TriggerOnLoginCompleteDelegates(InLocalUserNum, false, FUniqueNetIdGOG{}, errorMessage);
 		return false;
 	}
 
@@ -149,6 +150,9 @@ TSharedPtr<FUserOnlineAccount> FOnlineIdentityGOG::GetUserAccount(const FUniqueN
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetUserAccount()"));
 
+	if (InUserId == *ownUserOnlineAccount->GetUserId())
+		return ownUserOnlineAccount;
+
 	if (!UserInfoUtils::IsUserInfoAvailable(InUserId))
 		return nullptr;
 
@@ -159,7 +163,7 @@ TArray<TSharedPtr<FUserOnlineAccount>> FOnlineIdentityGOG::GetAllUserAccounts() 
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetAllUserAccounts()"));
 
-	return {GetUserAccount(*GetUniquePlayerId(LOCAL_USER_NUM))};
+	return {ownUserOnlineAccount};
 }
 
 TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::GetUniquePlayerId(int32 InLocalUserNum) const
@@ -168,11 +172,7 @@ TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::GetUniquePlayerId(int32 InLoc
 
 	CheckLocalUserNum(InLocalUserNum);
 
-	auto userID = UserInfoUtils::GetOwnUserID();
-	if (!userID.IsValid())
-		return nullptr;
-
-	return MakeShared<FUniqueNetIdGOG>(userID);
+	return ownUserOnlineAccount->GetUserId();
 }
 
 TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::GetSponsorUniquePlayerId(int32 InLocalUserNum) const
@@ -187,7 +187,6 @@ TSharedPtr<const FUniqueNetId> FOnlineIdentityGOG::CreateUniquePlayerId(uint8* I
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::CreateUniquePlayerId()"));
 
 	auto newGalaxyID = MakeShared<FUniqueNetIdGOG>(InBytes, InSize);
-
 	if (!newGalaxyID->IsValid())
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to create unique playerID: bytes=%u, size=%u"), InBytes, InSize);
@@ -239,7 +238,7 @@ ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(const FUniqueNetId& InUser
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetLoginStatus()"));
 
-	checkf(InUserId == *GetUniquePlayerId(LOCAL_USER_NUM), TEXT("Only single local user is supported by GOG platform"));
+	checkf(InUserId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
 
 	return GetLoginStatus(LOCAL_USER_NUM);
 }
@@ -248,18 +247,17 @@ FString FOnlineIdentityGOG::GetPlayerNickname(int32 InLocalUserNum) const
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetPlayerNickname()"));
 
-	if (InLocalUserNum != LOCAL_USER_NUM)
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Only single local player is supported"));
-		return FString(TEXT(""));
-	}
+	CheckLocalUserNum(InLocalUserNum);
 
-	return UserInfoUtils::GetOwnPlayerNickname();
+	return ownUserOnlineAccount->GetDisplayName();
 }
 
 FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) const
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetPlayerNickname()"));
+
+	if (InUserId == *ownUserOnlineAccount->GetUserId())
+		return ownUserOnlineAccount->GetDisplayName();
 
 	return UserInfoUtils::GetPlayerNickname(InUserId);
 }
@@ -273,25 +271,14 @@ FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
 	if (GetLoginStatus(InLocalUserNum) != ELoginStatus::LoggedIn)
 		UE_LOG_ONLINE(Warning, TEXT("Trying to get auth toke for a user that is not logged in"));
 
-	constexpr uint32_t MAX_ACCESSTOKEN_LENGHT = 1024;
-	std::array<char, MAX_ACCESSTOKEN_LENGHT> accessTokenBuffer;
-
-	galaxy::api::User()->GetAccessTokenCopy(accessTokenBuffer.data(), accessTokenBuffer.size());
-	auto err = galaxy::api::GetError();
-	if (err)
-	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get user access token: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		return {};
-	}
-
-	return FString(UTF8_TO_TCHAR(accessTokenBuffer.data()));
+	return ownUserOnlineAccount->GetAccessToken();
 }
 
 void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPrivileges::Type InPrivilege, const FOnGetUserPrivilegeCompleteDelegate& InDelegate)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetUserPrivilege()"));
 
-	check(InUserId == *GetUniquePlayerId(LOCAL_USER_NUM) && "Only single local user is supported by GOG platform");
+	checkf(InUserId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
 
 	auto privilegeResult = static_cast<uint32>(EPrivilegeResults::NoFailures);
 	switch (InPrivilege)
@@ -328,7 +315,7 @@ FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniq
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId()"));
 
-	check(InUniqueNetId == *GetUniquePlayerId(LOCAL_USER_NUM) && "Only single local user is supported by GOG platform");
+	checkf(InUniqueNetId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
 
 	return LOCAL_USER_NUM;
 }
@@ -337,23 +324,16 @@ FString FOnlineIdentityGOG::GetAuthType() const
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::GetAuthType()"));
 
-	return "galaxy";
+	return TEXT("galaxy");
 };
 
 void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOnRevokeAuthTokenCompleteDelegate& InDelegate)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::RevokeAuthToken()"));
 
-	check(InUserId == *GetUniquePlayerId(LOCAL_USER_NUM) && "Only single local user is supported by GOG platform");
+	checkf(InUserId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
 
-	auto accessToken = GetAuthToken(LOCAL_USER_NUM);
-	if (accessToken.IsEmpty())
-	{
-		UE_LOG_ONLINE(Display, TEXT("Trying to revoke empty access token"));
-		return;
-	}
-
-	galaxy::api::User()->ReportInvalidAccessToken(TCHAR_TO_UTF8(*accessToken));
+	galaxy::api::User()->ReportInvalidAccessToken(TCHAR_TO_UTF8(*ownUserOnlineAccount->GetAccessToken()));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -361,6 +341,7 @@ void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOn
 		InDelegate.ExecuteIfBound(InUserId, FOnlineError{501});
 	}
 
+	ownUserOnlineAccount->GetAccessToken().Empty();
 	InDelegate.ExecuteIfBound(InUserId, FOnlineError{true});
 }
 
@@ -371,18 +352,20 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	check(IsInGameThread());
 
 	isAuthInProgress = false;
+	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
+
+	*ownUserOnlineAccount = *FUserOnlineAccountGOG::CreateOwn();
+
+	checkf(ownUserOnlineAccount->GetUserId()->IsValid(), TEXT("Failed to fetch user information upon login"));
 
 	galaxy::api::User()->RequestUserData();
 	auto err = galaxy::api::GetError();
 	if (err)
 		UE_LOG_ONLINE(Warning, TEXT("Failed to request user data: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-	auto userID = GetUniquePlayerId(LOCAL_USER_NUM);
+	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, *ownUserOnlineAccount->GetUserId(), TEXT(""));
 
-	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
-	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, *userID, TEXT(""));
-
-	UE_LOG_ONLINE(Display, TEXT("Successfully logged in: name=%s, userID=%s"), *GetPlayerNickname(LOCAL_USER_NUM), *userID->ToString());
+	UE_LOG_ONLINE(Display, TEXT("Successfully logged in: name=%s, userID=%s"), *ownUserOnlineAccount->GetDisplayName(), *ownUserOnlineAccount->GetUserId()->ToString());
 }
 
 void FOnlineIdentityGOG::OnAuthFailure(FailureReason failureReason)
@@ -408,7 +391,7 @@ void FOnlineIdentityGOG::OnAuthLost()
 
 	UE_LOG_ONLINE(Error, TEXT("Authentication lost"));
 
-	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::LoggedIn, ELoginStatus::NotLoggedIn, *GetUniquePlayerId(LOCAL_USER_NUM));
+	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::LoggedIn, ELoginStatus::NotLoggedIn, *ownUserOnlineAccount->GetUserId());
 }
 
 FString FOnlineIdentityGOG::FailureReasonToFString(FailureReason failureReason)
@@ -431,4 +414,9 @@ FString FOnlineIdentityGOG::FailureReasonToFString(FailureReason failureReason)
 		default:
 			return TEXT("Undefined error.");
 	};
+}
+
+TSharedRef<FUserOnlineAccountGOG> FOnlineIdentityGOG::GetOwnUserOnlineAccount() const
+{
+	return ownUserOnlineAccount;
 }

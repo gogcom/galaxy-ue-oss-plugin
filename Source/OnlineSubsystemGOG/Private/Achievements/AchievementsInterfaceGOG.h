@@ -4,6 +4,7 @@
 #include "Types/IListenerGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 #include "ListenerManager.h"
+#include "Types/UserOnlineAccountGOG.h"
 
 #include "Interfaces/OnlineAchievementsInterface.h"
 
@@ -47,7 +48,7 @@ public:
 PACKAGE_SCOPE:
 
 	FOnlineAchievementsGOG() = delete;
-	FOnlineAchievementsGOG(class FOnlineSubsystemGOG& InSubsystem);
+	FOnlineAchievementsGOG(class FOnlineSubsystemGOG& InSubsystem, TSharedRef<FUserOnlineAccountGOG> InUserOnlineAccount);
 
 	void OnAchievementsRetrieved(const FUniqueNetIdGOG& InPlayerID);
 
@@ -78,4 +79,5 @@ private:
 #endif
 
 	FOnlineSubsystemGOG& subsystemGOG;
+	TSharedRef<FUserOnlineAccountGOG> ownUserOnlineAccount;
 };

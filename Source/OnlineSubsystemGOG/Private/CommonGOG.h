@@ -3,7 +3,6 @@
 // TODO: consider replacing with "CoreMinimal.h" and "UObject/CoreOnline.h" to reduce compilation time
 #include "Core.h"
 #include "OnlineSubsystem.h"
-#include "OnlineIdentityInterface.h"
 
 #include <galaxy/GalaxyApi.h>
 #include <galaxy/GalaxyExceptionHelper.h>
@@ -24,18 +23,6 @@ constexpr int32 LOCAL_USER_NUM{0};
 inline void CheckLocalUserNum(int32 InLocalUserNum)
 {
 	check(InLocalUserNum == LOCAL_USER_NUM && "Only single local player is supported")
-}
-
-inline TSharedPtr<const FUniqueNetId> GetLocalPlayerID(const IOnlineSubsystem& InSubsystem)
-{
-	auto onlineIdentityInterface = InSubsystem.GetIdentityInterface();
-	if (!onlineIdentityInterface.IsValid())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Online identity interface is invalid"));
-		return{};
-	}
-
-	return onlineIdentityInterface->GetUniquePlayerId(LOCAL_USER_NUM);
 }
 
 inline uint64 CharLen(const FString& InString)

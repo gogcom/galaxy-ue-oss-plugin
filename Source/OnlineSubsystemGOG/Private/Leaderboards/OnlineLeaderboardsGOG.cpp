@@ -10,6 +10,7 @@
 #include "VariantDataUtils.h"
 
 #include "OnlineSubsystemUtils.h"
+#include "Types/UserOnlineAccountGOG.h"
 
 namespace
 {
@@ -115,8 +116,9 @@ namespace
 
 }
 
-FOnlineLeaderboardsGOG::FOnlineLeaderboardsGOG(const FOnlineSubsystemGOG& InOnlineSubsystemGOG)
+FOnlineLeaderboardsGOG::FOnlineLeaderboardsGOG(const FOnlineSubsystemGOG& InOnlineSubsystemGOG, TSharedRef<FUserOnlineAccountGOG> InUserOnlineAccount)
 	: onlineSubsystemGOG{InOnlineSubsystemGOG}
+	, ownUserOnlineAccount{MoveTemp(InUserOnlineAccount)}
 {
 }
 
@@ -184,14 +186,6 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends(int32 InLocalUserNum, FO
 
 	CheckLocalUserNum(InLocalUserNum);
 
-	auto localPlayerID = GetLocalPlayerID(onlineSubsystemGOG);
-	if (!localPlayerID.IsValid() || !localPlayerID->IsValid())
-	{
-		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
-		TriggerOnLeaderboardReadCompleteDelegates(false);
-		return false;
-	}
-
 	TArray<TSharedRef<const FUniqueNetId>> friendList;
 	if (!GetFriendsList(friendList))
 	{
@@ -200,7 +194,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends(int32 InLocalUserNum, FO
 		return false;
 	}
 
-	friendList.Emplace(localPlayerID.ToSharedRef());
+	friendList.Emplace(ownUserOnlineAccount->GetUserId());
 
 	return ReadLeaderboards(friendList, InOutReadLeaderboard);
 }
@@ -288,7 +282,7 @@ bool FOnlineLeaderboardsGOG::WriteLeaderboards(const FName& InSessionName, const
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::WriteLeaderboards()"));
 
-	if (!InPlayer.IsValid() || InPlayer != *GetLocalPlayerID(onlineSubsystemGOG))
+	if (*ownUserOnlineAccount->GetUserId() != InPlayer)
 	{
 		UE_LOG_ONLINE(Error, TEXT("Invalid Player ID"));
 		return false;

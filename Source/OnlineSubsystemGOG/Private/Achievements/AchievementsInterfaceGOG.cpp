@@ -5,28 +5,10 @@
 #include "WriteAchievementsListener.h"
 
 #include "Misc/ConfigCacheIni.h"
-#include "Online.h"
 #include <array>
 
 namespace
 {
-
-	bool CheckPlayerID(const FOnlineSubsystemGOG& InSubsystem, const FUniqueNetId& InPlayerId)
-	{
-		if (!InPlayerId.IsValid())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Player ID is invalid"));
-			return false;
-		}
-
-		if (InPlayerId != *GetLocalPlayerID(InSubsystem))
-		{
-			UE_LOG_ONLINE(Error, TEXT("Achievements can only be modified for first local player"));
-			return false;
-		}
-
-		return true;
-	}
 
 	constexpr double ACHIVEMENT_PROGRESS_LOCKED = 0.;
 	constexpr double ACHIVEMENT_PROGRESS_UNLOCKED = 100.;
@@ -35,8 +17,9 @@ namespace
 
 }
 
-FOnlineAchievementsGOG::FOnlineAchievementsGOG(FOnlineSubsystemGOG& InSubsystem)
+FOnlineAchievementsGOG::FOnlineAchievementsGOG(FOnlineSubsystemGOG& InSubsystem, TSharedRef<FUserOnlineAccountGOG> InUserOnlineAccount)
 	: subsystemGOG{InSubsystem}
+	, ownUserOnlineAccount{MoveTemp(InUserOnlineAccount)}
 {
 	if (!GConfig->GetArray(TEXT_CONFIG_SECTION_GOG, TEXT_CONFIG_KEY_ACHIEVEMENTS, achievementIDs, GEngineIni))
 		// Assert not declared achievements only when they are actually used (any methods is called)
@@ -50,8 +33,9 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 	if (!AssertAchievementsCount())
 		return;
 
-	if (!CheckPlayerID(subsystemGOG, InPlayerId))
+	if (*ownUserOnlineAccount->GetUserId() != InPlayerId)
 	{
+		UE_LOG_ONLINE(Warning, TEXT("Achivements can be written only for self"));
 		InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 		InDelegate.ExecuteIfBound(InPlayerId, false);
 		return;
@@ -241,7 +225,7 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 	if (!AssertAchievementsCount())
 		return false;
 
-	if (!CheckPlayerID(subsystemGOG, InPlayerId))
+	if (*ownUserOnlineAccount->GetUserId() != InPlayerId)
 		return false;
 
 	auto playerCachedAchievements = cachedAchievements.Find(InPlayerId);
@@ -322,17 +306,17 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 
 	FString achievementName{UTF8_TO_TCHAR(InName)};
 
-	auto localUserID = GetLocalPlayerID(subsystemGOG);
-	if (!localUserID.IsValid() || !localUserID->IsValid())
+	auto ownUserID = ownUserOnlineAccount->GetUserId();
+	if (!ownUserID->IsValid())
 	{
 		UE_LOG_ONLINE(Error, TEXT("Cannot unlock player achivement. Invalid local user ID: achivementName='%s'"), *achievementName);
 		return;
 	}
 
-	auto playerCachedAchievements = cachedAchievements.Find(*localUserID);
+	auto playerCachedAchievements = cachedAchievements.Find(*ownUserID);
 	if (!playerCachedAchievements)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Cannot unlock player achivement. Player achievements not found: achivementName='%s', playerID='%s'"), *achievementName, *localUserID->ToString());
+		UE_LOG_ONLINE(Error, TEXT("Cannot unlock player achivement. Player achievements not found: achivementName='%s', playerID='%s'"), *achievementName, *ownUserID->ToString());
 		checkf(false, TEXT("Cannot find achievements to unlock: achivementName='%s'"), *achievementName);
 		return;
 	}
@@ -349,7 +333,7 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 	}
 
 	playerCachedAchievement->Progress = ACHIVEMENT_PROGRESS_UNLOCKED;
-	TriggerOnAchievementUnlockedDelegates(*localUserID, playerCachedAchievement->Id);
+	TriggerOnAchievementUnlockedDelegates(*ownUserID, playerCachedAchievement->Id);
 }
 
 void FOnlineAchievementsGOG::OnAchievementsRetrieved(const FUniqueNetIdGOG& InPlayerID)

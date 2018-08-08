@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CommonGOG.h"
+#include "Types/UserOnlineAccountGOG.h"
 
 #include "OnlineIdentityInterface.h"
 
@@ -49,6 +50,8 @@ public:
 
 	FString GetAuthType() const override;
 
+	TSharedRef<FUserOnlineAccountGOG> GetOwnUserOnlineAccount() const;
+
 private:
 
 	// IAuthListener
@@ -64,6 +67,8 @@ private:
 	class FOnlineSubsystemGOG& onlineSubsystemGOG;
 
 	bool isAuthInProgress{false};
+
+	TSharedRef<FUserOnlineAccountGOG> ownUserOnlineAccount;
 };
 
 using FOnlineIdentityGOGPtr = TSharedPtr<class FOnlineIdentityGOG, ESPMode::ThreadSafe>;

@@ -32,7 +32,7 @@ public:
 
 PACKAGE_SCOPE:
 
-	FOnlineLeaderboardsGOG(const class FOnlineSubsystemGOG& InOnlineSubsystemGOG);
+	FOnlineLeaderboardsGOG(const class FOnlineSubsystemGOG& InOnlineSubsystemGOG, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount);
 
 	void RemoveCachedLeaderboard(FName InSessionName);
 
@@ -49,4 +49,5 @@ private:
 	TMap<const SessionName, TMap<const LeaderboardName, CachedLeaderboardDetails>> writeLeaderboardCache;
 
 	const class FOnlineSubsystemGOG& onlineSubsystemGOG;
+	TSharedRef<class FUserOnlineAccountGOG> ownUserOnlineAccount;
 };

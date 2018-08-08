@@ -414,7 +414,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 
 	storedSession->SessionState = EOnlineSessionState::Starting;
 
-	galaxy::api::GalaxyID lobbyID = FUniqueNetIdGOG(storedSession->SessionInfo->GetSessionId());
+	galaxy::api::GalaxyID lobbyID = FUniqueNetIdGOG{storedSession->SessionInfo->GetSessionId()};
 
 	auto lobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(lobbyID);
 	auto err = galaxy::api::GetError();
