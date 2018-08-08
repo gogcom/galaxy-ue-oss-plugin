@@ -436,7 +436,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 		return true;
 	}
 
-	auto listenerID = CreateListener<FLobbyStartListener>(*this, lobbyID, InSessionName);
+	auto listenerID = CreateListener<FLobbyStartListener>(*this, lobbyID, InSessionName, storedSession->SessionSettings.bAllowJoinInProgress);
 
 	galaxy::api::Matchmaking()->SetLobbyJoinable(lobbyID, storedSession->SessionSettings.bAllowJoinInProgress, GetListenerRawPtr<FLobbyStartListener>(listenerID));
 	err = galaxy::api::GetError();
