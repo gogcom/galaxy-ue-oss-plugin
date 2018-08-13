@@ -7,6 +7,7 @@
 #include "Friends/OnlineFriendsGOG.h"
 #include "Presence/OnlinePresenceGOG.h"
 
+#include "Runtime/Launch/Resources/Version.h"
 #include "SharedPointer.h"
 #include <algorithm>
 
@@ -77,7 +78,16 @@ public:
 	void OnConnectionStateChange(galaxy::api::GogServicesConnectionState InConnectionState)
 	{
 		auto newState = GetConnectionState(InConnectionState);
+
+#if ENGINE_MINOR_VERSION < 20
 		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(currentState, newState);
+#else
+		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(
+			subsystemGOG.GetSubsystemName().ToString(),
+			currentState,
+			newState
+		);
+#endif
 		currentState = newState;
 	}
 

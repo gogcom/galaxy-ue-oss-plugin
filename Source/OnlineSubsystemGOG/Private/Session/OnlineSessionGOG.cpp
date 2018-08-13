@@ -1290,3 +1290,20 @@ void FOnlineSessionGOG::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& I
 	else
 		++storedSession->NumOpenPublicConnections;
 }
+
+#if ENGINE_MINOR_VERSION >= 20
+TSharedPtr<const FUniqueNetId> FOnlineSessionGOG::CreateSessionIdFromString(const FString& InSessionIdStr)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::CreateSessionIdFromString()"));
+
+	auto sessionID = MakeShared<const FUniqueNetIdGOG>(InSessionIdStr);
+
+	if (!sessionID->IsValid() || !sessionID->IsLobby())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to create valid SessionID from string: sessionIDStr='%s'"), *InSessionIdStr);
+		return nullptr;
+	}
+
+	return sessionID;
+}
+#endif

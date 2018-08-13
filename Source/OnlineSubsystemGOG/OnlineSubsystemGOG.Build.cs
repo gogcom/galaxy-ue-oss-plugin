@@ -6,7 +6,7 @@ public class OnlineSubsystemGOG : ModuleRules
 	public OnlineSubsystemGOG(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-
+#if ! UE_4_20_OR_LATER
 		PublicIncludePaths.AddRange(
 			new string[] {
 				"OnlineSubsystemGOG/Public"
@@ -18,7 +18,7 @@ public class OnlineSubsystemGOG : ModuleRules
 				"OnlineSubsystemGOG/Private"
 			}
 		);
-
+#endif
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{

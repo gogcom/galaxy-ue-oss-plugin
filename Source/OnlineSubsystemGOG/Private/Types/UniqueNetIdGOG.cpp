@@ -104,3 +104,15 @@ bool FUniqueNetIdGOG::operator==(const galaxy::api::GalaxyID& InGalaxyID) const
 {
 	return id == InGalaxyID.ToUint64();
 }
+
+FArchive& operator<<(FArchive& InArchive, FUniqueNetIdGOG& InUniqueNetId)
+{
+	return InArchive << InUniqueNetId.id;
+}
+
+#if ENGINE_MINOR_VERSION >= 20
+FName FUniqueNetIdGOG::GetType() const
+{
+	return TEXT_GOG;
+}
+#endif

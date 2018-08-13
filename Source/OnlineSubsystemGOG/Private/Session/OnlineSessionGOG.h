@@ -6,6 +6,7 @@
 #include "ListenerManager.h"
 
 #include "OnlineSessionSettings.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 class FOnlineSessionGOG
 	: public IOnlineSession
@@ -97,6 +98,10 @@ public:
 	int32 GetNumSessions() override;
 
 	void DumpSessionState() override;
+
+#if ENGINE_MINOR_VERSION >= 20
+	TSharedPtr<const FUniqueNetId> CreateSessionIdFromString(const FString& InSessionIdStr) override;
+#endif
 
 PACKAGE_SCOPE:
 
