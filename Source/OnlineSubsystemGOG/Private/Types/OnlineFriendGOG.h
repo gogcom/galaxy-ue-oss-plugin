@@ -9,7 +9,9 @@ class FOnlineFriendGOG : public FOnlineFriend, public FOnlineUserGOG
 {
 public:
 
-	explicit FOnlineFriendGOG(FUniqueNetIdGOG InFriendID);
+	static bool Fill(FOnlineFriendGOG& InOutOnlineFriend);
+
+	FOnlineFriendGOG(FUniqueNetIdGOG InFriendID);
 
 	// FOnlineUser interface implementation
 
@@ -25,13 +27,11 @@ public:
 
 	EInviteStatus::Type GetInviteStatus() const override;
 
-	const class FOnlineUserPresence& GetPresence() const override;
+	const FOnlineUserPresence& GetPresence() const override;
 
 	void SetPresence(FOnlineUserPresence InUserPresence);
 
 private:
-
-	FOnlineFriendGOG() = delete;
 
 	FOnlineUserPresence userPresence;
 };

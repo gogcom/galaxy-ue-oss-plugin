@@ -332,9 +332,20 @@ void FOnlineFriendsGOG::OnFriendListRetrieveSuccess()
 			continue;
 		}
 
+		FOnlineFriendGOG onlineFriend{friendID};
+		if (!FOnlineFriendGOG::Fill(onlineFriend))
+			continue;
+
+		auto onlinePresenceInterface = subsystemGOG.GetPresenceInterface();
+		checkf(onlinePresenceInterface.IsValid(), TEXT("Presence Interface is NULL"));
+
+		TSharedPtr<FOnlineUserPresence> userPresence;
+		if (onlinePresenceInterface->GetCachedPresence(friendID, userPresence) == EOnlineCachedResult::Success)
+			onlineFriend.SetPresence(MoveTemp(*userPresence));
+
 		retrievedFriendIDList.Add(friendID);
 
-		if(AddOrUpdateCachedFriend(friendID))
+		if (AddOrUpdateCachedFriend(MoveTemp(onlineFriend)))
 			isFriendsListChanged = true;
 	}
 
@@ -345,17 +356,17 @@ void FOnlineFriendsGOG::OnFriendListRetrieveSuccess()
 		TriggerOnFriendsChangeDelegates(LOCAL_USER_NUM);
 }
 
-bool FOnlineFriendsGOG::AddOrUpdateCachedFriend(FUniqueNetIdGOG InFriendID)
+bool FOnlineFriendsGOG::AddOrUpdateCachedFriend(FOnlineFriendGOG InOnlineFriend)
 {
-	auto cachedFriend = FindFriend(InFriendID, GetDefaultFriendsListName());
+	auto cachedFriend = FindFriend(*InOnlineFriend.GetUserId(), GetDefaultFriendsListName());
 	if (!cachedFriend)
 	{
-		cachedFriends.Emplace(MakeShared<FOnlineFriendGOG>(MoveTemp(InFriendID)));
+		cachedFriends.Emplace(MakeShared<FOnlineFriendGOG>(MoveTemp(InOnlineFriend)));
 		return true;
 	}
 
 	// Update friend's information not invalidating shared reference
-	**cachedFriend = FOnlineFriendGOG{MoveTemp(InFriendID)};
+	**cachedFriend = MoveTemp(InOnlineFriend);
 	return false;
 }
 

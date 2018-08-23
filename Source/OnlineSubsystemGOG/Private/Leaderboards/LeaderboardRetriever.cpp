@@ -20,7 +20,13 @@ namespace
 		const char* InDetailsBuffer,
 		uint32_t InDetailsSize)
 	{
-		auto& newEntry = InOutReadLeaderboard->Rows.Emplace_GetRef(UserInfoUtils::GetPlayerNickname(InUserID), MakeShared<FUniqueNetIdGOG>(InUserID));
+		auto userID = MakeShared<FUniqueNetIdGOG>(InUserID);
+
+		FString playerNickname;
+		if (!UserInfoUtils::GetPlayerNickname(*userID, playerNickname))
+			return false;
+
+		auto& newEntry = InOutReadLeaderboard->Rows.Emplace_GetRef(MoveTemp(playerNickname), MoveTemp(userID));
 		newEntry.Rank = InRank;
 
 		newEntry.Columns.Add(InOutReadLeaderboard->SortedColumn, InScore);

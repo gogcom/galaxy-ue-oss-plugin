@@ -6,11 +6,11 @@ class FUserOnlineAccountGOG : public FUserOnlineAccount, public FOnlineUserGOG
 {
 public:
 
-	static TSharedRef<FUserOnlineAccountGOG> CreateOwn();
-
 	explicit FUserOnlineAccountGOG(FUniqueNetIdGOG InUserID);
 
-	explicit FUserOnlineAccountGOG(FUniqueNetIdGOG InUserID, FString InDisplayName, FString InAccessToken = {});
+	static bool Fill(FUserOnlineAccountGOG& InOutUserOnlineAccount);
+
+	static bool FillOwn(FUserOnlineAccountGOG& InOutUserOnlineAccount);
 
 	// FOnlineUser interface implementation
 
@@ -31,8 +31,6 @@ public:
 	bool GetAuthAttribute(const FString& InAttrName, FString& OutAttrValue) const override;
 
 private:
-
-	FUserOnlineAccountGOG() = delete;
 
 	FString accessToken;
 };

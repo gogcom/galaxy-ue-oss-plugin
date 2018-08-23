@@ -1,12 +1,15 @@
 #include "OnlineFriendGOG.h"
 
-#include "OnlinePresenceInterface.h"
+#include "Online.h"
 
+bool FOnlineFriendGOG::Fill(FOnlineFriendGOG& InOutOnlineFriend)
+{
+	return FOnlineUserGOG::Fill(InOutOnlineFriend);
+}
 
 FOnlineFriendGOG::FOnlineFriendGOG(FUniqueNetIdGOG InFriendID)
 	: FOnlineUserGOG{MoveTemp(InFriendID)}
 {
-	// TODO: fill user presence once implemented https://jira.cdprojektred.com/browse/SDK-2270
 }
 
 TSharedRef<const FUniqueNetId> FOnlineFriendGOG::GetUserId() const

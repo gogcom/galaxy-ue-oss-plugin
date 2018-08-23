@@ -67,7 +67,7 @@ private:
 
 	void OnFriendListRetrieveSuccess() override;
 
-	bool AddOrUpdateCachedFriend(FUniqueNetIdGOG InFriendID);
+	bool AddOrUpdateCachedFriend(class FOnlineFriendGOG InOnlineFriend);
 
 	void RemoveUnfriended(TSet<FUniqueNetIdGOG> InRetrievedFriendIDList, bool &InOutIsFriendsListChanged);
 

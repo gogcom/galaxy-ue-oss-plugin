@@ -25,19 +25,22 @@ namespace
 
 }
 
-TSharedRef<FUserOnlineAccountGOG> FUserOnlineAccountGOG::FUserOnlineAccountGOG::CreateOwn()
+bool FUserOnlineAccountGOG::FUserOnlineAccountGOG::Fill(FUserOnlineAccountGOG& InOutUserOnlineAccount)
 {
-	return MakeShared<FUserOnlineAccountGOG>(UserInfoUtils::GetOwnUserID(), UserInfoUtils::GetOwnPlayerNickname(), GetOwnAccessToken());
+	return FOnlineUserGOG::Fill(InOutUserOnlineAccount);
+}
+
+bool FUserOnlineAccountGOG::FUserOnlineAccountGOG::FillOwn(FUserOnlineAccountGOG& InOutUserOnlineAccount)
+{
+	if (!FOnlineUserGOG::FillOwn(InOutUserOnlineAccount))
+		return false;
+
+	InOutUserOnlineAccount.accessToken = GetOwnAccessToken();
+	return true;
 }
 
 FUserOnlineAccountGOG::FUserOnlineAccountGOG(FUniqueNetIdGOG InUserID)
-	: FUserOnlineAccountGOG{MoveTemp(InUserID), UserInfoUtils::GetPlayerNickname(InUserID)}
-{
-}
-
-FUserOnlineAccountGOG::FUserOnlineAccountGOG(FUniqueNetIdGOG InUserID, FString InDisplayName, FString InAccessToken)
-	: FOnlineUserGOG{MoveTemp(InUserID), MoveTemp(InDisplayName)}
-	, accessToken{MoveTemp(InAccessToken)}
+	: FOnlineUserGOG{MoveTemp(InUserID)}
 {
 }
 

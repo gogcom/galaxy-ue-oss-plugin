@@ -259,7 +259,11 @@ FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) cons
 	if (InUserId == *ownUserOnlineAccount->GetUserId())
 		return ownUserOnlineAccount->GetDisplayName();
 
-	return UserInfoUtils::GetPlayerNickname(InUserId);
+	FString playerNickname;
+	if (!UserInfoUtils::GetPlayerNickname(InUserId, playerNickname))
+		return{};
+
+	return playerNickname;
 }
 
 FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
@@ -354,9 +358,18 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	isAuthInProgress = false;
 	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
 
-	*ownUserOnlineAccount = *FUserOnlineAccountGOG::CreateOwn();
+	auto ownUserID = UserInfoUtils::GetOwnUserID();
+	if (!ownUserID.IsValid() || !ownUserID.IsUser())
+	{
+		UE_LOG_ONLINE(Error, TEXT("Invalid own UserID: userID='%s'"), *ownUserID.ToString());
+		TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, false, *ownUserOnlineAccount->GetUserId(), FString::Printf(TEXT("Invalid own UserID: userID='%s'"), *ownUserID.ToString()));
+		return;
+	}
 
-	checkf(ownUserOnlineAccount->GetUserId()->IsValid(), TEXT("Failed to fetch user information upon login"));
+	// Update cached info keeping shared ref
+	*ownUserOnlineAccount = FUserOnlineAccountGOG{ownUserID};
+	if (!FUserOnlineAccountGOG::FillOwn(*ownUserOnlineAccount))
+		return;
 
 	galaxy::api::User()->RequestUserData();
 	auto err = galaxy::api::GetError();

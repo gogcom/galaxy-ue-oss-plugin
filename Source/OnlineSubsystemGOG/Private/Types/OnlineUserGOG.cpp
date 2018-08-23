@@ -1,16 +1,44 @@
 #include "OnlineUserGOG.h"
+#include "UserInfoUtils.h"
+
+bool FOnlineUserGOG::Fill(FOnlineUserGOG& InOutOnlineUser)
+{
+	if (!InOutOnlineUser.IsValid())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Invalid User: userID='%s'"), *InOutOnlineUser.userID->ToString());
+		return false;
+	}
+
+	if (!UserInfoUtils::GetPlayerNickname(*InOutOnlineUser.userID, InOutOnlineUser.displayName)
+		|| !UserInfoUtils::GetUserAttributes(*InOutOnlineUser.userID, InOutOnlineUser.userAttributes))
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get user information: userID='%s'"), *InOutOnlineUser.userID->ToString());
+		return false;
+	}
+
+	return true;
+}
+
+bool FOnlineUserGOG::FillOwn(FOnlineUserGOG& InOutOnlineUser)
+{
+	if (!InOutOnlineUser.IsValid())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Invalid User: userID='%s'"), *InOutOnlineUser.userID->ToString());
+		return false;
+	}
+
+	if (!UserInfoUtils::GetOwnPlayerNickname(InOutOnlineUser.displayName)
+		|| !UserInfoUtils::GetUserAttributes(*InOutOnlineUser.userID, InOutOnlineUser.userAttributes))
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get own user information: userID='%s'"), *InOutOnlineUser.userID->ToString());
+		return false;
+	}
+
+	return true;
+}
 
 FOnlineUserGOG::FOnlineUserGOG(FUniqueNetIdGOG InUserID)
 	: userID{MakeShared<const FUniqueNetIdGOG>(MoveTemp(InUserID))}
-	, displayName{UserInfoUtils::GetPlayerNickname(*userID)}
-	, userAttributes{UserInfoUtils::GetUserAttributes(*userID)}
-{
-}
-
-FOnlineUserGOG::FOnlineUserGOG(FUniqueNetIdGOG InUserID, FString InDisplayName)
-	: userID{MakeShared<const FUniqueNetIdGOG>(MoveTemp(InUserID))}
-	, displayName{MoveTemp(InDisplayName)}
-	, userAttributes{UserInfoUtils::GetUserAttributes(*userID)}
 {
 }
 
@@ -24,7 +52,7 @@ FString FOnlineUserGOG::GetRealName() const
 	return{};
 }
 
-FString FOnlineUserGOG::GetDisplayName(const FString& InPlatform /*= FString()*/) const
+FString FOnlineUserGOG::GetDisplayName(const FString& /*InPlatform = FString()*/) const
 {
 	return displayName;
 }
@@ -37,4 +65,9 @@ bool FOnlineUserGOG::GetUserAttribute(const FString& InAttrName, FString& OutAtt
 
 	OutAttrValue = *foundAttr;
 	return true;
+}
+
+bool FOnlineUserGOG::IsValid() const
+{
+	return userID->IsValid() && userID->IsUser();
 }

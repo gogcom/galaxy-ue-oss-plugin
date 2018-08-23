@@ -11,14 +11,14 @@ constexpr auto AVATAR_SMALL_KEY = TEXT("avatar_small");
 namespace UserInfoUtils
 {
 
-	FString GetOwnPlayerNickname();
+	bool GetOwnPlayerNickname(FString& OutPlayerNickname);
 
-	FString GetPlayerNickname(const FUniqueNetIdGOG& InUserId);
+	bool GetPlayerNickname(const FUniqueNetIdGOG& InUserId, FString& OutPlayerNickname);
 
 	FUniqueNetIdGOG GetOwnUserID();
 
 	bool IsUserInfoAvailable(const FUniqueNetIdGOG& InUserId);
 
-	UserAttributesMap GetUserAttributes(const FUniqueNetIdGOG& InUserId);
+	bool GetUserAttributes(const FUniqueNetIdGOG& InUserId, UserAttributesMap& OutUserAttributes);
 
 }

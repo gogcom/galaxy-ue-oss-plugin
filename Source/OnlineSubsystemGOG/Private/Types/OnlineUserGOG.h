@@ -9,6 +9,12 @@ class FOnlineUserGOG : public FOnlineUser
 {
 public:
 
+	static bool Fill(FOnlineUserGOG& InOutOnlineUser);
+
+	static bool FillOwn(FOnlineUserGOG& InOutOnlineUser);
+
+	explicit FOnlineUserGOG(FUniqueNetIdGOG InUserID);
+
 	TSharedRef<const FUniqueNetId> GetUserId() const override;
 
 	FString GetRealName() const override;
@@ -19,11 +25,7 @@ public:
 
 protected:
 
-	FOnlineUserGOG(FUniqueNetIdGOG InUserID);
-
-	FOnlineUserGOG(FUniqueNetIdGOG InUserID, FString InDisplayName);
-
-	FOnlineUserGOG() = delete;
+	bool IsValid() const;
 
 	TSharedRef<const FUniqueNetIdGOG> userID;
 	FString displayName;
