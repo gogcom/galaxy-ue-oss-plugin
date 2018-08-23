@@ -11,6 +11,7 @@ class FCreateLobbyListener
 	, public galaxy::api::ILobbyCreatedListener
 	, public galaxy::api::ILobbyEnteredListener
 	, public galaxy::api::ILobbyDataUpdateListener
+	, public galaxy::api::IRichPresenceChangeListener
 {
 public:
 
@@ -25,6 +26,12 @@ private:
 	void OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& InLobbyID) override;
 
 	void OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason) override;
+
+	bool AdvertiseToFriends();
+
+	void OnRichPresenceChangeSuccess() override;
+
+	void OnRichPresenceChangeFailure(galaxy::api::IRichPresenceChangeListener::FailureReason InFailureReason) override;
 
 	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful);
 

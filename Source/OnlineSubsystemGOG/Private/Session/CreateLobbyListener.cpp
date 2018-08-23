@@ -53,7 +53,7 @@ namespace
 			auto err = galaxy::api::GetError();
 			if (err)
 			{
-				UE_LOG_ONLINE(Error, TEXT("Failed to set lobby setting: lobbyID=%llu, settingName='%s'; %s; %s"),
+				UE_LOG_ONLINE(Error, TEXT("Failed to set lobby setting: lobbyID=%llu, settingName='%s'; %s: %s"),
 					InLobbyID.ToUint64(), *lobbySetting.Key, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 				return false;
@@ -84,7 +84,7 @@ namespace
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to make session joinable: lobbyID=%llu; %s; %s"), InLobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to make session joinable: lobbyID=%llu; %s: %s"), InLobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 
@@ -170,12 +170,46 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 	auto isLobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(InLobbyID);
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s, %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	if (!isLobbyJoinable)
-		UE_LOG_ONLINE(Error, TEXT("Failed to prepare lobby"));
+	{
+		UE_LOG_ONLINE(Error, TEXT("Cannot mark lobby as joinable"));
+		TriggerOnCreateSessionCompleteDelegates(false);
+	}
 
-	TriggerOnCreateSessionCompleteDelegates(isLobbyJoinable && AddLocalSession(sessionInterface, newLobbyID, sessionName, sessionSettings));
+	if (!AddLocalSession(sessionInterface, newLobbyID, sessionName, sessionSettings))
+	{
+		UE_LOG_ONLINE(Error, TEXT("Failed to add local session: sessionName=%s"), *sessionName.ToString());
+		TriggerOnCreateSessionCompleteDelegates(false);
+	}
+
+	if (!sessionSettings.bUsesPresence || !(sessionSettings.bAllowJoinViaPresence || sessionSettings.bAllowJoinViaPresenceFriendsOnly))
+	{
+		TriggerOnCreateSessionCompleteDelegates(true);
+		return;
+	}
+
+	if (!AdvertiseToFriends())
+		TriggerOnCreateSessionCompleteDelegates(false);
+}
+
+bool FCreateLobbyListener::AdvertiseToFriends()
+{
+	FString connectString;
+	if (!sessionInterface.GetResolvedConnectString(sessionName, connectString))
+		return false;
+
+	galaxy::api::Friends()->SetRichPresence("connect", TCHAR_TO_UTF8(*connectString), this);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		TriggerOnCreateSessionCompleteDelegates(false);
+		return false;
+	}
+
+	return true;
 }
 
 void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason)
@@ -187,6 +221,20 @@ void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID&
 	UE_LOG_ONLINE(Error, InFailureReason == galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST
 		? TEXT("Specified lobby does not exists")
 		: TEXT("Unknown error"));
+
+	TriggerOnCreateSessionCompleteDelegates(false);
+}
+
+void FCreateLobbyListener::OnRichPresenceChangeSuccess()
+{
+	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnRichPresenceChangeSuccess: lobbyID=%llu"), newLobbyID.ToUint64());
+
+	TriggerOnCreateSessionCompleteDelegates(true);
+}
+
+void FCreateLobbyListener::OnRichPresenceChangeFailure(galaxy::api::IRichPresenceChangeListener::FailureReason InFailureReason)
+{
+	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnRichPresenceChangeFailure: lobbyID=%llu"), newLobbyID.ToUint64());
 
 	TriggerOnCreateSessionCompleteDelegates(false);
 }

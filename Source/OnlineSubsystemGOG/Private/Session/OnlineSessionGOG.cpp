@@ -169,7 +169,7 @@ namespace
 			|| key == SEARCH_PRESENCE
 			|| key == SEARCH_EXCLUDE_UNIQUEIDS)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Search param is not supported. Skipping: searchParamName=%s"), *key.ToString())
+			UE_LOG_ONLINE(Warning, TEXT("Search param is not supported. Skipping: searchParamName=%s"), *key.ToString());
 			return true;
 		}
 
@@ -530,8 +530,13 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 		return false;
 	}
 
-	galaxy::api::Matchmaking()->LeaveLobby(FUniqueNetIdGOG{storedSession->SessionInfo->GetSessionId()});
+	galaxy::api::Friends()->DeleteRichPresence("connect");
 	auto err = galaxy::api::GetError();
+	if (err)
+		UE_LOG_ONLINE(Error, TEXT("Failed to delete players connect presence informatio: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+	galaxy::api::Matchmaking()->LeaveLobby(FUniqueNetIdGOG{storedSession->SessionInfo->GetSessionId()});
+	err = galaxy::api::GetError();
 	if (err)
 		UE_LOG_ONLINE(Error, TEXT("Failed to leave lobby: lobbyID=%llu, %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
