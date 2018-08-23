@@ -38,4 +38,3 @@ bool FOnlineUserGOG::GetUserAttribute(const FString& InAttrName, FString& OutAtt
 	OutAttrValue = *foundAttr;
 	return true;
 }
-

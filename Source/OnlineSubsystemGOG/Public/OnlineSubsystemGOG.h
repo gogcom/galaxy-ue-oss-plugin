@@ -40,6 +40,7 @@ public:
 	DECLARE_ONLINE_INTERFACE(Achievements);
 	DECLARE_ONLINE_INTERFACE(Leaderboards);
 	DECLARE_ONLINE_INTERFACE(Friends);
+	DECLARE_ONLINE_INTERFACE(Presence);
 
 #define STUB_ONLINE_INTERFACE(interfaceName) \
 	virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
@@ -51,7 +52,6 @@ public:
 
 	STUB_ONLINE_INTERFACE(UserCloud);
 
-	STUB_ONLINE_INTERFACE(Presence);
 
 	STUB_ONLINE_INTERFACE(Chat);
 

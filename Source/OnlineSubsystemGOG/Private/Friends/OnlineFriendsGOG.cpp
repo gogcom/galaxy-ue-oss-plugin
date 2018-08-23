@@ -38,6 +38,15 @@ FOnlineFriendsGOG::FOnlineFriendsGOG(FOnlineSubsystemGOG& InSubsystem, TSharedRe
 {
 }
 
+void FOnlineFriendsGOG::UpdateFriendPresence(const FUniqueNetIdGOG& InFriendID, TSharedRef<FOnlineUserPresence> InFriendPresence)
+{
+	auto cachedFriend = FindFriend(InFriendID, GetDefaultFriendsListName());
+	if (!cachedFriend)
+		return;
+
+	StaticCastSharedRef<FOnlineFriendGOG>(*cachedFriend)->SetPresence(*InFriendPresence);
+}
+
 bool FOnlineFriendsGOG::ReadFriendsList(int32 InLocalUserNum, const FString& InListName, const FOnReadFriendsListComplete& InDelegate)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineFriendsGOG::ReadFriendsList(%s)"), *InListName);

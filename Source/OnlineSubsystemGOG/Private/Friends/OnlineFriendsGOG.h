@@ -61,6 +61,8 @@ PACKAGE_SCOPE:
 
 	FOnlineFriendsGOG(class FOnlineSubsystemGOG& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount);
 
+	void UpdateFriendPresence(const class FUniqueNetIdGOG& InFriendID, TSharedRef<class FOnlineUserPresence> InFriendPresence);
+
 private:
 
 	void OnFriendListRetrieveSuccess() override;
@@ -76,9 +78,8 @@ private:
 	void OnFriendAdded(galaxy::api::GalaxyID InFriendID, galaxy::api::IFriendAddListener::InvitationDirection InInvitationDirection) override;
 
 	class FOnlineSubsystemGOG& subsystemGOG;
+
 	TSharedRef<class FUserOnlineAccountGOG> ownUserOnlineAccount;
 
 	TArray<TSharedRef<FOnlineFriend>> cachedFriends;
 };
-
-using FOnlineFriendsGOGPtr = TSharedPtr<FOnlineFriendsGOG, ESPMode::ThreadSafe>;
