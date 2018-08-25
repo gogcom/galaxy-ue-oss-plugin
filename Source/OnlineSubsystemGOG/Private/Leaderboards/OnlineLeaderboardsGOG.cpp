@@ -8,38 +8,13 @@
 #include "Converters/OnlineLeaderboardConverter.h"
 #include "Types/UniqueNetIdGOG.h"
 #include "VariantDataUtils.h"
+#include "Friends/OnlineFriendsGOG.h"
 
 #include "OnlineSubsystemUtils.h"
 #include "Types/UserOnlineAccountGOG.h"
 
 namespace
 {
-
-	// TODO: replace with IOnlineFriends::GetFriendsList() when implemented
-	bool GetFriendsList(TArray<TSharedRef<const FUniqueNetId>>& OutFriends)
-	{
-		auto friendCount = galaxy::api::Friends()->GetFriendCount();
-		auto err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get player friends: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			return false;
-		}
-
-		OutFriends.Reserve(friendCount);
-		for (decltype(friendCount) friendIdx{0}; friendIdx < friendCount; ++friendIdx)
-		{
-			OutFriends.Emplace(MakeShared<FUniqueNetIdGOG>(galaxy::api::Friends()->GetFriendByIndex(friendIdx)));
-			err = galaxy::api::GetError();
-			if (err)
-			{
-				UE_LOG_ONLINE(Error, TEXT("Failed to get player friends: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-				return false;
-			}
-		}
-
-		return true;
-	}
 
 	galaxy::api::LeaderboardSortMethod ConverterLeaderboardSortMethod(ELeaderboardSort::Type InSortMethod)
 	{
@@ -186,17 +161,33 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends(int32 InLocalUserNum, FO
 
 	CheckLocalUserNum(InLocalUserNum);
 
-	TArray<TSharedRef<const FUniqueNetId>> friendList;
-	if (!GetFriendsList(friendList))
+	auto onlineFriendsInterface = StaticCastSharedPtr<FOnlineFriendsGOG>(onlineSubsystemGOG.GetFriendsInterface());
+	if (!onlineFriendsInterface.IsValid())
+	{
+		UE_LOG_ONLINE(Error, TEXT("Invalid OnlineFriends interface"));
+
+		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
+		TriggerOnLeaderboardReadCompleteDelegates(false);
+		return false;
+	}
+
+	TArray<TSharedRef<FOnlineFriend>> friendList;
+	if (!onlineFriendsInterface->GetFriendsList(InLocalUserNum, onlineFriendsInterface->GetDefaultFriendsListName(), friendList))
 	{
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 		TriggerOnLeaderboardReadCompleteDelegates(false);
 		return false;
 	}
 
-	friendList.Emplace(ownUserOnlineAccount->GetUserId());
+	TArray<TSharedRef<const FUniqueNetId>> friendIDlist;
+	friendIDlist.Reserve(friendIDlist.Num());
 
-	return ReadLeaderboards(friendList, InOutReadLeaderboard);
+	for (const auto& _friend : friendList)
+		friendIDlist.Emplace(_friend->GetUserId());
+
+	friendIDlist.Emplace(ownUserOnlineAccount->GetUserId());
+
+	return ReadLeaderboards(friendIDlist, InOutReadLeaderboard);
 }
 
 bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InRange, FOnlineLeaderboardReadRef& InOutReadLeaderboard)
