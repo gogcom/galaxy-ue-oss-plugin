@@ -115,7 +115,7 @@ bool FOnlineSubsystemGOG::Init()
 	auto ownUserOnlineAccount = identityInterfaceGOG->GetOwnUserOnlineAccount();
 	galaxyIdentityInterface = identityInterfaceGOG;
 
-	galaxySessionInterface = MakeShared<FOnlineSessionGOG, ESPMode::ThreadSafe>(*this);
+	galaxySessionInterface = MakeShared<FOnlineSessionGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyAchievementsInterface = MakeShared<FOnlineAchievementsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyLeaderboardsInterface = MakeShared<FOnlineLeaderboardsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyFriendsInterface = MakeShared<FOnlineFriendsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);

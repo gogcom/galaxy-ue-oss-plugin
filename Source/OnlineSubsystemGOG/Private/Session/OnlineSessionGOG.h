@@ -11,6 +11,8 @@ class FOnlineSessionGOG
 	: public IOnlineSession
 	, public FListenerManager
 	, public galaxy::api::GlobalLobbyLeftListener
+	, public galaxy::api::GlobalGameInvitationReceivedListener
+	, public galaxy::api::GlobalGameJoinRequestedListener
 {
 public:
 
@@ -96,7 +98,7 @@ public:
 
 PACKAGE_SCOPE:
 
-	FOnlineSessionGOG(IOnlineSubsystem& InSubsystem);
+	FOnlineSessionGOG(IOnlineSubsystem& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount);
 
 	~FOnlineSessionGOG();
 
@@ -121,7 +123,12 @@ private:
 
 	void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure) override;
 
+	void OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString) override;
+
+	void OnGameJoinRequested(galaxy::api::GalaxyID InUserID, const char* InConnectString) override;
+
 	TArray<FNamedOnlineSession> storedSessions;
 
 	IOnlineSubsystem& subsystemGOG;
+	TSharedRef<class FUserOnlineAccountGOG> ownUserOnlineAccount;
 };

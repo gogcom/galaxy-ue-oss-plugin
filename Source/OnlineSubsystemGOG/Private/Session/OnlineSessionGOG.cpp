@@ -5,7 +5,10 @@
 #include "RequestLobbyListListener.h"
 #include "JoinLobbyListener.h"
 #include "LobbyStartListener.h"
+#include "GameInvitationReceivedListener.h"
+#include "GameInvitationAcceptedListener.h"
 #include "Types/UrlGOG.h"
+#include "Types/UserOnlineAccountGOG.h"
 #include "Converters/NamedVariantDataConverter.h"
 #include "VariantDataUtils.h"
 
@@ -18,6 +21,8 @@
 
 namespace
 {
+
+	constexpr auto TEXT_SESSION_NAME_OPTION = TEXT("SessionName");
 
 	void FlushLeaderboards(IOnlineSubsystem& InSubsystem, FName InSessionName)
 	{
@@ -232,8 +237,9 @@ namespace
 
 }
 
-FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem)
+FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount)
 	: subsystemGOG{InSubsystem}
+	, ownUserOnlineAccount{MoveTemp(InUserOnlineAccount)}
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::ctor()"));
 }
@@ -750,12 +756,12 @@ bool FOnlineSessionGOG::FindFriendSession(const FUniqueNetId&, const TArray<TSha
 
 bool FOnlineSessionGOG::SendSessionInviteToFriend(int32 InLocalUserNum, FName InSessionName, const FUniqueNetId& InFriend)
 {
-	return SendSessionInviteToFriends(InLocalUserNum, InSessionName, {MakeShareable<FUniqueNetIdGOG>(new FUniqueNetIdGOG{InFriend})});
+	return SendSessionInviteToFriends(InLocalUserNum, InSessionName, {MakeShared<FUniqueNetIdGOG>(InFriend)});
 }
 
 bool FOnlineSessionGOG::SendSessionInviteToFriend(const FUniqueNetId&, FName InSessionName, const FUniqueNetId& InFriend)
 {
-	return SendSessionInviteToFriends(LOCAL_USER_NUM, InSessionName, {MakeShareable<FUniqueNetIdGOG>(new FUniqueNetIdGOG{InFriend})});
+	return SendSessionInviteToFriends(LOCAL_USER_NUM, InSessionName, {MakeShared<FUniqueNetIdGOG>(InFriend)});
 }
 
 bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InFriends)
@@ -779,8 +785,6 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName I
 	if (!GetResolvedConnectString(InSessionName, connectString))
 		return false;
 
-	connectString.Append(TEXT("?SessionName=")).Append(InSessionName.ToString());
-
 	bool invitationSentSuccessfully = true;
 	for (auto invitedFriend : InFriends)
 	{
@@ -788,7 +792,8 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName I
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s; %s"), *invitedFriend->ToDebugString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s: %s"),
+				*invitedFriend->ToDebugString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			invitationSentSuccessfully = false;
 		}
 	}
@@ -982,6 +987,72 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool
 
 	// Not sure if we have to clean this up, or developer/Engine will manage everything, but let's do it
 	DestroySession(storedSession->SessionName);
+}
+
+void FOnlineSessionGOG::OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
+
+	auto sessionUrl = FUrlGOG{UTF8_TO_TCHAR(InConnectString)};
+
+	auto sessionID = FUniqueNetIdGOG{sessionUrl.Host};
+	if (!sessionID.IsValid() && !sessionID.IsLobby())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
+		return;
+	}
+
+	auto listener = CreateListener<FGameInvitationReceivedListener>(
+		*this,
+		// Invites from other games are filtered by Galaxy SDK
+		subsystemGOG.GetAppId(),
+		*ownUserOnlineAccount->GetUserId(),
+		InUserID,
+		sessionID);
+
+	galaxy::api::Matchmaking()->RequestLobbyData(sessionID, listener.Value);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
+			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		FreeListener(MoveTemp(listener.Key));
+		return;
+	}
+}
+
+void FOnlineSessionGOG::OnGameJoinRequested(galaxy::api::GalaxyID InUserID, const char* InConnectString)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
+
+	auto sessionUrl = FUrlGOG{UTF8_TO_TCHAR(InConnectString)};
+
+	auto sessionID = FUniqueNetIdGOG{sessionUrl.Host};
+	if (!sessionID.IsValid() && !sessionID.IsLobby())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
+		return;
+	}
+
+	auto listener = CreateListener<FGameInvitationAcceptedListener>(
+		*this,
+		// Invites from other games are filtered by Galaxy SDK
+		subsystemGOG.GetAppId(),
+		ownUserOnlineAccount->GetUserId(),
+		InUserID,
+		sessionID);
+
+	galaxy::api::Matchmaking()->RequestLobbyData(sessionID, listener.Value);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
+			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		FreeListener(MoveTemp(listener.Key));
+		return;
+	}
 }
 
 void FOnlineSessionGOG::DumpSessionState()
