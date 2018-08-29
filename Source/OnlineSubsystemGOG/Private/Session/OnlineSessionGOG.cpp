@@ -7,6 +7,7 @@
 #include "LobbyStartListener.h"
 #include "GameInvitationReceivedListener.h"
 #include "GameInvitationAcceptedListener.h"
+#include "GetSessionDetailsListener.h"
 #include "Types/UrlGOG.h"
 #include "Types/UserOnlineAccountGOG.h"
 #include "Converters/NamedVariantDataConverter.h"
@@ -589,7 +590,7 @@ bool FOnlineSessionGOG::CancelMatchmaking(int32, FName InSessionName)
 	return false;
 }
 
-bool FOnlineSessionGOG::CancelMatchmaking(const FUniqueNetId&, FName InsessionName)
+bool FOnlineSessionGOG::CancelMatchmaking(const FUniqueNetId& /*InSearchingPlayerId*/, FName InsessionName)
 {
 	return CancelMatchmaking(LOCAL_USER_NUM, InsessionName);
 }
@@ -634,7 +635,7 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 
 		InOutSearchSettings->SearchState = EOnlineAsyncTaskState::Failed;
 		TriggerOnFindSessionsCompleteDelegates(false);
-		false;
+		return false;
 	}
 
 	InOutSearchSettings->SearchState = EOnlineAsyncTaskState::InProgress;
@@ -642,21 +643,43 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	return true;
 }
 
-bool FOnlineSessionGOG::FindSessions(const FUniqueNetId& InSearchingPlayerId, const TSharedRef<FOnlineSessionSearch>& InOutSearchSettings)
+bool FOnlineSessionGOG::FindSessions(const FUniqueNetId& /*InSearchingPlayerId*/, const TSharedRef<FOnlineSessionSearch>& InOutSearchSettings)
 {
 	return FindSessions(LOCAL_USER_NUM, InOutSearchSettings);
 }
 
-bool FOnlineSessionGOG::FindSessionById(const FUniqueNetId&, const FUniqueNetId& InSessionId, const FUniqueNetId&, const FOnSingleSessionResultCompleteDelegate& InCompletionDelegates)
+bool FOnlineSessionGOG::FindSessionById(
+	const FUniqueNetId& /*InSearchingUserId*/,
+	const FUniqueNetId& InSessionId,
+	const FUniqueNetId& InFriendId,
+	const FOnSingleSessionResultCompleteDelegate& InCompletionDelegate)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::FindSessionById: sessionID='%s'"), *InSessionId.ToString());
 
-	UE_LOG_ONLINE(Error, TEXT("FindSessionById is not implemented yet"));
+	FUniqueNetIdGOG sessionID{InSessionId};
+	if (!sessionID.IsValid() || !sessionID.IsLobby())
+	{
+		UE_LOG_ONLINE(Display, TEXT("Invalid SessionID: sessionID='%s'"), *InSessionId.ToString());
+		InCompletionDelegate.ExecuteIfBound(LOCAL_USER_NUM, false, {});
+		return false;
+	}
 
-	InCompletionDelegates.ExecuteIfBound(LOCAL_USER_NUM, false, {});
-	TriggerOnFindSessionsCompleteDelegates(false);
+	auto listener = CreateListener<FGetSessionDetailsListener>(*this, sessionID, InFriendId, InCompletionDelegate);
 
-	return false;
+	galaxy::api::Matchmaking()->RequestLobbyData(sessionID, listener.Value);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request session data: sessionID='%s'; %s: %s"),
+			*InSessionId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		FreeListener(MoveTemp(listener.Key));
+
+		InCompletionDelegate.ExecuteIfBound(LOCAL_USER_NUM, false, {});
+		return false;
+	}
+
+	return true;
 }
 
 bool FOnlineSessionGOG::CancelFindSessions()
@@ -716,7 +739,7 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 	return true;
 }
 
-bool FOnlineSessionGOG::JoinSession(const FUniqueNetId& InPlayerId, FName InSessionName, const FOnlineSessionSearchResult& InDesiredSession)
+bool FOnlineSessionGOG::JoinSession(const FUniqueNetId& /*InPlayerId*/, FName InSessionName, const FOnlineSessionSearchResult& InDesiredSession)
 {
 	return JoinSession(LOCAL_USER_NUM, InSessionName, InDesiredSession);
 }
@@ -759,7 +782,7 @@ bool FOnlineSessionGOG::SendSessionInviteToFriend(int32 InLocalUserNum, FName In
 	return SendSessionInviteToFriends(InLocalUserNum, InSessionName, {MakeShared<FUniqueNetIdGOG>(InFriend)});
 }
 
-bool FOnlineSessionGOG::SendSessionInviteToFriend(const FUniqueNetId&, FName InSessionName, const FUniqueNetId& InFriend)
+bool FOnlineSessionGOG::SendSessionInviteToFriend(const FUniqueNetId& /*InLocalUserId*/, FName InSessionName, const FUniqueNetId& InFriend)
 {
 	return SendSessionInviteToFriends(LOCAL_USER_NUM, InSessionName, {MakeShared<FUniqueNetIdGOG>(InFriend)});
 }
@@ -801,7 +824,7 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName I
 	return invitationSentSuccessfully;
 }
 
-bool FOnlineSessionGOG::SendSessionInviteToFriends(const FUniqueNetId&, FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InFriends)
+bool FOnlineSessionGOG::SendSessionInviteToFriends(const FUniqueNetId& /*InLocalUserId*/, FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InFriends)
 {
 	return SendSessionInviteToFriends(LOCAL_USER_NUM, InSessionName, InFriends);
 }
