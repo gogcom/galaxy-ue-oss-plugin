@@ -4,13 +4,14 @@ Build/
 Intermediate/
 Saved/
 
-# SDK files
-Source/ThirdParty/GalaxySDK/Include
-Source/ThirdParty/GalaxySDK/Libraries
-Source/ThirdParty/GalaxySDK/Licenses
+# Build generated folders
+Output/
 
 # VS generated files
 *.sdf
 *.sln
 *.vs
 *.VC.opendb
+
+# python
+*.pyc
