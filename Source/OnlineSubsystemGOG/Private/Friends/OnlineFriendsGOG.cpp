@@ -350,7 +350,6 @@ void FOnlineFriendsGOG::OnFriendListRetrieveSuccess()
 	}
 
 	RemoveUnfriended(MoveTemp(retrievedFriendIDList), isFriendsListChanged);
-	return;
 
 	if (isFriendsListChanged)
 		TriggerOnFriendsChangeDelegates(LOCAL_USER_NUM);
