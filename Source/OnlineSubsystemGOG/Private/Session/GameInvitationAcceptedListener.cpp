@@ -1,7 +1,7 @@
 #include "GameInvitationAcceptedListener.h"
 
 #include "OnlineSessionGOG.h"
-#include "Types/OnlineSessionSearchResult.h"
+#include "OnlineSessionUtils.h"
 
 FGameInvitationAcceptedListener::FGameInvitationAcceptedListener(
 	FOnlineSessionGOG& InSessionInterface,
@@ -21,7 +21,7 @@ void FGameInvitationAcceptedListener::OnLobbyDataRetrieveSuccess(const galaxy::a
 	UE_LOG_ONLINE(Display, TEXT("FGameInvitationAcceptedListener::OnLobbyDataRetrieveSuccess: lobbyID=%llu"), InLobbyID.ToUint64());
 
 	FOnlineSessionSearchResult invitedSession;
-	if (!OnlineSessionSearchResult::Fill(InLobbyID, invitedSession) || !invitedSession.IsValid())
+	if (!OnlineSessionUtils::Fill(InLobbyID, invitedSession) || !invitedSession.IsValid())
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to fetch important information for incoming game invitation: lobbyID=%llu"), InLobbyID.ToUint64());
 		TriggerOnSessionUserInviteAcceptedDelegates(false);

@@ -4,7 +4,7 @@
 #include "Converters/OnlineSessionSettingsConverter.h"
 #include "LobbyData.h"
 #include "VariantDataUtils.h"
-#include "Types/OnlineSessionSearchResult.h"
+#include "OnlineSessionUtils.h"
 
 #include "Online.h"
 
@@ -25,7 +25,7 @@ void FGetSessionDetailsListener::OnLobbyDataRetrieveSuccess(const galaxy::api::G
 	UE_LOG_ONLINE(Display, TEXT("FGetSessionDetailsListener::OnLobbyDataRetrieveSuccess: lobbyID=%llu"), InLobbyID.ToUint64());
 
 	FOnlineSessionSearchResult retrievedSession;
-	if (!OnlineSessionSearchResult::Fill(InLobbyID, retrievedSession))
+	if (!OnlineSessionUtils::Fill(InLobbyID, retrievedSession))
 		UE_LOG_ONLINE(Warning, TEXT("Failed to get Session data: sessionID=%llu"), InLobbyID.ToUint64());
 
 	TriggerOnSessionDetailsCompleteDelegate(retrievedSession);

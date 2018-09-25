@@ -2,7 +2,7 @@
 
 #include "OnlineSessionGOG.h"
 #include "VariantDataUtils.h"
-#include "Types/OnlineSessionSearchResult.h"
+#include "OnlineSessionUtils.h"
 
 #include "Online.h"
 
@@ -182,7 +182,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Ga
 	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	FOnlineSessionSearchResult newSearchResult;
-	if (!OnlineSessionSearchResult::Fill(InLobbyID, newSearchResult))
+	if (!OnlineSessionUtils::Fill(InLobbyID, newSearchResult))
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to create Session data: lobbyID=%llu"), InLobbyID.ToUint64());
 		TriggerOnFindSessionsCompleteDelegates(false);
