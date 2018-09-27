@@ -1,6 +1,7 @@
 #include "CreateLobbyListener.h"
 
 #include "LobbyData.h"
+#include "OnlineSessionUtils.h"
 #include "Session/OnlineSessionGOG.h"
 #include "Converters/OnlineSessionSettingsConverter.h"
 
@@ -34,31 +35,6 @@ namespace
 
 		InOutSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_NAME, FOnlineSessionSetting{sessionOwnerName, EOnlineDataAdvertisementType::ViaOnlineService});
 		InOutSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_ID, FOnlineSessionSetting{sessionOwnerID->ToString(), EOnlineDataAdvertisementType::ViaOnlineService});
-
-		return true;
-	}
-
-	bool SetLobbyData(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSettings& InOutSessionSettings)
-	{
-		if (!AppendOwnerData(InOutSessionSettings))
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to set Session owner data"));
-			return false;
-		}
-
-		for (auto& lobbySetting : OnlineSessionSettingsConverter::ToLobbyData(InOutSessionSettings))
-		{
-			// Will wait for result of SetLobbyJoinable() as a confirmation that all LobbyData is set on the backend
-			galaxy::api::Matchmaking()->SetLobbyData(InLobbyID, TCHAR_TO_UTF8(*lobbySetting.Key), TCHAR_TO_UTF8(*lobbySetting.Value));
-			auto err = galaxy::api::GetError();
-			if (err)
-			{
-				UE_LOG_ONLINE(Error, TEXT("Failed to set lobby setting: lobbyID=%llu, settingName='%s'; %s: %s"),
-					InLobbyID.ToUint64(), *lobbySetting.Key, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-
-				return false;
-			}
-		}
 
 		return true;
 	}
@@ -152,7 +128,9 @@ void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID
 		return;
 	}
 
-	if (!SetLobbyData(newLobbyID, sessionSettings) || !MakeSessionJoinable(newLobbyID, this))
+	if (!AppendOwnerData(sessionSettings)
+		|| !OnlineSessionUtils::SetLobbyData(newLobbyID, sessionSettings)
+		|| !MakeSessionJoinable(newLobbyID, this))
 	{
 		TriggerOnCreateSessionCompleteDelegates(false);
 		return;

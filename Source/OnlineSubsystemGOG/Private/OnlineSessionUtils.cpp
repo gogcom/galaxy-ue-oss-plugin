@@ -51,22 +51,64 @@ namespace
 		return true;
 	}
 
-	bool GetSessionOpenConnections(const galaxy::api::GalaxyID& InLobbyID, FOnlineSession& InOutOnlineSession)
+}
+
+bool OnlineSessionUtils::SetLobbyData(const FUniqueNetIdGOG& InSessionID, const FOnlineSessionSettings& InOutSessionSettings)
+{
+	galaxy::api::GalaxyID lobbyID{InSessionID};
+
+	for (auto& lobbySetting : OnlineSessionSettingsConverter::ToLobbyData(InOutSessionSettings))
 	{
-		auto currentLobbySize = galaxy::api::Matchmaking()->GetNumLobbyMembers(InLobbyID);
+		// Will wait for result of SetLobbyJoinable() as a confirmation that all LobbyData is set on the backend
+		galaxy::api::Matchmaking()->SetLobbyData(lobbyID, TCHAR_TO_UTF8(*lobbySetting.Key), TCHAR_TO_UTF8(*lobbySetting.Value));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get current lobby size: lobbyID=%llu; %s; %s"),
-				InLobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Error, TEXT("Failed to set lobby data: lobbyID=%llu, settingName='%s'; %s: %s"),
+				lobbyID.ToUint64(), *lobbySetting.Key, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
 			return false;
 		}
-
-		InOutOnlineSession.NumOpenPublicConnections = std::max<int64>(InOutOnlineSession.SessionSettings.NumPublicConnections - currentLobbySize, 0u);
-		InOutOnlineSession.NumOpenPrivateConnections = 0;
-		return true;
 	}
 
+	return true;
+}
+
+bool OnlineSessionUtils::DeleteLobbyData(const FUniqueNetIdGOG& InSessionID, const TSet<FString>& InOutSessionSettings)
+{
+	galaxy::api::GalaxyID lobbyID{InSessionID};
+
+	for (auto& lobbySettingName : InOutSessionSettings)
+	{
+		// Will wait for result of SetLobbyJoinable() as a confirmation that all LobbyData is set on the backend
+		galaxy::api::Matchmaking()->DeleteLobbyData(lobbyID, TCHAR_TO_UTF8(*lobbySettingName));
+		auto err = galaxy::api::GetError();
+		if (err)
+		{
+			UE_LOG_ONLINE(Error, TEXT("Failed to delete lobby data: lobbyID=%llu, settingName='%s'; %s: %s"),
+				lobbyID.ToUint64(), *lobbySettingName, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool OnlineSessionUtils::GetSessionOpenConnections(const FUniqueNetIdGOG& InLobbyID, FOnlineSession& InOutOnlineSession)
+{
+	auto currentLobbySize = galaxy::api::Matchmaking()->GetNumLobbyMembers(InLobbyID);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Error, TEXT("Failed to get current lobby members count: lobbyID='%s'; %s: %s"),
+			*InLobbyID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		return false;
+	}
+
+	InOutOnlineSession.NumOpenPublicConnections = std::max<int64>(InOutOnlineSession.SessionSettings.NumPublicConnections - currentLobbySize, 0u);
+	InOutOnlineSession.NumOpenPrivateConnections = 0;
+	return true;
 }
 
 bool OnlineSessionUtils::Fill(const FUniqueNetIdGOG& InLobbyID, FOnlineSessionSettings& InOutOnlineSessionSettings)
