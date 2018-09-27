@@ -13,6 +13,8 @@ class FOnlineSessionGOG
 	, public galaxy::api::GlobalLobbyLeftListener
 	, public galaxy::api::GlobalGameInvitationReceivedListener
 	, public galaxy::api::GlobalGameJoinRequestedListener
+	, public galaxy::api::GlobalLobbyDataListener
+	, public galaxy::api::GlobalLobbyMemberStateListener
 {
 public:
 
@@ -117,15 +119,17 @@ private:
 
 	bool GetResolvedConnectStringFromSession(const FOnlineSession& InSession, FString& OutConnectString) const;
 
-	galaxy::api::LobbyType GetLobbyType(const FOnlineSessionSettings& InSessionSettings);
-
-	const FNamedOnlineSession* FindSession(const FUniqueNetIdGOG& InSessionID) const;
+	FNamedOnlineSession* FindSession(const FUniqueNetIdGOG& InSessionID);
 
 	void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure) override;
 
 	void OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString) override;
 
 	void OnGameJoinRequested(galaxy::api::GalaxyID InUserID, const char* InConnectString) override;
+
+	void OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID) override;
+
+	void OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID, galaxy::api::LobbyMemberStateChange InMemberStateChange) override;
 
 	TArray<FNamedOnlineSession> storedSessions;
 
