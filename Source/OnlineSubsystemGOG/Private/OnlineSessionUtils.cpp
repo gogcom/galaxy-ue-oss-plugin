@@ -53,13 +53,20 @@ namespace
 
 }
 
+bool OnlineSessionUtils::ShouldAdvertiseViaPresence(const FOnlineSessionSettings& InSettings)
+{
+	if (!InSettings.bUsesPresence)
+		return false;
+
+	return InSettings.bAllowJoinViaPresence || InSettings.bAllowJoinViaPresenceFriendsOnly;
+}
+
 bool OnlineSessionUtils::SetLobbyData(const FUniqueNetIdGOG& InSessionID, const FOnlineSessionSettings& InOutSessionSettings)
 {
 	galaxy::api::GalaxyID lobbyID{InSessionID};
 
 	for (auto& lobbySetting : OnlineSessionSettingsConverter::ToLobbyData(InOutSessionSettings))
 	{
-		// Will wait for result of SetLobbyJoinable() as a confirmation that all LobbyData is set on the backend
 		galaxy::api::Matchmaking()->SetLobbyData(lobbyID, TCHAR_TO_UTF8(*lobbySetting.Key), TCHAR_TO_UTF8(*lobbySetting.Value));
 		auto err = galaxy::api::GetError();
 		if (err)
@@ -80,7 +87,6 @@ bool OnlineSessionUtils::DeleteLobbyData(const FUniqueNetIdGOG& InSessionID, con
 
 	for (auto& lobbySettingName : InOutSessionSettings)
 	{
-		// Will wait for result of SetLobbyJoinable() as a confirmation that all LobbyData is set on the backend
 		galaxy::api::Matchmaking()->DeleteLobbyData(lobbyID, TCHAR_TO_UTF8(*lobbySettingName));
 		auto err = galaxy::api::GetError();
 		if (err)

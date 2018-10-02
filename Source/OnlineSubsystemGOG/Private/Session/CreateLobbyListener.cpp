@@ -162,7 +162,7 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 		TriggerOnCreateSessionCompleteDelegates(false);
 	}
 
-	if (!sessionSettings.bUsesPresence || !(sessionSettings.bAllowJoinViaPresence || sessionSettings.bAllowJoinViaPresenceFriendsOnly))
+	if (!OnlineSessionUtils::ShouldAdvertiseViaPresence(sessionSettings))
 	{
 		TriggerOnCreateSessionCompleteDelegates(true);
 		return;
@@ -183,7 +183,6 @@ bool FCreateLobbyListener::AdvertiseToFriends()
 	if (err)
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		TriggerOnCreateSessionCompleteDelegates(false);
 		return false;
 	}
 

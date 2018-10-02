@@ -5,6 +5,7 @@
 
 namespace OnlineSessionUtils
 {
+	bool ShouldAdvertiseViaPresence(const FOnlineSessionSettings& InSettings);
 
 	bool SetLobbyData(const FUniqueNetIdGOG& InSessionID, const FOnlineSessionSettings& InOutSessionSettings);
 
