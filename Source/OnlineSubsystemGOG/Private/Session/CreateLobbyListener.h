@@ -11,10 +11,16 @@ class FCreateLobbyListener
 	, public galaxy::api::ILobbyCreatedListener
 	, public galaxy::api::ILobbyEnteredListener
 	, public galaxy::api::ILobbyDataUpdateListener
+	, public galaxy::api::IRichPresenceChangeListener
 {
 public:
 
-	FCreateLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSessionSettings InSettings);
+	FCreateLobbyListener(
+		class FOnlineSessionGOG& InSessionInterface,
+		FName InSessionName,
+		TSharedRef<const FUniqueNetId> InSessionOwnerID,
+		FString InSessionOwnerName,
+		FOnlineSessionSettings InSettings);
 
 private:
 
@@ -26,12 +32,19 @@ private:
 
 	void OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason) override;
 
-	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful) const;
+	bool AdvertiseToFriends();
+
+	void OnRichPresenceChangeSuccess() override;
+
+	void OnRichPresenceChangeFailure(galaxy::api::IRichPresenceChangeListener::FailureReason InFailureReason) override;
+
+	void TriggerOnCreateSessionCompleteDelegates(bool InIsSuccessful);
 
 	class FOnlineSessionGOG& sessionInterface;
 	const FName sessionName;
 	FOnlineSessionSettings sessionSettings;
+	TSharedRef<const FUniqueNetId> sessionOwnerID;
+	FString sessionOwnerName;
 
 	galaxy::api::GalaxyID newLobbyID;
-	galaxy::api::GalaxyID memberID;
 };

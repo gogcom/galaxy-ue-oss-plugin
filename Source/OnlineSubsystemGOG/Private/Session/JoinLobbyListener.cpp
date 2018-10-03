@@ -12,14 +12,14 @@ FJoinLobbyListener::FJoinLobbyListener(class FOnlineSessionGOG& InSessionInterfa
 {
 }
 
-void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult) const
+void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult)
 {
 	// Save local copy of the session
 	sessionInterface.AddNamedSession(sessionName, joiningSession);
 
 	sessionInterface.TriggerOnJoinSessionCompleteDelegates(sessionName, InResult);
 
-	sessionInterface.FreeListener(ListenerID);
+	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }
 
 void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)

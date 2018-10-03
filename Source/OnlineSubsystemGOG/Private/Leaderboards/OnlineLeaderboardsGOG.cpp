@@ -8,39 +8,13 @@
 #include "Converters/OnlineLeaderboardConverter.h"
 #include "Types/UniqueNetIdGOG.h"
 #include "VariantDataUtils.h"
+#include "Friends/OnlineFriendsGOG.h"
 
 #include "OnlineSubsystemUtils.h"
-
-#include <map>
+#include "Types/UserOnlineAccountGOG.h"
 
 namespace
 {
-
-	// TODO: replace with IOnlineFriends::GetFriendsList() when implemented
-	bool GetFriendsList(TArray<TSharedRef<const FUniqueNetId>>& OutFriends)
-	{
-		auto friendCount = galaxy::api::Friends()->GetFriendCount();
-		auto err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get player friends: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			return false;
-		}
-
-		OutFriends.Reserve(friendCount);
-		for (decltype(friendCount) friendIdx{0}; friendIdx < friendCount; ++friendIdx)
-		{
-			OutFriends.Emplace(MakeShared<FUniqueNetIdGOG>(galaxy::api::Friends()->GetFriendByIndex(friendIdx)));
-			err = galaxy::api::GetError();
-			if (err)
-			{
-				UE_LOG_ONLINE(Error, TEXT("Failed to get player friends: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-				return false;
-			}
-		}
-
-		return true;
-	}
 
 	galaxy::api::LeaderboardSortMethod ConverterLeaderboardSortMethod(ELeaderboardSort::Type InSortMethod)
 	{
@@ -117,8 +91,9 @@ namespace
 
 }
 
-FOnlineLeaderboardsGOG::FOnlineLeaderboardsGOG(const FOnlineSubsystemGOG& InOnlineSubsystemGOG)
+FOnlineLeaderboardsGOG::FOnlineLeaderboardsGOG(const FOnlineSubsystemGOG& InOnlineSubsystemGOG, TSharedRef<FUserOnlineAccountGOG> InUserOnlineAccount)
 	: onlineSubsystemGOG{InOnlineSubsystemGOG}
+	, ownUserOnlineAccount{MoveTemp(InUserOnlineAccount)}
 {
 }
 
@@ -158,11 +133,11 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboards(const TArray<TSharedRef<const FUni
 	if (!MarkLeaderboardStarted(InOutReadLeaderboard, this))
 		return false;
 
-	auto listenerID = CreateListener<FReadLeaderboardForUsersListener>(*this, InPlayers, InOutReadLeaderboard);
+	auto listener = CreateListener<FReadLeaderboardForUsersListener>(*this, InPlayers, InOutReadLeaderboard);
 
 	galaxy::api::Stats()->FindLeaderboard(
 		TCHAR_TO_UTF8(*InOutReadLeaderboard->LeaderboardName.ToString()),
-		GetListenerRawPtr<FReadLeaderboardForUsersListener>(listenerID));
+		listener.Value);
 
 	auto err = galaxy::api::GetError();
 	if (err)
@@ -171,7 +146,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboards(const TArray<TSharedRef<const FUni
 			*InOutReadLeaderboard->LeaderboardName.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		TriggerOnLeaderboardReadCompleteDelegates(false);
 		return false;
@@ -186,25 +161,33 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends(int32 InLocalUserNum, FO
 
 	CheckLocalUserNum(InLocalUserNum);
 
-	auto localPlayerID = GetLocalPlayerID(onlineSubsystemGOG);
-	if (!localPlayerID.IsValid() || !localPlayerID->IsValid())
+	auto onlineFriendsInterface = StaticCastSharedPtr<FOnlineFriendsGOG>(onlineSubsystemGOG.GetFriendsInterface());
+	if (!onlineFriendsInterface.IsValid())
+	{
+		UE_LOG_ONLINE(Error, TEXT("Invalid OnlineFriends interface"));
+
+		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
+		TriggerOnLeaderboardReadCompleteDelegates(false);
+		return false;
+	}
+
+	TArray<TSharedRef<FOnlineFriend>> friendList;
+	if (!onlineFriendsInterface->GetFriendsList(InLocalUserNum, onlineFriendsInterface->GetDefaultFriendsListName(), friendList))
 	{
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 		TriggerOnLeaderboardReadCompleteDelegates(false);
 		return false;
 	}
 
-	TArray<TSharedRef<const FUniqueNetId>> friendList;
-	if (!GetFriendsList(friendList))
-	{
-		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
-		TriggerOnLeaderboardReadCompleteDelegates(false);
-		return false;
-	}
+	TArray<TSharedRef<const FUniqueNetId>> friendIDlist;
+	friendIDlist.Reserve(friendIDlist.Num());
 
-	friendList.Emplace(localPlayerID.ToSharedRef());
+	for (const auto& _friend : friendList)
+		friendIDlist.Emplace(_friend->GetUserId());
 
-	return ReadLeaderboards(friendList, InOutReadLeaderboard);
+	friendIDlist.Emplace(ownUserOnlineAccount->GetUserId());
+
+	return ReadLeaderboards(friendIDlist, InOutReadLeaderboard);
 }
 
 bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InRange, FOnlineLeaderboardReadRef& InOutReadLeaderboard)
@@ -223,10 +206,10 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InR
 	if (!MarkLeaderboardStarted(InOutReadLeaderboard, this))
 		return false;
 
-	auto listenerID = CreateListener<FReadLeaderboardAroundRankListener>(*this, InRank, InRange, InOutReadLeaderboard);
+	auto listener = CreateListener<FReadLeaderboardAroundRankListener>(*this, InRank, InRange, InOutReadLeaderboard);
 	galaxy::api::Stats()->FindLeaderboard(
 		TCHAR_TO_UTF8(*InOutReadLeaderboard->LeaderboardName.ToString()),
-		GetListenerRawPtr<FReadLeaderboardAroundRankListener>(listenerID));
+		listener.Value);
 
 	auto err = galaxy::api::GetError();
 	if (err)
@@ -235,7 +218,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InR
 			*InOutReadLeaderboard->LeaderboardName.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		TriggerOnLeaderboardReadCompleteDelegates(false);
 		return false;
@@ -260,10 +243,10 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser(TSharedRef<const FUnique
 	if (!MarkLeaderboardStarted(InOutReadLeaderboard, this))
 		return false;
 
-	auto listenerID = CreateListener<FReadLeaderboardAroundUserListener>(*this, StaticCastSharedRef<const FUniqueNetIdGOG>(InPlayer), InRange, InOutReadLeaderboard);
+	auto listener = CreateListener<FReadLeaderboardAroundUserListener>(*this, StaticCastSharedRef<const FUniqueNetIdGOG>(InPlayer), InRange, InOutReadLeaderboard);
 	galaxy::api::Stats()->FindLeaderboard(
 		TCHAR_TO_UTF8(*InOutReadLeaderboard->LeaderboardName.ToString()),
-		GetListenerRawPtr<FReadLeaderboardAroundUserListener>(listenerID));
+		listener.Value);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -271,7 +254,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser(TSharedRef<const FUnique
 			*InOutReadLeaderboard->LeaderboardName.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		TriggerOnLeaderboardReadCompleteDelegates(false);
 		return false;
@@ -290,7 +273,7 @@ bool FOnlineLeaderboardsGOG::WriteLeaderboards(const FName& InSessionName, const
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::WriteLeaderboards()"));
 
-	if (!InPlayer.IsValid() || InPlayer != *GetLocalPlayerID(onlineSubsystemGOG))
+	if (*ownUserOnlineAccount->GetUserId() != InPlayer)
 	{
 		UE_LOG_ONLINE(Error, TEXT("Invalid Player ID"));
 		return false;
@@ -359,7 +342,7 @@ bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 		return false;
 	}
 
-	auto listenerID = CreateListener<FFlushLeaderboardsListener>(*this, InSessionName, *cachedLeaderboards);
+	auto listener = CreateListener<FFlushLeaderboardsListener>(*this, InSessionName, *cachedLeaderboards);
 
 	for (const auto& cachedLeaderboard : *cachedLeaderboards)
 	{
@@ -368,7 +351,7 @@ bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 			TCHAR_TO_UTF8(*cachedLeaderboard.Key.ToString()),
 			ConverterLeaderboardSortMethod(cachedLeaderboard.Value.SortMethod),
 			ConverterLeaderboardDisplayFormat(cachedLeaderboard.Value.DisplayFormat),
-			GetListenerRawPtr<FFlushLeaderboardsListener>(listenerID));
+			listener.Value);
 
 		auto err = galaxy::api::GetError();
 		if (err)
@@ -376,7 +359,7 @@ bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 			UE_LOG_ONLINE(Error, TEXT("Failed to find or create leaderboard: sessionName='%s', leaderboardName='%s', %s; %s"),
 				*InSessionName.ToString(), *cachedLeaderboard.Key.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-			FreeListener(listenerID);
+			FreeListener(MoveTemp(listener.Key));
 
 			TriggerOnLeaderboardFlushCompleteDelegates(InSessionName, false);
 			return false;

@@ -3,13 +3,18 @@
 #include "CommonGOG.h"
 #include "OnlineSessionInfoGOG.h"
 #include "Interfaces/OnlineSessionInterface.h"
-#include "Types/IListenerGOG.h"
+#include "ListenerManager.h"
 
 #include "OnlineSessionSettings.h"
 
 class FOnlineSessionGOG
 	: public IOnlineSession
+	, public FListenerManager
 	, public galaxy::api::GlobalLobbyLeftListener
+	, public galaxy::api::GlobalGameInvitationReceivedListener
+	, public galaxy::api::GlobalGameJoinRequestedListener
+	, public galaxy::api::GlobalLobbyDataListener
+	, public galaxy::api::GlobalLobbyMemberStateListener
 {
 public:
 
@@ -95,28 +100,9 @@ public:
 
 PACKAGE_SCOPE:
 
-	FOnlineSessionGOG(IOnlineSubsystem& InSubsystem);
+	FOnlineSessionGOG(IOnlineSubsystem& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount);
 
 	~FOnlineSessionGOG();
-
-	void FreeListener(const FSetElementId& InListenerID)
-	{
-		listenerRegistry.Remove(InListenerID);
-	}
-
-	template<class Listener, typename... Args>
-	FSetElementId CreateListener(Args&&... args)
-	{
-		auto listenerID = listenerRegistry.Add(MakeUnique<Listener>(Forward<Args>(args)...));
-		listenerRegistry[listenerID]->ListenerID = listenerID;
-		return listenerID;
-	}
-
-	template<class Listener>
-	Listener* GetListenerRawPtr(const FSetElementId& InListenerID)
-	{
-		return dynamic_cast<Listener*>(listenerRegistry[InListenerID].Get());
-	}
 
 	FNamedOnlineSession* AddNamedSession(FName InSessionName, const FOnlineSessionSettings& InSessionSettings) override;
 
@@ -133,15 +119,20 @@ private:
 
 	bool GetResolvedConnectStringFromSession(const FOnlineSession& InSession, FString& OutConnectString) const;
 
-	galaxy::api::LobbyType GetLobbyType(const FOnlineSessionSettings& InSessionSettings);
-
-	const FNamedOnlineSession* FindSession(const FUniqueNetIdGOG& InSessionID) const;
+	FNamedOnlineSession* FindSession(const FUniqueNetIdGOG& InSessionID);
 
 	void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure) override;
 
+	void OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString) override;
+
+	void OnGameJoinRequested(galaxy::api::GalaxyID InUserID, const char* InConnectString) override;
+
+	void OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID) override;
+
+	void OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID, galaxy::api::LobbyMemberStateChange InMemberStateChange) override;
+
 	TArray<FNamedOnlineSession> storedSessions;
 
-	TSet<TUniquePtr<IListenerGOG>> listenerRegistry;
-
 	IOnlineSubsystem& subsystemGOG;
+	TSharedRef<class FUserOnlineAccountGOG> ownUserOnlineAccount;
 };

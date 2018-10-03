@@ -9,7 +9,7 @@ class FLobbyStartListener
 {
 public:
 
-	FLobbyStartListener(class FOnlineSessionGOG& InSessionInterface, galaxy::api::GalaxyID InLobbyID, FName InSessionName);
+	FLobbyStartListener(class FOnlineSessionGOG& InSessionInterface, galaxy::api::GalaxyID InLobbyID, FName InSessionName, bool InAllowJoinInProgress);
 
 private:
 
@@ -24,4 +24,5 @@ private:
 	class FOnlineSessionGOG& sessionInterface;
 	const galaxy::api::GalaxyID lobbyID;
 	const FName sessionName;
+	bool allowJoinInProgress;
 };

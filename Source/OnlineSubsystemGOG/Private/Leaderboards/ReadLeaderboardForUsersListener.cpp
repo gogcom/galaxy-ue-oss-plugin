@@ -15,7 +15,7 @@ void FReadLeaderboardForUsersListener::RequestLeaderboardEntries()
 {
 	TArray<galaxy::api::GalaxyID> galaxyUsers;
 	for (const auto& player : players)
-		galaxyUsers.Emplace(AsUniqueNetIDGOG(*player));
+		galaxyUsers.Emplace(FUniqueNetIdGOG{*player});
 
 	galaxy::api::Stats()->RequestLeaderboardEntriesForUsers(TCHAR_TO_UTF8(*readLeaderboard->LeaderboardName.ToString()), galaxyUsers.GetData(), galaxyUsers.Num(), this);
 	auto err = galaxy::api::GetError();

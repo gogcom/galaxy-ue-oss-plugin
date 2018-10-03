@@ -18,7 +18,7 @@ public:
 
 private:
 
-	void TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful) const;
+	void TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful);
 
 	void OnLobbyList(uint32_t InlobbyCount, bool InIOFailure) override;
 

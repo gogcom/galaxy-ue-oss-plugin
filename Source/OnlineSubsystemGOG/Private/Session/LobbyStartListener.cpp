@@ -4,10 +4,11 @@
 
 #include "Online.h"
 
-FLobbyStartListener::FLobbyStartListener(class FOnlineSessionGOG& InSessionInterface, galaxy::api::GalaxyID InLobbyID, FName InSessionName)
+FLobbyStartListener::FLobbyStartListener(class FOnlineSessionGOG& InSessionInterface, galaxy::api::GalaxyID InLobbyID, FName InSessionName, bool InAllowJoinInProgress)
 	: sessionInterface{InSessionInterface}
 	, lobbyID{MoveTemp(InLobbyID)}
 	, sessionName{MoveTemp(InSessionName)}
+	, allowJoinInProgress{InAllowJoinInProgress}
 {
 }
 
@@ -22,10 +23,10 @@ void FLobbyStartListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& 
 	if (err)
 		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s, %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-	if (!isLobbyJoinable)
-		UE_LOG_ONLINE(Error, TEXT("Failed to set Lobby as joinable"));
+	if (isLobbyJoinable != allowJoinInProgress)
+		UE_LOG_ONLINE(Error, TEXT("Failed to set Lobby as %s"), allowJoinInProgress ? TEXT("joinable") : TEXT("non-joinable"));
 
-	TriggerOnStartSessionCompleteDelegates(isLobbyJoinable);
+	TriggerOnStartSessionCompleteDelegates(isLobbyJoinable == allowJoinInProgress);
 }
 
 void FLobbyStartListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason)
@@ -57,5 +58,5 @@ bool FLobbyStartListener::MarkSessionStarted(bool IsJoinable) const
 void FLobbyStartListener::TriggerOnStartSessionCompleteDelegates(bool InResult)
 {
 	sessionInterface.TriggerOnStartSessionCompleteDelegates(sessionName, MarkSessionStarted(InResult));
-	sessionInterface.FreeListener(ListenerID);
+	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }

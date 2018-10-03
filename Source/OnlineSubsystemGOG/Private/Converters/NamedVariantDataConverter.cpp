@@ -80,7 +80,9 @@ namespace NamedVariantDataConverter
 		}
 
 		return MakeTuple(
-			FString::Printf(CONVERTED_NAME_FORMAT, GetKeyPrefixFromType(InData.GetType()), *InName.ToString()),
+			FString::Printf(CONVERTED_NAME_FORMAT,
+				static_cast<TCHAR>(GetKeyPrefixFromType(InData.GetType())),
+				*InName.ToString()),
 			InData.ToString());
 	}
 

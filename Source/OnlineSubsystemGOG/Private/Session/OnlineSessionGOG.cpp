@@ -5,8 +5,14 @@
 #include "RequestLobbyListListener.h"
 #include "JoinLobbyListener.h"
 #include "LobbyStartListener.h"
-#include "Network/InternetAddrGOG.h"
+#include "GameInvitationReceivedListener.h"
+#include "GameInvitationAcceptedListener.h"
+#include "GetSessionDetailsListener.h"
+#include "UpdateLobbyListener.h"
+#include "Types/UrlGOG.h"
+#include "Types/UserOnlineAccountGOG.h"
 #include "Converters/NamedVariantDataConverter.h"
+#include "OnlineSessionUtils.h"
 #include "VariantDataUtils.h"
 
 #include "Online.h"
@@ -18,6 +24,8 @@
 
 namespace
 {
+
+	constexpr auto TEXT_SESSION_NAME_OPTION = TEXT("SessionName");
 
 	void FlushLeaderboards(IOnlineSubsystem& InSubsystem, FName InSessionName)
 	{
@@ -169,7 +177,7 @@ namespace
 			|| key == SEARCH_PRESENCE
 			|| key == SEARCH_EXCLUDE_UNIQUEIDS)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Search param is not supported. Skipping: searchParamName=%s"), *key.ToString())
+			UE_LOG_ONLINE(Warning, TEXT("Search param is not supported. Skipping: searchParamName=%s"), *key.ToString());
 			return true;
 		}
 
@@ -230,10 +238,22 @@ namespace
 		}
 	}
 
+	galaxy::api::LobbyType GetLobbyType(const FOnlineSessionSettings& InSessionSettings)
+	{
+		if (InSessionSettings.bShouldAdvertise)
+			return galaxy::api::LOBBY_TYPE_PUBLIC;
+
+		if (InSessionSettings.bAllowJoinViaPresenceFriendsOnly)
+			return galaxy::api::LOBBY_TYPE_FRIENDS_ONLY;
+
+		return galaxy::api::LOBBY_TYPE_PRIVATE;
+	}
+
 }
 
-FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem)
+FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount)
 	: subsystemGOG{InSubsystem}
+	, ownUserOnlineAccount{MoveTemp(InUserOnlineAccount)}
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::ctor()"));
 }
@@ -245,7 +265,7 @@ FOnlineSessionGOG::~FOnlineSessionGOG()
 	for (const auto& session : storedSessions)
 	{
 		if (session.SessionInfo.IsValid() && session.SessionInfo->IsValid())
-			galaxy::api::Matchmaking()->LeaveLobby(AsUniqueNetIDGOG(session.SessionInfo->GetSessionId()));
+			galaxy::api::Matchmaking()->LeaveLobby(FUniqueNetIdGOG{session.SessionInfo->GetSessionId()});
 	}
 }
 
@@ -279,23 +299,27 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 		return false;
 	}
 
-	auto listenerID = CreateListener<FCreateLobbyListener>(*this, InSessionName, InSessionSettings);
-	auto listener = GetListenerRawPtr<FCreateLobbyListener>(listenerID);
+	auto listener = CreateListener<FCreateLobbyListener>(
+		*this,
+		InSessionName,
+		ownUserOnlineAccount->GetUserId(),
+		ownUserOnlineAccount->GetDisplayName(),
+		InSessionSettings);
 
 	galaxy::api::Matchmaking()->CreateLobby(
 		GetLobbyType(InSessionSettings),
 		InSessionSettings.NumPublicConnections,
 		false,
 		galaxy::api::LOBBY_TOPOLOGY_TYPE_STAR,
-		listener,
-		listener);
+		listener.Value,
+		listener.Value);
 
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to create lobby[0]: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		TriggerOnCreateSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -307,17 +331,6 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 bool FOnlineSessionGOG::CreateSession(const FUniqueNetId& InHostingPlayerId, FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
 {
 	return CreateSession(LOCAL_USER_NUM, std::move(InSessionName), InSessionSettings);
-}
-
-galaxy::api::LobbyType FOnlineSessionGOG::GetLobbyType(const FOnlineSessionSettings& InSessionSettings)
-{
-	if (InSessionSettings.bShouldAdvertise)
-		return galaxy::api::LOBBY_TYPE_PUBLIC;
-
-	if (InSessionSettings.bAllowJoinViaPresenceFriendsOnly)
-		return galaxy::api::LOBBY_TYPE_FRIENDS_ONLY;
-
-	return galaxy::api::LOBBY_TYPE_PRIVATE;
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
@@ -415,13 +428,13 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 
 	storedSession->SessionState = EOnlineSessionState::Starting;
 
-	galaxy::api::GalaxyID lobbyID = AsUniqueNetIDGOG(storedSession->SessionInfo->GetSessionId());
+	galaxy::api::GalaxyID lobbyID = FUniqueNetIdGOG{storedSession->SessionInfo->GetSessionId()};
 
 	auto lobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(lobbyID);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby joinability: sessionName='%s', lobbyID=%llus, %s; %s"),
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby joinability: sessionName='%s', lobbyID=%llu, %s: %s"),
 			*InSessionName.ToString(), lobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		storedSession->SessionState = EOnlineSessionState::Pending;
@@ -436,15 +449,16 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 		return true;
 	}
 
-	auto listenerID = CreateListener<FLobbyStartListener>(*this, lobbyID, InSessionName);
+	auto listener = CreateListener<FLobbyStartListener>(*this, lobbyID, InSessionName, storedSession->SessionSettings.bAllowJoinInProgress);
 
-	galaxy::api::Matchmaking()->SetLobbyJoinable(lobbyID, storedSession->SessionSettings.bAllowJoinInProgress, GetListenerRawPtr<FLobbyStartListener>(listenerID));
+	galaxy::api::Matchmaking()->SetLobbyJoinable(lobbyID, storedSession->SessionSettings.bAllowJoinInProgress, listener.Value);
 	err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID=%llus, %s; %s"), lobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID=%llu, %s: %s"),
+			lobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 		storedSession->SessionState = EOnlineSessionState::Pending;
 		TriggerOnStartSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -457,10 +471,135 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::UpdateSession('%s')"), *InSessionName.ToString());
 
-	UE_LOG_ONLINE(Error, TEXT("UpdateSession is not implemented yet"));
+	auto* storedSession = GetNamedSession(InSessionName);
+	if (!storedSession)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Cannot update a session that does not exists: sessionName='%s'"), *InSessionName.ToString());
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
+		return false;
+	}
 
-	TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
-	return false;
+	if (*storedSession->OwningUserId != *ownUserOnlineAccount->GetUserId())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Cannot update session. Player is not a session owner: sessionName='%s', sessionOwnerID='%s', userID='%s'"),
+			*InSessionName.ToString(), *storedSession->OwningUserId->ToString(), *ownUserOnlineAccount->GetUserId()->ToString());
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
+		return false;
+	}
+
+	if (!InShouldRefreshOnlineData)
+	{
+		UE_LOG_ONLINE(VeryVerbose, TEXT("Received local session update"));
+		storedSession->SessionSettings = InUpdatedSessionSettings;
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, true);
+		return true;
+	}
+
+	FUniqueNetIdGOG sessionID{storedSession->SessionInfo->GetSessionId()};
+
+	InUpdatedSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_NAME, FOnlineSessionSetting{ownUserOnlineAccount->GetDisplayName(), EOnlineDataAdvertisementType::ViaOnlineService});
+	InUpdatedSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_ID, FOnlineSessionSetting{ownUserOnlineAccount->GetUserId()->ToString(), EOnlineDataAdvertisementType::ViaOnlineService});
+
+	auto sessionSettingsToUpdate = InUpdatedSessionSettings;
+	TSet<FString> sessionSettingsToDelete;
+
+	const auto& storedSessionSettings = storedSession->SessionSettings.Settings;
+	for (const auto& storedSetting : storedSessionSettings)
+	{
+		auto updatedSetting = sessionSettingsToUpdate.Settings.Find(storedSetting.Key);
+		if (!updatedSetting)
+		{
+			auto convertedSettingName = NamedVariantDataConverter::ToLobbyDataEntry(storedSetting.Key, storedSetting.Value.Data).Key;
+			sessionSettingsToDelete.Emplace(MoveTemp(convertedSettingName));
+			continue;
+		}
+
+		if (updatedSetting->Data == storedSetting.Value.Data)
+		{
+			sessionSettingsToUpdate.Remove(storedSetting.Key);
+			continue;
+		}
+	}
+
+	auto updatedLobbyType = GetLobbyType(sessionSettingsToUpdate);
+	auto shouldAdvertiseViaPresence = OnlineSessionUtils::ShouldAdvertiseViaPresence(InUpdatedSessionSettings);
+
+	if (sessionSettingsToUpdate.Settings.Num() == 0
+		&& sessionSettingsToDelete.Num() == 0
+		&& updatedLobbyType == GetLobbyType(storedSession->SessionSettings)
+		&& sessionSettingsToUpdate.NumPublicConnections == storedSession->SessionSettings.NumPublicConnections
+		&& shouldAdvertiseViaPresence == OnlineSessionUtils::ShouldAdvertiseViaPresence(storedSession->SessionSettings)
+		&& (storedSession->SessionState != EOnlineSessionState::InProgress
+			|| InUpdatedSessionSettings.bAllowJoinInProgress == storedSession->SessionSettings.bAllowJoinInProgress))
+	{
+		UE_LOG_ONLINE(Display, TEXT("No changes in Session settings"));
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, true);
+		return false;
+	}
+
+	if (!OnlineSessionUtils::SetLobbyData(sessionID, sessionSettingsToUpdate)
+		|| !OnlineSessionUtils::DeleteLobbyData(sessionID, sessionSettingsToDelete))
+	{
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
+		return false;
+	}
+
+	galaxy::api::Matchmaking()->SetLobbyType(sessionID, updatedLobbyType);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to update lobby type: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
+		return false;
+	}
+
+	galaxy::api::Matchmaking()->SetMaxNumLobbyMembers(sessionID, sessionSettingsToUpdate.NumPublicConnections);
+	err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Error, TEXT("Failed to update lobby maximum size: lobbyID='%s'; %s: %s"),
+			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
+		return false;
+	}
+
+	if (shouldAdvertiseViaPresence)
+	{
+		FString connectString;
+		if (!GetResolvedConnectString(InSessionName, connectString))
+			return false;
+
+		// Ignore rich presence update result as it seems to be not crucial
+		galaxy::api::Friends()->SetRichPresence("connect", TCHAR_TO_UTF8(*connectString));
+		err = galaxy::api::GetError();
+		if (err)
+		{
+			UE_LOG_ONLINE(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"),
+				UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		}
+	}
+
+	// Setting all lobby data is done in bulk, so it's enough to listen only to the last operation
+	auto listener = CreateListener<FUpdateLobbyListener>(*this, InSessionName);
+
+	bool isLobbyJoinable = storedSession->SessionState != EOnlineSessionState::InProgress
+		|| InUpdatedSessionSettings.bAllowJoinInProgress;
+
+	galaxy::api::Matchmaking()->SetLobbyJoinable(sessionID, isLobbyJoinable, listener.Value);
+	err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID='%s'; %s: %s"),
+			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		FreeListener(MoveTemp(listener.Key));
+
+		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
+		return false;
+	}
+
+	return true;
 }
 
 bool FOnlineSessionGOG::EndSession(FName InSessionName)
@@ -531,8 +670,13 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 		return false;
 	}
 
-	galaxy::api::Matchmaking()->LeaveLobby(AsUniqueNetIDGOG(storedSession->SessionInfo->GetSessionId()));
+	galaxy::api::Friends()->DeleteRichPresence("connect");
 	auto err = galaxy::api::GetError();
+	if (err)
+		UE_LOG_ONLINE(Error, TEXT("Failed to delete players connect presence informatio: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+	galaxy::api::Matchmaking()->LeaveLobby(FUniqueNetIdGOG{storedSession->SessionInfo->GetSessionId()});
+	err = galaxy::api::GetError();
 	if (err)
 		UE_LOG_ONLINE(Error, TEXT("Failed to leave lobby: lobbyID=%llu, %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
@@ -579,7 +723,7 @@ bool FOnlineSessionGOG::CancelMatchmaking(int32, FName InSessionName)
 	return false;
 }
 
-bool FOnlineSessionGOG::CancelMatchmaking(const FUniqueNetId&, FName InsessionName)
+bool FOnlineSessionGOG::CancelMatchmaking(const FUniqueNetId& /*InSearchingPlayerId*/, FName InsessionName)
 {
 	return CancelMatchmaking(LOCAL_USER_NUM, InsessionName);
 }
@@ -612,19 +756,19 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	FSearchParams postOperationSearchQueryParams;
 	ParseAndApplyLobbySearchFilters(InOutSearchSettings->QuerySettings, postOperationSearchQueryParams);
 
-	auto listenerID = CreateListener<FRequestLobbyListListener>(*this, InOutSearchSettings, MoveTemp(postOperationSearchQueryParams));
+	auto listener = CreateListener<FRequestLobbyListListener>(*this, InOutSearchSettings, MoveTemp(postOperationSearchQueryParams));
 
-	galaxy::api::Matchmaking()->RequestLobbyList(false, GetListenerRawPtr<FRequestLobbyListListener>(listenerID));
+	galaxy::api::Matchmaking()->RequestLobbyList(false, listener.Value);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby list: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		InOutSearchSettings->SearchState = EOnlineAsyncTaskState::Failed;
 		TriggerOnFindSessionsCompleteDelegates(false);
-		false;
+		return false;
 	}
 
 	InOutSearchSettings->SearchState = EOnlineAsyncTaskState::InProgress;
@@ -632,21 +776,43 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	return true;
 }
 
-bool FOnlineSessionGOG::FindSessions(const FUniqueNetId& InSearchingPlayerId, const TSharedRef<FOnlineSessionSearch>& InOutSearchSettings)
+bool FOnlineSessionGOG::FindSessions(const FUniqueNetId& /*InSearchingPlayerId*/, const TSharedRef<FOnlineSessionSearch>& InOutSearchSettings)
 {
 	return FindSessions(LOCAL_USER_NUM, InOutSearchSettings);
 }
 
-bool FOnlineSessionGOG::FindSessionById(const FUniqueNetId&, const FUniqueNetId& InSessionId, const FUniqueNetId&, const FOnSingleSessionResultCompleteDelegate& InCompletionDelegates)
+bool FOnlineSessionGOG::FindSessionById(
+	const FUniqueNetId& /*InSearchingUserId*/,
+	const FUniqueNetId& InSessionId,
+	const FUniqueNetId& InFriendId,
+	const FOnSingleSessionResultCompleteDelegate& InCompletionDelegate)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::FindSessionById: sessionID='%s'"), *InSessionId.ToString());
 
-	UE_LOG_ONLINE(Error, TEXT("FindSessionById is not implemented yet"));
+	FUniqueNetIdGOG sessionID{InSessionId};
+	if (!sessionID.IsValid() || !sessionID.IsLobby())
+	{
+		UE_LOG_ONLINE(Display, TEXT("Invalid SessionID: sessionID='%s'"), *InSessionId.ToString());
+		InCompletionDelegate.ExecuteIfBound(LOCAL_USER_NUM, false, {});
+		return false;
+	}
 
-	InCompletionDelegates.ExecuteIfBound(LOCAL_USER_NUM, false, {});
-	TriggerOnFindSessionsCompleteDelegates(false);
+	auto listener = CreateListener<FGetSessionDetailsListener>(*this, sessionID, InFriendId, InCompletionDelegate);
 
-	return false;
+	galaxy::api::Matchmaking()->RequestLobbyData(sessionID, listener.Value);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request session data: sessionID='%s'; %s: %s"),
+			*InSessionId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		FreeListener(MoveTemp(listener.Key));
+
+		InCompletionDelegate.ExecuteIfBound(LOCAL_USER_NUM, false, {});
+		return false;
+	}
+
+	return true;
 }
 
 bool FOnlineSessionGOG::CancelFindSessions()
@@ -689,16 +855,16 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 
 	const auto& sessionID = InDesiredSession.Session.SessionInfo->GetSessionId();
 
-	auto listenerID = CreateListener<FJoinLobbyListener>(*this, InSessionName, InDesiredSession.Session);
+	auto listener = CreateListener<FJoinLobbyListener>(*this, InSessionName, InDesiredSession.Session);
 
-	galaxy::api::Matchmaking()->JoinLobby(AsUniqueNetIDGOG(sessionID), GetListenerRawPtr<FJoinLobbyListener>(listenerID));
+	galaxy::api::Matchmaking()->JoinLobby(FUniqueNetIdGOG{sessionID}, listener.Value);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Failed to join lobby: lobbyID=%s; %s; %s"), *sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		TriggerOnJoinSessionCompleteDelegates(InSessionName, EOnJoinSessionCompleteResult::UnknownError);
 
-		FreeListener(listenerID);
+		FreeListener(MoveTemp(listener.Key));
 
 		return false;
 	}
@@ -706,7 +872,7 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 	return true;
 }
 
-bool FOnlineSessionGOG::JoinSession(const FUniqueNetId& InPlayerId, FName InSessionName, const FOnlineSessionSearchResult& InDesiredSession)
+bool FOnlineSessionGOG::JoinSession(const FUniqueNetId& /*InPlayerId*/, FName InSessionName, const FOnlineSessionSearchResult& InDesiredSession)
 {
 	return JoinSession(LOCAL_USER_NUM, InSessionName, InDesiredSession);
 }
@@ -746,12 +912,12 @@ bool FOnlineSessionGOG::FindFriendSession(const FUniqueNetId&, const TArray<TSha
 
 bool FOnlineSessionGOG::SendSessionInviteToFriend(int32 InLocalUserNum, FName InSessionName, const FUniqueNetId& InFriend)
 {
-	return SendSessionInviteToFriends(InLocalUserNum, InSessionName, {MakeShareable<FUniqueNetIdGOG>(new FUniqueNetIdGOG{InFriend})});
+	return SendSessionInviteToFriends(InLocalUserNum, InSessionName, {MakeShared<FUniqueNetIdGOG>(InFriend)});
 }
 
-bool FOnlineSessionGOG::SendSessionInviteToFriend(const FUniqueNetId&, FName InSessionName, const FUniqueNetId& InFriend)
+bool FOnlineSessionGOG::SendSessionInviteToFriend(const FUniqueNetId& /*InLocalUserId*/, FName InSessionName, const FUniqueNetId& InFriend)
 {
-	return SendSessionInviteToFriends(LOCAL_USER_NUM, InSessionName, {MakeShareable<FUniqueNetIdGOG>(new FUniqueNetIdGOG{InFriend})});
+	return SendSessionInviteToFriends(LOCAL_USER_NUM, InSessionName, {MakeShared<FUniqueNetIdGOG>(InFriend)});
 }
 
 bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InFriends)
@@ -775,16 +941,15 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName I
 	if (!GetResolvedConnectString(InSessionName, connectString))
 		return false;
 
-	connectString.Append(TEXT("?SessionName=")).Append(InSessionName.ToString());
-
 	bool invitationSentSuccessfully = true;
 	for (auto invitedFriend : InFriends)
 	{
-		galaxy::api::Friends()->SendInvitation(FUniqueNetIdGOG(*invitedFriend), TCHAR_TO_UTF8(*connectString));
+		galaxy::api::Friends()->SendInvitation(FUniqueNetIdGOG{*invitedFriend}, TCHAR_TO_UTF8(*connectString));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s; %s"), *invitedFriend->ToDebugString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s: %s"),
+				*invitedFriend->ToDebugString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			invitationSentSuccessfully = false;
 		}
 	}
@@ -792,7 +957,7 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName I
 	return invitationSentSuccessfully;
 }
 
-bool FOnlineSessionGOG::SendSessionInviteToFriends(const FUniqueNetId&, FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InFriends)
+bool FOnlineSessionGOG::SendSessionInviteToFriends(const FUniqueNetId& /*InLocalUserId*/, FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InFriends)
 {
 	return SendSessionInviteToFriends(LOCAL_USER_NUM, InSessionName, InFriends);
 }
@@ -806,7 +971,7 @@ bool FOnlineSessionGOG::GetResolvedConnectStringFromSession(const FOnlineSession
 		return false;
 	}
 
-	OutConnectString = FInternetAddrGOG{InSession.SessionInfo->GetSessionId()}.ToString(true);
+	OutConnectString = FUrlGOG{InSession.SessionInfo->GetSessionId()}.ToString();
 	return true;
 }
 
@@ -890,7 +1055,7 @@ bool FOnlineSessionGOG::RegisterPlayers(FName InSessionName, const TArray< TShar
 
 		storedSession->RegisteredPlayers.Add(playerID);
 
-		galaxy::api::Friends()->RequestUserInformation(AsUniqueNetIDGOG(*playerID));
+		galaxy::api::Friends()->RequestUserInformation(FUniqueNetIdGOG{*playerID});
 		auto err = galaxy::api::GetError();
 		if (err)
 			UE_LOG_ONLINE(Warning, TEXT("Failed to request information for user: userID='%s'; '%s'; '%s'"), *playerID->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
@@ -980,6 +1145,72 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool
 	DestroySession(storedSession->SessionName);
 }
 
+void FOnlineSessionGOG::OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
+
+	auto sessionUrl = FUrlGOG{UTF8_TO_TCHAR(InConnectString)};
+
+	auto sessionID = FUniqueNetIdGOG{sessionUrl.Host};
+	if (!sessionID.IsValid() && !sessionID.IsLobby())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
+		return;
+	}
+
+	auto listener = CreateListener<FGameInvitationReceivedListener>(
+		*this,
+		// Invites from other games are filtered by Galaxy SDK
+		subsystemGOG.GetAppId(),
+		*ownUserOnlineAccount->GetUserId(),
+		InUserID,
+		sessionID);
+
+	galaxy::api::Matchmaking()->RequestLobbyData(sessionID, listener.Value);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
+			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		FreeListener(MoveTemp(listener.Key));
+		return;
+	}
+}
+
+void FOnlineSessionGOG::OnGameJoinRequested(galaxy::api::GalaxyID InUserID, const char* InConnectString)
+{
+	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
+
+	auto sessionUrl = FUrlGOG{UTF8_TO_TCHAR(InConnectString)};
+
+	auto sessionID = FUniqueNetIdGOG{sessionUrl.Host};
+	if (!sessionID.IsValid() && !sessionID.IsLobby())
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
+		return;
+	}
+
+	auto listener = CreateListener<FGameInvitationAcceptedListener>(
+		*this,
+		// Invites from other games are filtered by Galaxy SDK
+		subsystemGOG.GetAppId(),
+		ownUserOnlineAccount->GetUserId(),
+		InUserID,
+		sessionID);
+
+	galaxy::api::Matchmaking()->RequestLobbyData(sessionID, listener.Value);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
+			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+		FreeListener(MoveTemp(listener.Key));
+		return;
+	}
+}
+
 void FOnlineSessionGOG::DumpSessionState()
 {
 	UE_LOG_ONLINE(Display, TEXT("DumpSessionState"));
@@ -988,10 +1219,59 @@ void FOnlineSessionGOG::DumpSessionState()
 		DumpNamedSession(&session);
 }
 
-const FNamedOnlineSession* FOnlineSessionGOG::FindSession(const FUniqueNetIdGOG& InSessionID) const
+FNamedOnlineSession* FOnlineSessionGOG::FindSession(const FUniqueNetIdGOG& InSessionID)
 {
 	return storedSessions.FindByPredicate([&](const auto& session) {
 		const auto& sessionInfo = session.SessionInfo;
 		return sessionInfo.IsValid() && sessionInfo->IsValid() && sessionInfo->GetSessionId() == InSessionID;
 	});
+}
+
+void FOnlineSessionGOG::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID)
+{
+	UE_LOG_ONLINE(Display, TEXT("OnLobbyDataUpdated"));
+
+	if (InMemberID.IsValid())
+	{
+		UE_LOG_ONLINE(VeryVerbose, TEXT("Received member data update. Ignored"));
+		return;
+	}
+
+	FUniqueNetIdGOG sessionID{InLobbyID};
+
+	auto storedSession = FindSession(sessionID);
+	if (!storedSession)
+	{
+		// Session from StartSession, RequestLobbyData e.t.c will not be handed here as session are not known at this point
+		UE_LOG_ONLINE(VeryVerbose, TEXT("Received unknown session data update. Ignored"));
+		return;
+	}
+
+	FOnlineSessionSettings updatedSessionSettings;
+	if (!OnlineSessionUtils::Fill(sessionID, updatedSessionSettings)
+		|| OnlineSessionUtils::GetSessionOpenConnections(sessionID, *storedSession))
+	{
+		UE_LOG_ONLINE(Error, TEXT("Error updating Session"));
+		return;
+	}
+
+	// Replace previous session settings, relying on GalaxySDK to keep the data in consistency
+	storedSession->SessionSettings = MoveTemp(updatedSessionSettings);
+}
+
+void FOnlineSessionGOG::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& /*InMemberID*/, galaxy::api::LobbyMemberStateChange InMemberStateChange)
+{
+	UE_LOG_ONLINE(Display, TEXT("OnLobbyMemberStateChanged"));
+
+	auto storedSession = FindSession(InLobbyID);
+	if (!storedSession)
+	{
+		UE_LOG_ONLINE(VeryVerbose, TEXT("Received unknown session member state update. Ignored"));
+		return;
+	}
+
+	if (InMemberStateChange == galaxy::api::LOBBY_MEMBER_STATE_CHANGED_ENTERED)
+		--storedSession->NumOpenPublicConnections;
+	else
+		++storedSession->NumOpenPublicConnections;
 }

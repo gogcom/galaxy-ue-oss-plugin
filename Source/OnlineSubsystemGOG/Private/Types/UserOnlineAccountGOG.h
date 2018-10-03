@@ -1,39 +1,36 @@
 #pragma once
 
-#include "CommonGOG.h"
-#include "UniqueNetIdGOG.h"
+#include "OnlineUserGOG.h"
 
-#include "OnlineSubsystemTypes.h"
-
-class FUserOnlineAccountGOG : public FUserOnlineAccount
+class FUserOnlineAccountGOG : public FUserOnlineAccount, public FOnlineUserGOG
 {
 public:
 
-	FUserOnlineAccountGOG(FUniqueNetIdGOG InUserID, FString InDisplayName, FString InAccessToken = {});
+	explicit FUserOnlineAccountGOG(FUniqueNetIdGOG InUserID);
 
-	// FOnlineUser
+	static bool Fill(FUserOnlineAccountGOG& InOutUserOnlineAccount);
+
+	static bool FillOwn(FUserOnlineAccountGOG& InOutUserOnlineAccount);
+
+	// FOnlineUser interface implementation
 
 	TSharedRef<const FUniqueNetId> GetUserId() const override;
 
 	FString GetRealName() const override;
 
-	FString GetDisplayName(const FString& InPlatform) const override;
+	FString GetDisplayName(const FString& InPlatform = FString()) const override;
 
 	bool GetUserAttribute(const FString& InAttrName, FString& OutAttrValue) const override;
 
-	// FUserOnlineAccount
+	// FUserOnlineAccount interface implementation
+
+	bool SetUserAttribute(const FString& InAttrName, const FString& InAttrValue) override;
 
 	FString GetAccessToken() const override;
 
 	bool GetAuthAttribute(const FString& InAttrName, FString& OutAttrValue) const override;
 
-	bool SetUserAttribute(const FString& InAttrName, const FString& AttrValue) override;
-
 private:
-
-	TSharedRef<const FUniqueNetId> userID;
-	FString displayName;
-	TMap<FString, FString> userAttributes;
 
 	FString accessToken;
 };

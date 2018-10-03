@@ -1,14 +1,12 @@
 #include "RequestLobbyListListener.h"
 
 #include "OnlineSessionGOG.h"
-#include "LobbyData.h"
 #include "VariantDataUtils.h"
+#include "OnlineSessionUtils.h"
 
 #include "Online.h"
 
 #include <algorithm>
-#include <array>
-#include "Converters/OnlineSessionSettingsConverter.h"
 
 namespace
 {
@@ -51,7 +49,7 @@ namespace
 
 		for (int32 playerID{0}; playerID < InTotalUserCount; ++playerID)
 		{
-			const auto lobbyMemberID = galaxy::api::Matchmaking()->GetLobbyMemberByIndex(AsUniqueNetIDGOG(InSearchResult.Session.SessionInfo->GetSessionId()), playerID);
+			const auto lobbyMemberID = galaxy::api::Matchmaking()->GetLobbyMemberByIndex(FUniqueNetIdGOG{InSearchResult.Session.SessionInfo->GetSessionId()}, playerID);
 			auto err = galaxy::api::GetError();
 			if (err)
 			{
@@ -89,124 +87,6 @@ namespace
 		return true;
 	}
 
-	bool CreateOnlineSessionSettings(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSettings& OutOnlineSessionSettings)
-	{
-		auto lobbyDataCount = galaxy::api::Matchmaking()->GetLobbyDataCount(InLobbyID);
-		if (!lobbyDataCount)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Lobby data not found: lobbyID=%llu"), InLobbyID.ToUint64());
-			return false;
-		}
-
-		FLobbyData lobbyData;
-
-		std::array<char, lobby_data::MAX_KEY_LENGTH> lobbyDataKeyBuffer;
-		std::array<char, lobby_data::MAX_DATA_SIZE> lobbyDataValueBuffer;
-
-		for (decltype(lobbyDataCount) lobbyDataIdx = 0; lobbyDataIdx < lobbyDataCount; lobbyDataIdx++)
-		{
-			if (!galaxy::api::Matchmaking()->GetLobbyDataByIndex(
-				InLobbyID,
-				lobbyDataIdx,
-				lobbyDataKeyBuffer.data(),
-				lobbyDataKeyBuffer.size(),
-				lobbyDataValueBuffer.data(),
-				lobbyDataValueBuffer.size()))
-			{
-				UE_LOG_ONLINE(Error, TEXT("Failed to fetch lobby data; lobbyID=%llu"), InLobbyID.ToUint64());
-				false;
-			}
-
-			lobbyData.Emplace(UTF8_TO_TCHAR(lobbyDataKeyBuffer.data()), UTF8_TO_TCHAR(lobbyDataValueBuffer.data()));
-		}
-
-		OutOnlineSessionSettings = OnlineSessionSettingsConverter::FromLobbyData(lobbyData);
-		return true;
-	}
-
-	bool GetSessionOwnerID(FOnlineSessionSettings &sessionSettings, const galaxy::api::GalaxyID &InLobbyID, FOnlineSessionSearchResult& InOutSearchResult)
-	{
-		auto setting = sessionSettings.Settings.Find(lobby_data::SESSION_OWNER_ID);
-		if (!setting)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Session owner ID not found; lobbyID=%llu"), InLobbyID.ToUint64());
-			return false;
-		}
-
-		FString sessionOwnerID;
-		setting->Data.GetValue(sessionOwnerID);
-		InOutSearchResult.Session.OwningUserId = MakeShared<FUniqueNetIdGOG>(sessionOwnerID);
-
-		if (!InOutSearchResult.Session.OwningUserId->IsValid())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Session owner ID is invalid; lobbyID=%llu"), InLobbyID.ToUint64());
-			return false;
-		}
-
-		return true;
-	}
-
-	bool GetSessionOwnerName(FOnlineSessionSettings &sessionSettings, const galaxy::api::GalaxyID &InLobbyID, FOnlineSessionSearchResult& InOutSearchResult)
-	{
-		auto setting = sessionSettings.Settings.Find(lobby_data::SESSION_OWNER_NAME);
-		if (!setting)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Session owner name not found; lobbyID=%llu"), InLobbyID.ToUint64());
-			return false;
-		}
-
-		setting->Data.GetValue(InOutSearchResult.Session.OwningUserName);
-
-		if (InOutSearchResult.Session.OwningUserName.IsEmpty())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Session owner name is empty; lobbyID=%llu"), InLobbyID.ToUint64());
-			return false;
-		}
-
-		return true;
-	}
-
-	bool CreateSearchResult(const galaxy::api::GalaxyID& InLobbyID, FOnlineSessionSearchResult& InSearchResult)
-	{
-		FOnlineSessionSettings sessionSettings;
-		if (!CreateOnlineSessionSettings(InLobbyID, sessionSettings))
-			return false;
-
-		InSearchResult.PingInMs = 0;
-
-		if (!GetSessionOwnerID(sessionSettings, InLobbyID, InSearchResult)
-			|| !GetSessionOwnerName(sessionSettings, InLobbyID, InSearchResult))
-			return false;
-
-		InSearchResult.Session.SessionInfo = MakeShared<FOnlineSessionInfoGOG>(InLobbyID);
-
-		auto maxLobbyMembers = galaxy::api::Matchmaking()->GetMaxNumLobbyMembers(InLobbyID);
-		auto err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get maximum lobby size: lobbyID=%llu; %s; %s"), maxLobbyMembers, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			return false;
-		}
-		sessionSettings.NumPublicConnections = maxLobbyMembers;
-
-		auto currentLobbySize = galaxy::api::Matchmaking()->GetNumLobbyMembers(InLobbyID);
-		err = galaxy::api::GetError();
-		if (err)
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get current lobby size: lobbyID=%llu; %s; %s"), maxLobbyMembers, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			return false;
-		}
-
-		check(sessionSettings.NumPrivateConnections == 0);
-
-		InSearchResult.Session.NumOpenPublicConnections = std::max(maxLobbyMembers - currentLobbySize, 0u);
-		InSearchResult.Session.NumOpenPrivateConnections = 0;
-
-		InSearchResult.Session.SessionSettings = sessionSettings;
-
-		return true;
-	}
-
 }
 
 FRequestLobbyListListener::FRequestLobbyListListener(
@@ -219,7 +99,7 @@ FRequestLobbyListListener::FRequestLobbyListListener(
 {
 }
 
-void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful) const
+void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful)
 {
 	searchSettings->SearchState = InIsSuccessful
 		? EOnlineAsyncTaskState::Done
@@ -227,7 +107,7 @@ void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIs
 
 	sessionInterface.TriggerOnFindSessionsCompleteDelegates(InIsSuccessful);
 
-	sessionInterface.FreeListener(ListenerID);
+	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }
 
 void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, bool InIOFailure)
@@ -302,15 +182,15 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Ga
 	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	FOnlineSessionSearchResult newSearchResult;
-	if (!CreateSearchResult(InLobbyID, newSearchResult))
+	if (!OnlineSessionUtils::Fill(InLobbyID, newSearchResult))
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to fill Session data: lobbyID=%llu"), InLobbyID.ToUint64());
+		UE_LOG_ONLINE(Error, TEXT("Failed to create Session data: lobbyID=%llu"), InLobbyID.ToUint64());
 		TriggerOnFindSessionsCompleteDelegates(false);
 		return;
 	}
 
 	if (TestFilters(postOperationSearchQueryParams, newSearchResult))
-		searchSettings->SearchResults.Emplace(newSearchResult);
+		searchSettings->SearchResults.Emplace(MoveTemp(newSearchResult));
 
 	if (pendingLobbyList.Num() == 0)
 		TriggerOnFindSessionsCompleteDelegates(true);

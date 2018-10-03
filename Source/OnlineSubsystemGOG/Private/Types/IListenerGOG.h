@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CommonGOG.h"
+#include "UniquePtr.h"
+#include "Set.h"
 
 // Interface needed to play-around lack of virtual inheritance in IGalaxy listeners
 class IListenerGOG

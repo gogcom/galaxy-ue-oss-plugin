@@ -12,7 +12,7 @@ bool FOnlineSessionInfoGOG::operator==(const FOnlineSessionInfoGOG& InOther) con
 
 bool FOnlineSessionInfoGOG::IsValid() const
 {
-	return SessionID.IsValid();
+	return SessionID.IsValid() && SessionID.IsLobby();
 }
 
 FString FOnlineSessionInfoGOG::ToString() const
