@@ -11,35 +11,13 @@
 namespace
 {
 
-	bool AppendOwnerData(FOnlineSessionSettings& InOutSessionSettings)
-	{
-		// Store Session owner name and ID to avoid additional Galaxy async request
-
-		auto onlineIdentityInterface = Online::GetIdentityInterface(TEXT_GOG);
-		if (!onlineIdentityInterface.IsValid())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get Session owner data. OnlineIdentity interface is NULL"));
-			return false;
-		}
-
-		auto sessionOwnerName = onlineIdentityInterface->GetPlayerNickname(LOCAL_USER_NUM);
-		if (sessionOwnerName.IsEmpty())
-		{
-			UE_LOG_ONLINE(Error, TEXT("Session owner name is empty"));
-			return false;
-		}
-
-		auto sessionOwnerID = onlineIdentityInterface->GetUniquePlayerId(LOCAL_USER_NUM);
-		if (!sessionOwnerID.IsValid() || !sessionOwnerID->IsValid())
-			return false;
-
-		InOutSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_NAME, FOnlineSessionSetting{sessionOwnerName, EOnlineDataAdvertisementType::ViaOnlineService});
-		InOutSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_ID, FOnlineSessionSetting{sessionOwnerID->ToString(), EOnlineDataAdvertisementType::ViaOnlineService});
-
-		return true;
-	}
-
-	bool AddLocalSession(FOnlineSessionGOG& InSessionInterface, const galaxy::api::GalaxyID& InLobbyID, const FName& InSessionName, const FOnlineSessionSettings& InSessionSettings)
+	bool AddLocalSession(
+		FOnlineSessionGOG& InSessionInterface,
+		const galaxy::api::GalaxyID& InLobbyID,
+		const FName& InSessionName,
+		const TSharedRef<const FUniqueNetId>& InSessionOwnerID,
+		const FString& InSessionOwnerName,
+		const FOnlineSessionSettings& InSessionSettings)
 	{
 		auto newSession = InSessionInterface.AddNamedSession(InSessionName, InSessionSettings);
 		if (!newSession)
@@ -50,6 +28,9 @@ namespace
 
 		newSession->SessionState = EOnlineSessionState::Pending;
 		newSession->SessionInfo = MakeShared<FOnlineSessionInfoGOG>(InLobbyID);
+		newSession->OwningUserId = InSessionOwnerID;
+		newSession->OwningUserName = InSessionOwnerName;
+		newSession->NumOpenPublicConnections = InSessionSettings.NumPublicConnections;
 
 		return true;
 	}
@@ -69,11 +50,19 @@ namespace
 
 }
 
-FCreateLobbyListener::FCreateLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSessionSettings InSettings)
+FCreateLobbyListener::FCreateLobbyListener(
+	class FOnlineSessionGOG& InSessionInterface,
+	FName InSessionName,
+	TSharedRef<const FUniqueNetId> InSessionOwnerID,
+	FString InSessionOwnerName,
+	FOnlineSessionSettings InSettings)
 	: sessionInterface{InSessionInterface}
 	, sessionName{MoveTemp(InSessionName)}
+	, sessionOwnerID{MoveTemp(InSessionOwnerID)}
+	, sessionOwnerName{MoveTemp(InSessionOwnerName)}
 	, sessionSettings{MoveTemp(InSettings)}
 {
+	checkf(!sessionOwnerName.IsEmpty() && sessionOwnerID->IsValid(), TEXT("Invalid session owner information"));
 }
 
 void FCreateLobbyListener::OnLobbyCreated(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyCreateResult InResult)
@@ -128,8 +117,10 @@ void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID
 		return;
 	}
 
-	if (!AppendOwnerData(sessionSettings)
-		|| !OnlineSessionUtils::SetLobbyData(newLobbyID, sessionSettings)
+	sessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_NAME, FOnlineSessionSetting{sessionOwnerName, EOnlineDataAdvertisementType::ViaOnlineService});
+	sessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_ID, FOnlineSessionSetting{sessionOwnerID->ToString(), EOnlineDataAdvertisementType::ViaOnlineService});
+
+	if (!OnlineSessionUtils::SetLobbyData(newLobbyID, sessionSettings)
 		|| !MakeSessionJoinable(newLobbyID, this))
 	{
 		TriggerOnCreateSessionCompleteDelegates(false);
@@ -156,7 +147,7 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 		TriggerOnCreateSessionCompleteDelegates(false);
 	}
 
-	if (!AddLocalSession(sessionInterface, newLobbyID, sessionName, sessionSettings))
+	if (!AddLocalSession(sessionInterface, newLobbyID, sessionName, sessionOwnerID, sessionOwnerName, sessionSettings))
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to add local session: sessionName=%s"), *sessionName.ToString());
 		TriggerOnCreateSessionCompleteDelegates(false);

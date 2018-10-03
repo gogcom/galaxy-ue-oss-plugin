@@ -299,7 +299,12 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 		return false;
 	}
 
-	auto listener = CreateListener<FCreateLobbyListener>(*this, InSessionName, InSessionSettings);
+	auto listener = CreateListener<FCreateLobbyListener>(
+		*this,
+		InSessionName,
+		ownUserOnlineAccount->GetUserId(),
+		ownUserOnlineAccount->GetDisplayName(),
+		InSessionSettings);
 
 	galaxy::api::Matchmaking()->CreateLobby(
 		GetLobbyType(InSessionSettings),
@@ -492,6 +497,9 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 
 	FUniqueNetIdGOG sessionID{storedSession->SessionInfo->GetSessionId()};
 
+	InUpdatedSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_NAME, FOnlineSessionSetting{ownUserOnlineAccount->GetDisplayName(), EOnlineDataAdvertisementType::ViaOnlineService});
+	InUpdatedSessionSettings.Settings.Emplace(lobby_data::SESSION_OWNER_ID, FOnlineSessionSetting{ownUserOnlineAccount->GetUserId()->ToString(), EOnlineDataAdvertisementType::ViaOnlineService});
+
 	auto sessionSettingsToUpdate = InUpdatedSessionSettings;
 	TSet<FString> sessionSettingsToDelete;
 
@@ -574,7 +582,11 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 
 	// Setting all lobby data is done in bulk, so it's enough to listen only to the last operation
 	auto listener = CreateListener<FUpdateLobbyListener>(*this, InSessionName);
-	galaxy::api::Matchmaking()->SetLobbyJoinable(sessionID, InUpdatedSessionSettings.bAllowJoinInProgress, listener.Value);
+
+	bool isLobbyJoinable = storedSession->SessionState != EOnlineSessionState::InProgress
+		|| InUpdatedSessionSettings.bAllowJoinInProgress;
+
+	galaxy::api::Matchmaking()->SetLobbyJoinable(sessionID, isLobbyJoinable, listener.Value);
 	err = galaxy::api::GetError();
 	if (err)
 	{

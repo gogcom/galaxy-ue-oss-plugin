@@ -15,7 +15,12 @@ class FCreateLobbyListener
 {
 public:
 
-	FCreateLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSessionSettings InSettings);
+	FCreateLobbyListener(
+		class FOnlineSessionGOG& InSessionInterface,
+		FName InSessionName,
+		TSharedRef<const FUniqueNetId> InSessionOwnerID,
+		FString InSessionOwnerName,
+		FOnlineSessionSettings InSettings);
 
 private:
 
@@ -38,7 +43,8 @@ private:
 	class FOnlineSessionGOG& sessionInterface;
 	const FName sessionName;
 	FOnlineSessionSettings sessionSettings;
+	TSharedRef<const FUniqueNetId> sessionOwnerID;
+	FString sessionOwnerName;
 
 	galaxy::api::GalaxyID newLobbyID;
-	galaxy::api::GalaxyID memberID;
 };
