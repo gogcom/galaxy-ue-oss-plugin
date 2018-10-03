@@ -1,76 +1,89 @@
-This is an implementation of the OnlineSubsystem for GOG online platform.
+**Table of Contents**
 
-0. Known issues and limitations:
-	- GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
-	- A player has to be logged on to GOG backend services prior to using any features from OnlineSubsystemGOG
-	- Dedicated servers are not supported yet
-	- Mac version may have problems with finding symbols from the GalaxySDK
+[TOCM]
 
-1. Installing plugin:
+[TOC]
 
-	- Copy the plugin folder under "<GameFolder>/Plugins".
+###Known issues and limitations:
+- GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
+- A player has to be logged on to GOG backend services prior to using any features from OnlineSubsystemGOG
+- Dedicated servers are not supported yet
 
-	- Enable the plugin:
-		* either through UE4 Editor interface:
-			* go to Settings -> Plugins -> Online -> OnlineSubsystemGOG
-			* check "Enabled"
-			* save and close
-			* restart UE4 Editor
+#Installing plugin:
 
-		* or modifying "<Game>.uproject" file manually as follows:
-				"Plugins": [
-					{
-						"Name": "OnlineSubsystem",
-						"Enabled": true
-					},
-					{
-						"Name": "OnlineSubsystemGOG",
-						"Enabled": true
-					}
-				]
+- Copy the plugin folder to your **"GameFolder/Plugins"**
+- Unpack content of the [Galaxy SDK](https://devportal.gog.com/galaxy/components/sdk "Galaxy SDK") to **"GameFolder/Plugins/OnlineSubsystemGOG/Source/ThirdParty/GalaxySDK"**
+- Enable the plugin:
+	* either via UE4 Editor interface:
+		* **Settings** -> **Plugins** -> **Online** -> **OnlineSubsystemGOG**
+		* check **"Enabled"**
+		* restart UnrealEditor
 
-	- Update default engine configuration file ("<GameFolder>/Config/DefaultEngine.ini") with ClientID* and ClientSecret*:
+	* or modifying **&#42;.uproject** file manually as follows:
+```json
+"Plugins":
+[
+	{
+		"Name": "OnlineSubsystem",
+		"Enabled": true
+	},
+	{
+		"Name": "OnlineSubsystemGOG",
+		"Enabled": true
+	}
+]
+```
+- Update default engine configuration file (**"GameFolder/Config/DefaultEngine.ini"**) with **ClientID** and **ClientSecret**:
 
-		[OnlineSubsystem]
-		DefaultPlatformService=GOG
+```
+[OnlineSubsystem]
+DefaultPlatformService=GOG
 
-		[OnlineSubsystemGOG]
-		ClientID=<ClientID>
-		ClientSecret=<ClientSecret>
+[OnlineSubsystemGOG]
+ClientID=<CLIENT_ID>
+ClientSecret=<CLIENT_SECRET>
 
-		[/Script/Engine.Engine]
-		!NetDriverDefinitions=ClearArray
-		NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSubsystemGOG.NetDriverGOG",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
+[/Script/Engine.Engine]
+!NetDriverDefinitions=ClearArray
+NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSubsystemGOG.NetDriverGOG",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
 
-		[/Script/Engine.GameEngine]
-		!NetDriverDefinitions=ClearArray
-		NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSubsystemGOG.NetDriverGOG",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
+[/Script/Engine.GameEngine]
+!NetDriverDefinitions=ClearArray
+NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSubsystemGOG.NetDriverGOG",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
 
-		[/Script/OnlineSubsystemGOG.NetDriverGOG]
-		NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
+[/Script/OnlineSubsystemGOG.NetDriverGOG]
+NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
+```
+ Please contact your GOG.com tech representative for more info on how to obtain **ClientID** and **ClientSecret**
 
-		* Please contact your GOG.com tech representative for more info on how to obtain Client ID and Client Secret
+#Logging in:
+- Using C++, IOnlineIdentity::Login() method is provided:
 
-2. Logging in:
+```cpp
+auto onlineIdentityInterface = Online::GetIdentityInterface(TEXT("GOG"));
+auto onLoginCompleteDelegateHandle = onlineIdentityInterface->AddOnLoginCompleteDelegate_Handle(0, FOnLoginCompleteDelegate::CreateRaw(this, &OnLoginComplete));
+FOnlineAccountCredentials accountCredentials;
+onlineIdentityInterface->Login(0, accountCredentials);
 
-	- To login from C++, use IOnlineIdentity::Login() method, e.g.:
+void OnLoginComplete(int32, bool, const FUniqueNetId&, const FString&)
+{
+	Online::GetIdentityInterface(TEXT("GOG"))->ClearOnLoginCompleteDelegate_Handle(0, onLoginCompleteDelegateHandle);
+	...
+	// Proceed with online features initialization
+}
+```
 
-		auto onLoginCompleteDelegateHandle = OnlineIdentityInterface->AddOnLoginCompleteDelegate_Handle(0, FOnLoginCompleteDelegate::CreateRaw(this, &OnLoginComplete));
-		FOnlineAccountCredentials accountCredentials;
-		Online::GetIdentityInterface(TEXT("GOG"))->Login(0, accountCredentials);
+- Using Blueprints, you can find **Login** method under the **Online** category
 
-		void OnLoginComplete(int32, bool, const FUniqueNetId&, const FString&)
-		{
-			Online::GetIdentityInterface(TEXT("GOG"))->ClearOnLoginCompleteDelegate_Handle(0, onLoginCompleteDelegateHandle);
-			...
-			// Proceed with the game
-		}
+#Using the Achivements:
+Prior to using the achivements:
+* Achivements must be defined in [GOG Devportal](https://devportal.gog.com/panel/games "GOG Devportal")
+* Achivements **API Key**s as defined in Devportal should be provided to engine configuration file:
 
-	- To login from BluePrints you can find a Login method under the Online category
+```
+[OnlineSubsystemGOG]
 
-3. Using the Achivements:
-
-	- Update engine configuration file with your achivements definitions. Those are the achivements "API Key" from Devportal.
-
-	- In UE4 methods (and blueprints) use above definitions as AchievementIds.
-
++Achievements=<ACHIEVEMENT_KEY_1>
++Achievements=<ACHIEVEMENT_KEY_2>
+... e.t.c.
+```
