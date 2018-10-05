@@ -1249,7 +1249,7 @@ void FOnlineSessionGOG::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyI
 
 	FOnlineSessionSettings updatedSessionSettings;
 	if (!OnlineSessionUtils::Fill(sessionID, updatedSessionSettings)
-		|| OnlineSessionUtils::GetSessionOpenConnections(sessionID, *storedSession))
+		|| !OnlineSessionUtils::GetSessionOpenConnections(sessionID, *storedSession))
 	{
 		UE_LOG_ONLINE(Error, TEXT("Error updating Session"));
 		return;
