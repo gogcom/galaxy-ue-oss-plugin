@@ -6,8 +6,6 @@
 
 #include "Online.h"
 
-#include <algorithm>
-
 namespace
 {
 
@@ -143,9 +141,6 @@ void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, galaxy::api::
 		TriggerOnFindSessionsCompleteDelegates(true);
 		return;
 	}
-
-	if (searchSettings->MaxSearchResults > 0)
-		InLobbyCount = std::min(InLobbyCount, static_cast<uint32_t>(searchSettings->MaxSearchResults));
 
 	if (!RequestLobbiesData(InLobbyCount))
 	{
