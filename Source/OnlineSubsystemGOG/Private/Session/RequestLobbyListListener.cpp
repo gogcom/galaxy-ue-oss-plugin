@@ -87,6 +87,20 @@ namespace
 		return true;
 	}
 
+	FString ToString(galaxy::api::LobbyListResult lobbyListResult)
+	{
+		switch (lobbyListResult)
+		{
+			case galaxy::api::LobbyListResult::LOBBY_LIST_RESULT_SUCCESS:
+				return TEXT("The list of lobbies retrieved successfully.");
+			case galaxy::api::LobbyListResult::LOBBY_LIST_RESULT_CONNECTION_FAILURE:
+				return TEXT("Unable to communicate with backend services.");
+			case galaxy::api::LobbyListResult::LOBBY_LIST_RESULT_ERROR:
+			default:
+				return TEXT("Unexpected error.");
+		}
+	}
+
 }
 
 FRequestLobbyListListener::FRequestLobbyListListener(
@@ -110,13 +124,13 @@ void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIs
 	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }
 
-void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, bool InIOFailure)
+void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, galaxy::api::LobbyListResult lobbyListResult)
 {
 	UE_LOG_ONLINE(Display, TEXT("FRequestLobbyListListener::OnLobbyList()"));
 
-	if (InIOFailure)
+	if (lobbyListResult != galaxy::api::LOBBY_LIST_RESULT_SUCCESS)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Unknown I/O failure while retrieving lobby list"));
+		UE_LOG_ONLINE(Error, TEXT("Failed to retrieve lobby list: %s"), *ToString(lobbyListResult));
 
 		TriggerOnFindSessionsCompleteDelegates(false);
 		return;

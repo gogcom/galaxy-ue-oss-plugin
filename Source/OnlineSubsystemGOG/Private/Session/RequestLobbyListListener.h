@@ -20,7 +20,7 @@ private:
 
 	void TriggerOnFindSessionsCompleteDelegates(bool InIsSuccessful);
 
-	void OnLobbyList(uint32_t InlobbyCount, bool InIOFailure) override;
+	void OnLobbyList(uint32_t InlobbyCount, galaxy::api::LobbyListResult lobbyListResult) override;
 
 	bool RequestLobbiesData(uint32_t InLobbyCount);
 
