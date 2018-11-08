@@ -330,26 +330,26 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 
 bool FOnlineSessionGOG::CreateSession(const FUniqueNetId& InHostingPlayerId, FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
 {
-	return CreateSession(LOCAL_USER_NUM, std::move(InSessionName), InSessionSettings);
+	return CreateSession(LOCAL_USER_NUM, MoveTemp(InSessionName), InSessionSettings);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
 
-	return CreateNamedSession(std::move(InSessionName), InSessionSettings);
+	return CreateNamedSession(MoveTemp(InSessionName), InSessionSettings);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSession& InSession)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
 
-	return CreateNamedSession(std::move(InSessionName), InSession);
+	return CreateNamedSession(MoveTemp(InSessionName), InSession);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName)
 {
-	return const_cast<FNamedOnlineSession*>(static_cast<const FOnlineSessionGOG*>(this)->GetNamedSession(std::move(InSessionName)));
+	return const_cast<FNamedOnlineSession*>(static_cast<const FOnlineSessionGOG*>(this)->GetNamedSession(MoveTemp(InSessionName)));
 }
 
 const FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName) const
@@ -534,7 +534,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 	{
 		UE_LOG_ONLINE(Display, TEXT("No changes in Session settings"));
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, true);
-		return false;
+		return true;
 	}
 
 	if (!OnlineSessionUtils::SetLobbyData(sessionID, sessionSettingsToUpdate)
@@ -647,7 +647,8 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 	if (storedSession->SessionState == EOnlineSessionState::Destroying)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Session is already marked to be destroyed. Skipping: sessionName='%s'"), *InSessionName.ToString());
-		// Initial operation will trigger the delegates
+		InCompletionDelegate.ExecuteIfBound(InSessionName, false);
+		// Initial operation will trigger global delegate
 		return false;
 	}
 

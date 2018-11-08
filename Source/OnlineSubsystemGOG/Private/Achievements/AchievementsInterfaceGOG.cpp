@@ -129,13 +129,17 @@ void FOnlineAchievementsGOG::QueryAchievementDescriptions(const FUniqueNetId& In
 	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::QueryAchievementDescriptions()"));
 
 	if (!AssertAchievementsCount())
+	{
+		InDelegate.ExecuteIfBound(InPlayerId, false);
 		return;
+	}
 
 	// Assuming achievements declarations and descriptions cannot be changed in a runtime, it's enough to request them only once
 
 	if (!AreAchivementsDescriptionsAvailable())
 	{
 		QueryAchievements(InPlayerId, InDelegate);
+		InDelegate.ExecuteIfBound(InPlayerId, false);
 		return;
 	}
 
