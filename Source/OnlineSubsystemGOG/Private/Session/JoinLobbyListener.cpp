@@ -15,7 +15,8 @@ FJoinLobbyListener::FJoinLobbyListener(class FOnlineSessionGOG& InSessionInterfa
 void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult)
 {
 	// Save local copy of the session
-	sessionInterface.AddNamedSession(sessionName, joiningSession);
+	if(InResult == EOnJoinSessionCompleteResult::Success)
+		sessionInterface.AddNamedSession(sessionName, joiningSession);
 
 	sessionInterface.TriggerOnJoinSessionCompleteDelegates(sessionName, InResult);
 

@@ -103,7 +103,7 @@ namespace
 			auto err = galaxy::api::GetError();
 			if (err)
 			{
-				UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter near value: searchQueryhParamName=%s, %d; %s; %s"),
+				UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter near value: searchQueryParamName=%s, %d; %s; %s"),
 					*filter.Key, filterValue, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 
 				return;
@@ -113,7 +113,7 @@ namespace
 		galaxy::api::LobbyComparisonType lobbyComparisonType;
 		if (!ConvertToLobbySearchComparisonType(InSearchQueryParam.Value.ComparisonOp, lobbyComparisonType))
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryhParamName=%s, %s"),
+			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryParamName=%s, %s"),
 				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
 
 			return;
@@ -123,7 +123,7 @@ namespace
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for numerical value: searchQueryhParamName=%s, %d; %s: %s"),
+			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for numerical value: searchQueryParamName=%s, %d; %s: %s"),
 				*filter.Key, filterValue, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 
 			return;
@@ -137,7 +137,7 @@ namespace
 		const auto& filter = NamedVariantDataConverter::ToLobbyDataEntry(InSearchQueryParam.Key, InSearchQueryParam.Value.Data);
 		if (filter.Value.IsEmpty())
 		{
-			UE_LOG_ONLINE(Display, TEXT("Empty filter. Skipping: searchQueryhParamName=%s, %s"),
+			UE_LOG_ONLINE(Display, TEXT("Empty filter. Skipping: searchQueryParamName=%s, %s"),
 				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
 			return;
 		}
@@ -145,7 +145,7 @@ namespace
 		galaxy::api::LobbyComparisonType lobbyComparisonType;
 		if (!ConvertToLobbySearchComparisonType(InSearchQueryParam.Value.ComparisonOp, lobbyComparisonType))
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryhParamName=%s, %s"),
+			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryParamName=%s, %s"),
 				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
 
 			return;
@@ -154,7 +154,7 @@ namespace
 		galaxy::api::Matchmaking()->AddRequestLobbyListStringFilter(TCHAR_TO_UTF8(*filter.Key), TCHAR_TO_UTF8(*filter.Value), lobbyComparisonType);
 		auto err = galaxy::api::GetError();
 		if (err)
-			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for string value: searchQueryhParamName=%s, %s; %s: %s"),
+			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for string value: searchQueryParamName=%s, %s; %s: %s"),
 				*filter.Key, *filter.Value, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 	}
 
@@ -330,26 +330,26 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 
 bool FOnlineSessionGOG::CreateSession(const FUniqueNetId& InHostingPlayerId, FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
 {
-	return CreateSession(LOCAL_USER_NUM, std::move(InSessionName), InSessionSettings);
+	return CreateSession(LOCAL_USER_NUM, MoveTemp(InSessionName), InSessionSettings);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
 
-	return CreateNamedSession(std::move(InSessionName), InSessionSettings);
+	return CreateNamedSession(MoveTemp(InSessionName), InSessionSettings);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSession& InSession)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
 
-	return CreateNamedSession(std::move(InSessionName), InSession);
+	return CreateNamedSession(MoveTemp(InSessionName), InSession);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName)
 {
-	return const_cast<FNamedOnlineSession*>(static_cast<const FOnlineSessionGOG*>(this)->GetNamedSession(std::move(InSessionName)));
+	return const_cast<FNamedOnlineSession*>(static_cast<const FOnlineSessionGOG*>(this)->GetNamedSession(MoveTemp(InSessionName)));
 }
 
 const FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName) const
@@ -534,7 +534,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 	{
 		UE_LOG_ONLINE(Display, TEXT("No changes in Session settings"));
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, true);
-		return false;
+		return true;
 	}
 
 	if (!OnlineSessionUtils::SetLobbyData(sessionID, sessionSettingsToUpdate)
@@ -647,7 +647,8 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 	if (storedSession->SessionState == EOnlineSessionState::Destroying)
 	{
 		UE_LOG_ONLINE(Warning, TEXT("Session is already marked to be destroyed. Skipping: sessionName='%s'"), *InSessionName.ToString());
-		// Initial operation will trigger the delegates
+		InCompletionDelegate.ExecuteIfBound(InSessionName, false);
+		// Initial operation will trigger global delegate
 		return false;
 	}
 
@@ -741,9 +742,6 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 		return false;
 	}
 
-	if (InOutSearchSettings->MaxSearchResults < 0)
-		UE_LOG_ONLINE(Warning, TEXT("Invalid number of max search results. Ignoring this value"));
-
 	if (InOutSearchSettings->bIsLanQuery)
 		UE_LOG_ONLINE(Warning, TEXT("LAN is not supported by GOG platform. Ignoring this value"));
 
@@ -752,6 +750,22 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 
 	if (InOutSearchSettings->PingBucketSize > 0)
 		UE_LOG_ONLINE(Warning, TEXT("Ping-based search is not supported. Ignoring this value"));
+
+	if (InOutSearchSettings->MaxSearchResults > 0)
+	{
+		galaxy::api::Matchmaking()->AddRequestLobbyListResultCountFilter(static_cast<uint32_t>(InOutSearchSettings->MaxSearchResults));
+		auto err = galaxy::api::GetError();
+		if (err)
+		{
+			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby count filter: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+
+			InOutSearchSettings->SearchState = EOnlineAsyncTaskState::Failed;
+			TriggerOnFindSessionsCompleteDelegates(false);
+			return false;
+		}
+	}
+	else
+		UE_LOG_ONLINE(Warning, TEXT("Invalid number of max search results. Ignoring this value"));
 
 	FSearchParams postOperationSearchQueryParams;
 	ParseAndApplyLobbySearchFilters(InOutSearchSettings->QuerySettings, postOperationSearchQueryParams);
