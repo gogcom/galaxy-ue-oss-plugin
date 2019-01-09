@@ -3,7 +3,8 @@
 
 	"FriendlyName": "Online Subsystem GOG",
 	"Version": 1,
-	"VersionName": "0.2",
+	"VersionName": "0.2.2",
+	"VersionDescription": "Several small fixes",
 	"Description": "GOG online features",
 	"Category": "Online Platform",
 	"CreatedBy": "GOG Galaxy SDK Dev Team",
