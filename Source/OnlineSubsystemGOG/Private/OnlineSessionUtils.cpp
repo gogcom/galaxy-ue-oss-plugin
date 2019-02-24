@@ -142,7 +142,7 @@ bool OnlineSessionUtils::Fill(const FUniqueNetIdGOG& InLobbyID, FOnlineSessionSe
 			lobbyDataValueBuffer.size()))
 		{
 			UE_LOG_ONLINE(Error, TEXT("Failed to fetch lobby data: lobbyID='%s'"), *InLobbyID.ToString());
-			false;
+			return false;
 		}
 
 		lobbyData.Emplace(UTF8_TO_TCHAR(lobbyDataKeyBuffer.data()), UTF8_TO_TCHAR(lobbyDataValueBuffer.data()));
