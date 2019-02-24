@@ -40,7 +40,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	if (accountType == TEXT("steam"))
 	{
 		UE_LOG_ONLINE(Display, TEXT("Trying to log in as Steam user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Token), CharLen(InAccountCredentials.Token), TCHAR_TO_UTF8(*InAccountCredentials.Id));
+		galaxy::api::User()->SignInSteam(TCHAR_TO_UTF8(*InAccountCredentials.Token), CharLen(InAccountCredentials.Token), TCHAR_TO_UTF8(*InAccountCredentials.Id));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
@@ -57,7 +57,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	if (accountType == TEXT("test"))
 	{
 		UE_LOG_ONLINE(Display, TEXT("Trying to log in as user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
+		galaxy::api::User()->SignInCredentials(TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
@@ -72,7 +72,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	}
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with Galaxy Client"));
-	galaxy::api::User()->SignIn(true);
+	galaxy::api::User()->SignInGalaxy(true);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -88,7 +88,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 #elif PLATFORM_XBOXONE
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with XBOX ONE UserID '%s'"), *InAccountCredentials.Id);
-	galaxy::api::User()->SignIn(static_cast<uint32_t>(FCString::Atoi(*InAccountCredentials.Id)));
+	galaxy::api::User()->SignInXB1(static_cast<uint32_t>(FCString::Atoi(*InAccountCredentials.Id)));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -104,7 +104,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 #elif PLATFORM_PS4
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with PS4 ClientID '%s'"), *InAccountCredentials.Id);
-	galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Id), nullptr, nullptr, 0);
+	galaxy::api::User()->SignInPS4(TCHAR_TO_UTF8(*InAccountCredentials.Id), nullptr, nullptr, 0);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{

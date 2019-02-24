@@ -426,7 +426,7 @@ UNetDriverGOG::LobbyLeftListener::LobbyLeftListener(UNetDriverGOG& InDriver)
 {
 }
 
-void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIOFailure)
+void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason /*InLeaveReason*/)
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::OnLobbyMemberStateChanged()"));
 

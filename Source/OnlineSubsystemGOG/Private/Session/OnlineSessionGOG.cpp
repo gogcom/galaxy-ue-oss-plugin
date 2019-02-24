@@ -1142,7 +1142,7 @@ int32 FOnlineSessionGOG::GetNumSessions()
 	return storedSessions.Num();
 }
 
-void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure)
+void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason /*InLeaveReason*/)
 {
 	UE_LOG_ONLINE(Log, TEXT("FOnlineSessionGOG::OnLobbyLeft()"));
 

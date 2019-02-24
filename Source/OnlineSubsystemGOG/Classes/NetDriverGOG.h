@@ -54,7 +54,7 @@ private:
 
 		LobbyLeftListener(UNetDriverGOG& InDriver);
 
-		void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIOFailure) override;
+		void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason InLeaveReason) override;
 
 		UNetDriverGOG& driver;
 	};
