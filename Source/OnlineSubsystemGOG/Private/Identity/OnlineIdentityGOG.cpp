@@ -129,11 +129,16 @@ bool FOnlineIdentityGOG::Logout(int32 InLocalUserNum)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::Logout()"));
 
-	UE_LOG_ONLINE(Error, TEXT("'Logout()' operation is not available on GOG platform"));
+	galaxy::api::User()->SignOut();
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to sign out; %s : %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		return false;
+	}
 
-	TriggerOnLoginChangedDelegates(InLocalUserNum);
-	TriggerOnLogoutCompleteDelegates(InLocalUserNum, false);
-	return false;
+	isSigningOut = true;
+	return true;
 }
 
 bool FOnlineIdentityGOG::AutoLogin(int32 InLocalUserNum)
@@ -356,15 +361,9 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	check(IsInGameThread());
 
 	isAuthInProgress = false;
-	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
 
 	auto ownUserID = UserInfoUtils::GetOwnUserID();
-	if (!ownUserID.IsValid() || !ownUserID.IsUser())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid own UserID: userID='%s'"), *ownUserID.ToString());
-		TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, false, *ownUserOnlineAccount->GetUserId(), FString::Printf(TEXT("Invalid own UserID: userID='%s'"), *ownUserID.ToString()));
-		return;
-	}
+	check(ownUserID.IsValid() && ownUserID.IsUser())
 
 	// Update cached info keeping shared ref
 	*ownUserOnlineAccount = FUserOnlineAccountGOG{ownUserID};
@@ -376,7 +375,9 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	if (err)
 		UE_LOG_ONLINE(Warning, TEXT("Failed to request user data: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
+	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
 	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, *ownUserOnlineAccount->GetUserId(), TEXT(""));
+	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::NotLoggedIn, ELoginStatus::LoggedIn, *ownUserOnlineAccount->GetUserId());
 
 	UE_LOG_ONLINE(Display, TEXT("Successfully logged in: name=%s, userID=%s"), *ownUserOnlineAccount->GetDisplayName(), *ownUserOnlineAccount->GetUserId()->ToString());
 }
@@ -404,7 +405,15 @@ void FOnlineIdentityGOG::OnAuthLost()
 
 	UE_LOG_ONLINE(Error, TEXT("Authentication lost"));
 
+	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
+	if (isSigningOut)
+	{
+		isSigningOut = false;
+		TriggerOnLogoutCompleteDelegates(LOCAL_USER_NUM, true);
+	}
 	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::LoggedIn, ELoginStatus::NotLoggedIn, *ownUserOnlineAccount->GetUserId());
+
+	*ownUserOnlineAccount = FUserOnlineAccountGOG{{}};
 }
 
 FString FOnlineIdentityGOG::FailureReasonToFString(FailureReason failureReason)

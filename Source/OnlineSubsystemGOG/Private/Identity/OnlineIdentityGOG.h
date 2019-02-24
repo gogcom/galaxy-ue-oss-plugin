@@ -67,6 +67,7 @@ private:
 	class FOnlineSubsystemGOG& onlineSubsystemGOG;
 
 	bool isAuthInProgress{false};
+	bool isSigningOut{false};
 
 	TSharedRef<FUserOnlineAccountGOG> ownUserOnlineAccount;
 };
