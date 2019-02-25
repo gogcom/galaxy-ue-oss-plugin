@@ -8,6 +8,7 @@
 #include "Presence/OnlinePresenceGOG.h"
 
 #include "SharedPointer.h"
+#include <algorithm>
 
 namespace
 {
@@ -32,6 +33,34 @@ namespace
 			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
 				return EOnlineServerConnectionStatus::Normal;
 		}
+	}
+
+	std::uint16_t GetPeerPort()
+	{
+		{
+			std::uint16_t port{0};
+			if (FParse::Value(FCommandLine::Get(), TEXT("port="), port))
+				return port;
+		}
+
+		int32 port{0};
+		if (GConfig->GetInt(TEXT_CONFIG_SECTION_GOG, TEXT("Port"), port, GEngineIni))
+			return static_cast<std::uint16_t>(std::max(port, 0));
+
+		return 0; // use any port
+	}
+
+	FString GetPeerHost()
+	{
+		FString host;
+		if (FParse::Value(FCommandLine::Get(), TEXT("multihome="), host) && !host.IsEmpty())
+			return host;
+
+		host = GConfig->GetStr(TEXT_CONFIG_SECTION_GOG, TEXT("Host"), GEngineIni);
+		if (!host.IsEmpty())
+			return host;
+
+		return {};
 	}
 
 }
@@ -132,7 +161,21 @@ bool FOnlineSubsystemGOG::InitGalaxyPeer()
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::InitGalaxyPeer()"));
 
-	galaxy::api::Init(galaxy::api::InitOptions{TCHAR_TO_UTF8(*GetAppId()), TCHAR_TO_UTF8(*GetClientSecret())});
+	const auto host = GetPeerHost();
+	const auto port = GetPeerPort();
+
+	if(!host.IsEmpty() || port != 0 )
+		UE_LOG_ONLINE(Display, TEXT("Binding Galaxy to adress %s:%u"), *host, port);
+
+	galaxy::api::Init({
+		TCHAR_TO_UTF8(*GetAppId()),
+		TCHAR_TO_UTF8(*GetClientSecret()),
+		".", // configPath
+		nullptr, // galaxyAllocator
+		nullptr, // storagePath
+		TCHAR_TO_UTF8(*host),
+		GetPeerPort()});
+
 	auto err = galaxy::api::GetError();
 	if (err)
 	{

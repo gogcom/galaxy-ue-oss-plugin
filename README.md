@@ -36,6 +36,8 @@ DefaultPlatformService=GOG
 [OnlineSubsystemGOG]
 ClientID=<CLIENT_ID>
 ClientSecret=<CLIENT_SECRET>
+Port=<LOCAL_PORT> ; can be overriden with -port=<port>
+Host=<LOCAL_HOST> ; can be overriden with -multihome=<host>
 
 [/Script/Engine.Engine]
 !NetDriverDefinitions=ClearArray
