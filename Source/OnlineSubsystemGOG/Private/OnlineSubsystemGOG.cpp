@@ -9,6 +9,55 @@
 
 #include "SharedPointer.h"
 
+namespace
+{
+
+	EOnlineServerConnectionStatus::Type GetConnectionState(galaxy::api::GogServicesConnectionState InConnectionState)
+	{
+		using namespace galaxy::api;
+
+		switch (InConnectionState)
+		{
+			case GOG_SERVICES_CONNECTION_STATE_CONNECTED:
+				return EOnlineServerConnectionStatus::Connected;
+
+			case GOG_SERVICES_CONNECTION_STATE_DISCONNECTED:
+				return EOnlineServerConnectionStatus::ConnectionDropped;
+
+			case GOG_SERVICES_CONNECTION_STATE_AUTH_LOST:
+				return EOnlineServerConnectionStatus::NotAuthorized;
+
+			default:
+				checkf(false, TEXT("Unsupported connection state: %u"), InConnectionState);
+			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
+				return EOnlineServerConnectionStatus::Normal;
+		}
+	}
+
+}
+
+class FOnlineSubsystemGOG::GlobalConnectionListener : public galaxy::api::GlobalGogServicesConnectionStateListener
+{
+public:
+
+	GlobalConnectionListener(FOnlineSubsystemGOG& InSubsystemGOG)
+		: subsystemGOG{InSubsystemGOG}
+	{
+	}
+
+	void OnConnectionStateChange(galaxy::api::GogServicesConnectionState InConnectionState)
+	{
+		auto newState = GetConnectionState(InConnectionState);
+		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(currentState, newState);
+		currentState = newState;
+	}
+
+private:
+
+	EOnlineServerConnectionStatus::Type currentState{EOnlineServerConnectionStatus::Normal};
+	FOnlineSubsystemGOG& subsystemGOG;
+};
+
 FOnlineSubsystemGOG::FOnlineSubsystemGOG()
 {
 }
@@ -111,6 +160,8 @@ bool FOnlineSubsystemGOG::Init()
 		return false;
 	}
 
+	globalConnectionListener = MakeUnique<GlobalConnectionListener>(*this);
+
 	auto identityInterfaceGOG = MakeShared<FOnlineIdentityGOG, ESPMode::ThreadSafe>(*this);
 	auto ownUserOnlineAccount = identityInterfaceGOG->GetOwnUserOnlineAccount();
 	galaxyIdentityInterface = identityInterfaceGOG;
@@ -166,6 +217,8 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 	galaxyLeaderboardsInterface.Reset();
 	galaxyFriendsInterface.Reset();
 	galaxyPresenceInterface.Reset();
+
+	globalConnectionListener.Reset();
 
 	ShutdownGalaxyPeer();
 

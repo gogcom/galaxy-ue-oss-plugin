@@ -1153,8 +1153,6 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, gala
 		return;
 	}
 
-	subsystemGOG.TriggerOnConnectionStatusChangedDelegates(EOnlineServerConnectionStatus::Normal, EOnlineServerConnectionStatus::ConnectionDropped);
-
 	// Not sure if we have to clean this up, or developer/Engine will manage everything, but let's do it
 	DestroySession(storedSession->SessionName);
 }

@@ -110,6 +110,9 @@ private:
 	FString clientID;
 	FString clientSecret;
 
+	class GlobalConnectionListener;
+	TUniquePtr<GlobalConnectionListener> globalConnectionListener;
+
 	bool ShutdownImpl();
 };
 
