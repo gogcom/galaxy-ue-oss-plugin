@@ -123,10 +123,7 @@ bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 	galaxy::api::ProcessData();
 	auto err = galaxy::api::GetError();
 	if (err)
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to tick galaxy::api::ProcessData()"));
-		return false;
-	}
+		UE_LOG_ONLINE(Error, TEXT("Failed to tick ProcessData(): %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	return FOnlineSubsystemImpl::Tick(InDeltaTime);
 }
