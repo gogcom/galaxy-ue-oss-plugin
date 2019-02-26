@@ -105,12 +105,11 @@ namespace OnlineUserPresence
 			return false;
 		}
 
-		// TODO: Uncomment after 1.128 or newer is released
-		//	if (galaxy::api::Friends()->IsUserInTheSameGame(InUserID))
-		//	{
-		//		bIsPlaying = true;
-		//		bIsPlayingThisGame = true;
-		//	}
+		if (galaxy::api::Friends()->IsUserInTheSameGame(InUserID))
+		{
+			InOutOnlineUserPresence.bIsPlaying = true;
+			InOutOnlineUserPresence.bIsPlayingThisGame = true;
+		}
 
 		InOutOnlineUserPresence.Status.Properties.Reserve(presenceCount);
 		for (decltype(presenceCount) idx{0}; idx < presenceCount; ++idx)
