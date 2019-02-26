@@ -1142,9 +1142,12 @@ int32 FOnlineSessionGOG::GetNumSessions()
 	return storedSessions.Num();
 }
 
-void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason /*InLeaveReason*/)
+void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason InLeaveReason)
 {
 	UE_LOG_ONLINE(Log, TEXT("FOnlineSessionGOG::OnLobbyLeft()"));
+
+	if (InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_USER_LEFT)
+		return;
 
 	auto storedSession = FindSession(InLobbyID);
 	if (!storedSession)
