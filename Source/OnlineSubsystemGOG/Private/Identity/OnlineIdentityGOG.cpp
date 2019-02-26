@@ -9,6 +9,20 @@
 
 #include <array>
 
+namespace
+{
+
+	bool GetRequireBackendAuthorization()
+	{
+		bool requireBackendAuthrorization{true};
+		if (GConfig->GetBool(TEXT_CONFIG_SECTION_GOG, TEXT("bRequireBackendAuthorization"), requireBackendAuthrorization, GEngineIni))
+			return requireBackendAuthrorization;
+
+		return true;
+	}
+
+}
+
 FOnlineIdentityGOG::FOnlineIdentityGOG(FOnlineSubsystemGOG& InOnlineSubsystemGOG)
 	: onlineSubsystemGOG{InOnlineSubsystemGOG}
 	, ownUserOnlineAccount{MakeShared<FUserOnlineAccountGOG>(FUniqueNetIdGOG{})}
@@ -72,7 +86,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	}
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with Galaxy Client"));
-	galaxy::api::User()->SignInGalaxy(true);
+	galaxy::api::User()->SignInGalaxy(GetRequireBackendAuthorization());
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -377,7 +391,6 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 
 	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
 	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, *ownUserOnlineAccount->GetUserId(), TEXT(""));
-	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::NotLoggedIn, ELoginStatus::LoggedIn, *ownUserOnlineAccount->GetUserId());
 
 	UE_LOG_ONLINE(Display, TEXT("Successfully logged in: name=%s, userID=%s"), *ownUserOnlineAccount->GetDisplayName(), *ownUserOnlineAccount->GetUserId()->ToString());
 }
@@ -411,9 +424,13 @@ void FOnlineIdentityGOG::OnAuthLost()
 		isSigningOut = false;
 		TriggerOnLogoutCompleteDelegates(LOCAL_USER_NUM, true);
 	}
-	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::LoggedIn, ELoginStatus::NotLoggedIn, *ownUserOnlineAccount->GetUserId());
+}
 
-	*ownUserOnlineAccount = FUserOnlineAccountGOG{{}};
+void FOnlineIdentityGOG::OnOperationalStateChanged(uint32_t /*InOperationalState*/)
+{
+	auto newLoginStatus = GetLoginStatus(LOCAL_USER_NUM);
+	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, loginStatus, newLoginStatus, *ownUserOnlineAccount->GetUserId());
+	loginStatus = newLoginStatus;
 }
 
 FString FOnlineIdentityGOG::FailureReasonToFString(FailureReason failureReason)

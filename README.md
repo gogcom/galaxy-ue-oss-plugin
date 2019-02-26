@@ -27,7 +27,7 @@
 	}
 ]
 ```
-- Update default engine configuration file (**"GameFolder/Config/DefaultEngine.ini"**) with **ClientID** and **ClientSecret**:
+- Update default engine configuration file (**"GameFolder/Config/DefaultEngine.ini"**):
 
 ```
 [OnlineSubsystem]
@@ -36,8 +36,13 @@ DefaultPlatformService=GOG
 [OnlineSubsystemGOG]
 ClientID=<CLIENT_ID>
 ClientSecret=<CLIENT_SECRET>
-Port=<LOCAL_PORT> ; can be overriden with -port=<port>
-Host=<LOCAL_HOST> ; can be overriden with -multihome=<host>
+; Port can be overriden with -port=<port>
+Port=<LOCAL_PORT>
+; Host be overriden with -multihome=<host>
+Host=<LOCAL_HOST>
+; When authorizing with Galaxy, this flag controls whether user can play offline (using local profile from the GalaxyClient), or has to be logged on to Galaxy backend services
+; When offline, achievements, stats and other data are stored locally until user is online, and some functionalities are unavailable, e.g. friends, multiplayer, rich presence
+bRequireBackendAuthorization=<IS_BACKEND_AUTH_REQUIRED>
 
 [/Script/Engine.Engine]
 !NetDriverDefinitions=ClearArray
