@@ -31,7 +31,7 @@ namespace
 
 		newEntry.Columns.Add(InOutReadLeaderboard->SortedColumn, InScore);
 
-		FString details{static_cast<int32>(InDetailsSize), UTF8_TO_TCHAR(InDetailsBuffer)};
+		FString details{static_cast<int32>(InDetailsSize / sizeof(FString::ElementType)), UTF8_TO_TCHAR(InDetailsBuffer)};
 		newEntry.Columns.Append(OnlineLeaderboardConverter::FromJsonString(MoveTemp(details)));
 
 		return true;
