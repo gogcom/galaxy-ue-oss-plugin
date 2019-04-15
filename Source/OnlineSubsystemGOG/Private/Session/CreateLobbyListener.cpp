@@ -58,9 +58,9 @@ FCreateLobbyListener::FCreateLobbyListener(
 	FOnlineSessionSettings InSettings)
 	: sessionInterface{InSessionInterface}
 	, sessionName{MoveTemp(InSessionName)}
+	, sessionSettings{MoveTemp(InSettings)}
 	, sessionOwnerID{MoveTemp(InSessionOwnerID)}
 	, sessionOwnerName{MoveTemp(InSessionOwnerName)}
-	, sessionSettings{MoveTemp(InSettings)}
 {
 	checkf(!sessionOwnerName.IsEmpty() && sessionOwnerID->IsValid(), TEXT("Invalid session owner information"));
 }
