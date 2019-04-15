@@ -1142,9 +1142,12 @@ int32 FOnlineSessionGOG::GetNumSessions()
 	return storedSessions.Num();
 }
 
-void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure)
+void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason InLeaveReason)
 {
 	UE_LOG_ONLINE(Log, TEXT("FOnlineSessionGOG::OnLobbyLeft()"));
+
+	if (InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_USER_LEFT)
+		return;
 
 	auto storedSession = FindSession(InLobbyID);
 	if (!storedSession)
@@ -1152,8 +1155,6 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool
 		UE_LOG_ONLINE(Warning, TEXT("Lobby left listener called for an unknown session. Ignoring"));
 		return;
 	}
-
-	subsystemGOG.TriggerOnConnectionStatusChangedDelegates(EOnlineServerConnectionStatus::Normal, EOnlineServerConnectionStatus::ConnectionDropped);
 
 	// Not sure if we have to clean this up, or developer/Engine will manage everything, but let's do it
 	DestroySession(storedSession->SessionName);

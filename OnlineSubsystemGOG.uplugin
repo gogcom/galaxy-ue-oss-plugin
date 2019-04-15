@@ -3,7 +3,9 @@
 
 	"FriendlyName": "Online Subsystem GOG",
 	"Version": 1,
-	"VersionName": "0.2",
+	"VersionName": "0.3.0",
+	"VersionDescription": "Add host/port configuration; Add lobby pings; Add connection state handling; Several fixes",
+	"GalaxySDKVersion": "1.133.6",
 	"Description": "GOG online features",
 	"Category": "Online Platform",
 	"CreatedBy": "GOG Galaxy SDK Dev Team",

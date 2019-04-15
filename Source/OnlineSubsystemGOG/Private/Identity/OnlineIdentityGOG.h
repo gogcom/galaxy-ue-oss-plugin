@@ -8,6 +8,7 @@
 class FOnlineIdentityGOG
 	: public IOnlineIdentity
 	, public galaxy::api::GlobalAuthListener
+	, public galaxy::api::GlobalOperationalStateChangeListener
 {
 public:
 
@@ -62,11 +63,15 @@ private:
 
 	void OnAuthLost() override;
 
+	void OnOperationalStateChanged(uint32_t InOperationalState) override;
+
 	FString FailureReasonToFString(FailureReason failureReason);
 
 	class FOnlineSubsystemGOG& onlineSubsystemGOG;
 
 	bool isAuthInProgress{false};
+	bool isSigningOut{false};
+	ELoginStatus::Type loginStatus{ELoginStatus::NotLoggedIn};
 
 	TSharedRef<FUserOnlineAccountGOG> ownUserOnlineAccount;
 };

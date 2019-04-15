@@ -9,6 +9,20 @@
 
 #include <array>
 
+namespace
+{
+
+	bool GetRequireBackendAuthorization()
+	{
+		bool requireBackendAuthrorization{true};
+		if (GConfig->GetBool(TEXT_CONFIG_SECTION_GOG, TEXT("bRequireBackendAuthorization"), requireBackendAuthrorization, GEngineIni))
+			return requireBackendAuthrorization;
+
+		return true;
+	}
+
+}
+
 FOnlineIdentityGOG::FOnlineIdentityGOG(FOnlineSubsystemGOG& InOnlineSubsystemGOG)
 	: onlineSubsystemGOG{InOnlineSubsystemGOG}
 	, ownUserOnlineAccount{MakeShared<FUserOnlineAccountGOG>(FUniqueNetIdGOG{})}
@@ -40,7 +54,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	if (accountType == TEXT("steam"))
 	{
 		UE_LOG_ONLINE(Display, TEXT("Trying to log in as Steam user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Token), CharLen(InAccountCredentials.Token), TCHAR_TO_UTF8(*InAccountCredentials.Id));
+		galaxy::api::User()->SignInSteam(TCHAR_TO_UTF8(*InAccountCredentials.Token), CharLen(InAccountCredentials.Token), TCHAR_TO_UTF8(*InAccountCredentials.Id));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
@@ -57,7 +71,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	if (accountType == TEXT("test"))
 	{
 		UE_LOG_ONLINE(Display, TEXT("Trying to log in as user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
+		galaxy::api::User()->SignInCredentials(TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
@@ -72,7 +86,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	}
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with Galaxy Client"));
-	galaxy::api::User()->SignIn(true);
+	galaxy::api::User()->SignInGalaxy(GetRequireBackendAuthorization());
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -88,7 +102,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 #elif PLATFORM_XBOXONE
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with XBOX ONE UserID '%s'"), *InAccountCredentials.Id);
-	galaxy::api::User()->SignIn(static_cast<uint32_t>(FCString::Atoi(*InAccountCredentials.Id)));
+	galaxy::api::User()->SignInXB1(static_cast<uint32_t>(FCString::Atoi(*InAccountCredentials.Id)));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -104,7 +118,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 #elif PLATFORM_PS4
 
 	UE_LOG_ONLINE(Display, TEXT("Trying to log in with PS4 ClientID '%s'"), *InAccountCredentials.Id);
-	galaxy::api::User()->SignIn(TCHAR_TO_UTF8(*InAccountCredentials.Id), nullptr, nullptr, 0);
+	galaxy::api::User()->SignInPS4(TCHAR_TO_UTF8(*InAccountCredentials.Id), nullptr, nullptr, 0);
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -129,11 +143,16 @@ bool FOnlineIdentityGOG::Logout(int32 InLocalUserNum)
 {
 	UE_LOG_ONLINE(Display, TEXT("FOnlineIdentityGOG::Logout()"));
 
-	UE_LOG_ONLINE(Error, TEXT("'Logout()' operation is not available on GOG platform"));
+	galaxy::api::User()->SignOut();
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to sign out; %s : %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		return false;
+	}
 
-	TriggerOnLoginChangedDelegates(InLocalUserNum);
-	TriggerOnLogoutCompleteDelegates(InLocalUserNum, false);
-	return false;
+	isSigningOut = true;
+	return true;
 }
 
 bool FOnlineIdentityGOG::AutoLogin(int32 InLocalUserNum)
@@ -356,15 +375,9 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	check(IsInGameThread());
 
 	isAuthInProgress = false;
-	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
 
 	auto ownUserID = UserInfoUtils::GetOwnUserID();
-	if (!ownUserID.IsValid() || !ownUserID.IsUser())
-	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid own UserID: userID='%s'"), *ownUserID.ToString());
-		TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, false, *ownUserOnlineAccount->GetUserId(), FString::Printf(TEXT("Invalid own UserID: userID='%s'"), *ownUserID.ToString()));
-		return;
-	}
+	check(ownUserID.IsValid() && ownUserID.IsUser())
 
 	// Update cached info keeping shared ref
 	*ownUserOnlineAccount = FUserOnlineAccountGOG{ownUserID};
@@ -376,6 +389,7 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	if (err)
 		UE_LOG_ONLINE(Warning, TEXT("Failed to request user data: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
+	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
 	TriggerOnLoginCompleteDelegates(LOCAL_USER_NUM, true, *ownUserOnlineAccount->GetUserId(), TEXT(""));
 
 	UE_LOG_ONLINE(Display, TEXT("Successfully logged in: name=%s, userID=%s"), *ownUserOnlineAccount->GetDisplayName(), *ownUserOnlineAccount->GetUserId()->ToString());
@@ -404,7 +418,19 @@ void FOnlineIdentityGOG::OnAuthLost()
 
 	UE_LOG_ONLINE(Error, TEXT("Authentication lost"));
 
-	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, ELoginStatus::LoggedIn, ELoginStatus::NotLoggedIn, *ownUserOnlineAccount->GetUserId());
+	TriggerOnLoginChangedDelegates(LOCAL_USER_NUM);
+	if (isSigningOut)
+	{
+		isSigningOut = false;
+		TriggerOnLogoutCompleteDelegates(LOCAL_USER_NUM, true);
+	}
+}
+
+void FOnlineIdentityGOG::OnOperationalStateChanged(uint32_t /*InOperationalState*/)
+{
+	auto newLoginStatus = GetLoginStatus(LOCAL_USER_NUM);
+	TriggerOnLoginStatusChangedDelegates(LOCAL_USER_NUM, loginStatus, newLoginStatus, *ownUserOnlineAccount->GetUserId());
+	loginStatus = newLoginStatus;
 }
 
 FString FOnlineIdentityGOG::FailureReasonToFString(FailureReason failureReason)

@@ -8,6 +8,84 @@
 #include "Presence/OnlinePresenceGOG.h"
 
 #include "SharedPointer.h"
+#include <algorithm>
+
+namespace
+{
+
+	EOnlineServerConnectionStatus::Type GetConnectionState(galaxy::api::GogServicesConnectionState InConnectionState)
+	{
+		using namespace galaxy::api;
+
+		switch (InConnectionState)
+		{
+			case GOG_SERVICES_CONNECTION_STATE_CONNECTED:
+				return EOnlineServerConnectionStatus::Connected;
+
+			case GOG_SERVICES_CONNECTION_STATE_DISCONNECTED:
+				return EOnlineServerConnectionStatus::ConnectionDropped;
+
+			case GOG_SERVICES_CONNECTION_STATE_AUTH_LOST:
+				return EOnlineServerConnectionStatus::NotAuthorized;
+
+			default:
+				checkf(false, TEXT("Unsupported connection state: %u"), InConnectionState);
+			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
+				return EOnlineServerConnectionStatus::Normal;
+		}
+	}
+
+	std::uint16_t GetPeerPort()
+	{
+		{
+			std::uint16_t port{0};
+			if (FParse::Value(FCommandLine::Get(), TEXT("port="), port))
+				return port;
+		}
+
+		int32 port{0};
+		if (GConfig->GetInt(TEXT_CONFIG_SECTION_GOG, TEXT("Port"), port, GEngineIni))
+			return static_cast<std::uint16_t>(std::max(port, 0));
+
+		return 0; // use any port
+	}
+
+	FString GetPeerHost()
+	{
+		FString host;
+		if (FParse::Value(FCommandLine::Get(), TEXT("multihome="), host) && !host.IsEmpty())
+			return host;
+
+		host = GConfig->GetStr(TEXT_CONFIG_SECTION_GOG, TEXT("Host"), GEngineIni);
+		if (!host.IsEmpty())
+			return host;
+
+		return {};
+	}
+
+}
+
+class FOnlineSubsystemGOG::GlobalConnectionListener : public galaxy::api::GlobalGogServicesConnectionStateListener
+{
+public:
+
+	GlobalConnectionListener(FOnlineSubsystemGOG& InSubsystemGOG)
+		: subsystemGOG{InSubsystemGOG}
+	{
+	}
+
+	void OnConnectionStateChange(galaxy::api::GogServicesConnectionState InConnectionState)
+	{
+		auto newState = GetConnectionState(InConnectionState);
+		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(currentState, newState);
+		currentState = newState;
+	}
+
+private:
+
+	EOnlineServerConnectionStatus::Type currentState{EOnlineServerConnectionStatus::Normal};
+	FOnlineSubsystemGOG& subsystemGOG;
+};
 
 FOnlineSubsystemGOG::FOnlineSubsystemGOG()
 {
@@ -74,10 +152,7 @@ bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 	galaxy::api::ProcessData();
 	auto err = galaxy::api::GetError();
 	if (err)
-	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to tick galaxy::api::ProcessData()"));
-		return false;
-	}
+		UE_LOG_ONLINE(Error, TEXT("Failed to tick ProcessData(): %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	return FOnlineSubsystemImpl::Tick(InDeltaTime);
 }
@@ -86,7 +161,21 @@ bool FOnlineSubsystemGOG::InitGalaxyPeer()
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::InitGalaxyPeer()"));
 
-	galaxy::api::Init(galaxy::api::InitOptions{TCHAR_TO_UTF8(*GetAppId()), TCHAR_TO_UTF8(*GetClientSecret())});
+	const auto host = GetPeerHost();
+	const auto port = GetPeerPort();
+
+	if(!host.IsEmpty() || port != 0 )
+		UE_LOG_ONLINE(Display, TEXT("Binding Galaxy to adress %s:%u"), *host, port);
+
+	galaxy::api::Init({
+		TCHAR_TO_UTF8(*GetAppId()),
+		TCHAR_TO_UTF8(*GetClientSecret()),
+		".", // configPath
+		nullptr, // galaxyAllocator
+		nullptr, // storagePath
+		TCHAR_TO_UTF8(*host),
+		GetPeerPort()});
+
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
@@ -110,6 +199,8 @@ bool FOnlineSubsystemGOG::Init()
 		UE_LOG_ONLINE(Error, TEXT("Failed to initialize OnlineSubsystemGOG. Online features are not available."));
 		return false;
 	}
+
+	globalConnectionListener = MakeUnique<GlobalConnectionListener>(*this);
 
 	auto identityInterfaceGOG = MakeShared<FOnlineIdentityGOG, ESPMode::ThreadSafe>(*this);
 	auto ownUserOnlineAccount = identityInterfaceGOG->GetOwnUserOnlineAccount();
@@ -166,6 +257,8 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 	galaxyLeaderboardsInterface.Reset();
 	galaxyFriendsInterface.Reset();
 	galaxyPresenceInterface.Reset();
+
+	globalConnectionListener.Reset();
 
 	ShutdownGalaxyPeer();
 

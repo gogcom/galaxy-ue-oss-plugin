@@ -121,7 +121,7 @@ private:
 
 	FNamedOnlineSession* FindSession(const FUniqueNetIdGOG& InSessionID);
 
-	void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, bool InIoFailure) override;
+	void OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason InLeaveReason) override;
 
 	void OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString) override;
 

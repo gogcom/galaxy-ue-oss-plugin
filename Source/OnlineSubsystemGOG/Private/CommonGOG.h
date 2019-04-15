@@ -5,7 +5,6 @@
 #include "OnlineSubsystem.h"
 
 #include <galaxy/GalaxyApi.h>
-#include <galaxy/GalaxyExceptionHelper.h>
 
 #define TEXT_GOG TEXT("GOG")
 

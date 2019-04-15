@@ -58,9 +58,9 @@ FCreateLobbyListener::FCreateLobbyListener(
 	FOnlineSessionSettings InSettings)
 	: sessionInterface{InSessionInterface}
 	, sessionName{MoveTemp(InSessionName)}
+	, sessionSettings{MoveTemp(InSettings)}
 	, sessionOwnerID{MoveTemp(InSessionOwnerID)}
 	, sessionOwnerName{MoveTemp(InSessionOwnerName)}
-	, sessionSettings{MoveTemp(InSettings)}
 {
 	checkf(!sessionOwnerName.IsEmpty() && sessionOwnerID->IsValid(), TEXT("Invalid session owner information"));
 }
@@ -145,12 +145,14 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 	{
 		UE_LOG_ONLINE(Error, TEXT("Cannot mark lobby as joinable"));
 		TriggerOnCreateSessionCompleteDelegates(false);
+		return;
 	}
 
 	if (!AddLocalSession(sessionInterface, newLobbyID, sessionName, sessionOwnerID, sessionOwnerName, sessionSettings))
 	{
 		UE_LOG_ONLINE(Error, TEXT("Failed to add local session: sessionName=%s"), *sessionName.ToString());
 		TriggerOnCreateSessionCompleteDelegates(false);
+		return;
 	}
 
 	if (!OnlineSessionUtils::ShouldAdvertiseViaPresence(sessionSettings))

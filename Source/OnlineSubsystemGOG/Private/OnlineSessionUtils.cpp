@@ -142,7 +142,7 @@ bool OnlineSessionUtils::Fill(const FUniqueNetIdGOG& InLobbyID, FOnlineSessionSe
 			lobbyDataValueBuffer.size()))
 		{
 			UE_LOG_ONLINE(Error, TEXT("Failed to fetch lobby data: lobbyID='%s'"), *InLobbyID.ToString());
-			false;
+			return false;
 		}
 
 		lobbyData.Emplace(UTF8_TO_TCHAR(lobbyDataKeyBuffer.data()), UTF8_TO_TCHAR(lobbyDataValueBuffer.data()));
@@ -176,7 +176,15 @@ bool OnlineSessionUtils::Fill(const FUniqueNetIdGOG& InLobbyID, FOnlineSession& 
 
 bool OnlineSessionUtils::Fill(const FUniqueNetIdGOG& InLobbyID, FOnlineSessionSearchResult& InOutOnlineSessionSearchResult)
 {
-	InOutOnlineSessionSearchResult.PingInMs = 0;
+	auto ping = galaxy::api::Networking()->GetPingWith(InLobbyID);
+	auto err = galaxy::api::GetError();
+	if (err)
+	{
+		UE_LOG_ONLINE(Warning, TEXT("Failed to get ping with lobby: lobbyID='%s'; %s: %s"),
+			*InLobbyID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+	}
+
+	InOutOnlineSessionSearchResult.PingInMs = ping > 0 ? ping : MAX_QUERY_PING;
 
 	return Fill(InLobbyID, InOutOnlineSessionSearchResult.Session) && InOutOnlineSessionSearchResult.IsValid();
 }

@@ -25,7 +25,7 @@ public:
 
 	/* Log in to platform backend services
 	 *
-	 * To log in with Galaxy Client, leave parameters empty
+	 * To log in with Galaxy Client, leave parameters empty. In this case, config parameter 'bRequireBackendAuthorization' is taken into consideration.
 	 */
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"), Category = "Online")
 	static UGOGLoginCallbackProxy* Login(UObject* WorldContextObject, class APlayerController* PlayerController, FString AuthType, FString UserID, FString UserToken);
