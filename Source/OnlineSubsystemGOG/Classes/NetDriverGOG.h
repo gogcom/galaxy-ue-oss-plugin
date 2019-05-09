@@ -33,7 +33,11 @@ public:
 
 	void TickDispatch(float InDeltaTime) override;
 
+#if ENGINE_MINOR_VERSION >= 21
+	void LowLevelSend(FString InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;
+#else
 	void LowLevelSend(FString InAddress, void* InData, int32 InCountBits) override;
+#endif
 
 	FString LowLevelGetNetworkNumber() override;
 

@@ -97,10 +97,6 @@ private:
 	FOnlineSubsystemGOG& subsystemGOG;
 };
 
-FOnlineSubsystemGOG::FOnlineSubsystemGOG()
-{
-}
-
 FOnlineSubsystemGOG::FOnlineSubsystemGOG(FName InInstanceName)
 	: FOnlineSubsystemImpl(TEXT_GOG, InInstanceName)
 {

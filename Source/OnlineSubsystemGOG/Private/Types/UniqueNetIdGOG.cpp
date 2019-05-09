@@ -83,7 +83,7 @@ FString FUniqueNetIdGOG::ToDebugString() const
 
 uint32 GetTypeHash(const FUniqueNetIdGOG& InUniqueNetId)
 {
-	return static_cast<uint32>(InUniqueNetId.id) ^ (static_cast<uint32>(InUniqueNetId.id >> 32));
+	return GetTypeHash(InUniqueNetId.id);
 }
 
 FUniqueNetIdGOG::operator galaxy::api::GalaxyID() const

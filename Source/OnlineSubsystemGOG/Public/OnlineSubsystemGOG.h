@@ -85,9 +85,11 @@ public:
 
 	STUB_ONLINE_INTERFACE(TurnBased);
 
-PACKAGE_SCOPE:
+#if ENGINE_MINOR_VERSION >= 21
+	STUB_ONLINE_INTERFACE(Tournament);
+#endif
 
-	FOnlineSubsystemGOG();
+PACKAGE_SCOPE:
 
 	FOnlineSubsystemGOG(FName InInstanceName);
 

@@ -32,6 +32,13 @@ const FString& FOnlineFriendsGOG::GetDefaultFriendsListName()
 	return defaultFriendsListName;
 }
 
+#if ENGINE_MINOR_VERSION >= 21
+void FOnlineFriendsGOG::DumpRecentPlayers() const
+{
+	UE_LOG_ONLINE(Warning, TEXT("FOnlineFriendsGOG::DumpRecentPlayers() is not supported"));
+}
+#endif
+
 FOnlineFriendsGOG::FOnlineFriendsGOG(FOnlineSubsystemGOG& InSubsystem, TSharedRef<FUserOnlineAccountGOG> InUserOnlineAccount)
 	: subsystemGOG{InSubsystem}
 	, ownUserOnlineAccount{MoveTemp(InUserOnlineAccount)}

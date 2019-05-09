@@ -356,7 +356,11 @@ UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUrlGOG& InRemote
 	return *storedConnectionIt;
 }
 
+#if ENGINE_MINOR_VERSION >= 21
+void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
+#else
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits)
+#endif
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend()"));
 
@@ -364,8 +368,11 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 
 	if (ConnectionlessHandler.IsValid())
 	{
+#if ENGINE_MINOR_VERSION >= 21
+		const ProcessedPacket processedDataPacket = ConnectionlessHandler->OutgoingConnectionless(InAddress, dataToSend, InCountBits, OutTraits);
+#else
 		const ProcessedPacket processedDataPacket = ConnectionlessHandler->OutgoingConnectionless(InAddress, dataToSend, InCountBits);
-
+#endif
 		if (processedDataPacket.bError)
 		{
 			UE_LOG_TRAFFIC(Error, TEXT("Error processing packet with connectionless handler"));

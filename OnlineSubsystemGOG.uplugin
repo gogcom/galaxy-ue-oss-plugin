@@ -3,9 +3,9 @@
 
 	"FriendlyName": "Online Subsystem GOG",
 	"Version": 1,
-	"VersionName": "0.4.0",
-	"VersionDescription": "Upgrade to UE4.20",
-	"SupportedEngineAssociation": ["4.19", "4.20"],
+	"VersionName": "0.5.0",
+	"VersionDescription": "Upgrade to UE4.21",
+	"SupportedEngineAssociation": ["4.19", "4.20", "4.21"],
 	"GalaxySDKVersion": "1.133.6",
 	"Description": "GOG online features",
 	"Category": "Online Platform",
