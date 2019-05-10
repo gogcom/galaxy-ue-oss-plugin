@@ -43,7 +43,7 @@ FLeaderboardRetriever::FLeaderboardRetriever(class FOnlineLeaderboardsGOG& InLea
 	: leaderboardsInterface{InLeaderboardsInterface}
 	, readLeaderboard{MoveTemp(InInOutReadLeaderboard)}
 {
-	UE_LOG_ONLINE(Display, TEXT("Retrieving leaderboard: name=%s, sortedColumn=%s, readState=%s"),
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("Retrieving leaderboard: name=%s, sortedColumn=%s, readState=%s"),
 		*readLeaderboard->LeaderboardName.ToString(),
 		*readLeaderboard->SortedColumn.ToString(),
 		EOnlineAsyncTaskState::ToString(readLeaderboard->ReadState));
@@ -51,21 +51,21 @@ FLeaderboardRetriever::FLeaderboardRetriever(class FOnlineLeaderboardsGOG& InLea
 
 void FLeaderboardRetriever::OnLeaderboardRetrieveSuccess(const char* InName)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLeaderboardRetrieveSuccess: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("OnLeaderboardRetrieveSuccess: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
 
 	RequestLeaderboardEntries();
 }
 
 void FLeaderboardRetriever::OnLeaderboardRetrieveFailure(const char* InName, galaxy::api::ILeaderboardRetrieveListener::FailureReason failureReason)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLeaderboardRetrieveSuccess: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("OnLeaderboardRetrieveSuccess: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
 
 	TriggerOnLeaderboardReadCompleteDelegates(false);
 }
 
 void FLeaderboardRetriever::OnLeaderboardEntriesRetrieveSuccess(const char* InName, uint32_t InEntryCount)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLeaderboardEntriesRetrieveSuccess: %s"), UTF8_TO_TCHAR(InName));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("OnLeaderboardEntriesRetrieveSuccess: %s"), UTF8_TO_TCHAR(InName));
 
 	uint32 rank;
 	int32 score;
@@ -83,7 +83,7 @@ void FLeaderboardRetriever::OnLeaderboardEntriesRetrieveSuccess(const char* InNa
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to read retrieved leaderboard entries: leaderboardName='%s'; %s; %s"),
+			UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to read retrieved leaderboard entries: leaderboardName='%s'; %s; %s"),
 				*readLeaderboard->LeaderboardName.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 			TriggerOnLeaderboardReadCompleteDelegates(false);
@@ -102,15 +102,15 @@ void FLeaderboardRetriever::OnLeaderboardEntriesRetrieveSuccess(const char* InNa
 
 void FLeaderboardRetriever::OnLeaderboardEntriesRetrieveFailure(const char* InName, galaxy::api::ILeaderboardEntriesRetrieveListener::FailureReason InFailureReason)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLeaderboardEntriesRetrieveFailure: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("OnLeaderboardEntriesRetrieveFailure: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
 
 	if (InFailureReason == galaxy::api::ILeaderboardEntriesRetrieveListener::FAILURE_REASON_NOT_FOUND)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Could not find any entries for specified search criteria"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Could not find any entries for specified search criteria"));
 	}
 	else
 	{
-		UE_LOG_ONLINE(Error, TEXT("Could not retrieve leaderboard entries. Unknown failure"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Could not retrieve leaderboard entries. Unknown failure"));
 	}
 
 	TriggerOnLeaderboardReadCompleteDelegates(false);

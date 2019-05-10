@@ -27,7 +27,7 @@ namespace
 		int32 minSlotsRequired;
 		if (!SafeGetInt32Value(InSearchParam->Data, minSlotsRequired))
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Invalid data type. Skipping SEARCH_MINSLOTSAVAILABLE filter: %s"), *InSearchParam->ToString());
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid data type. Skipping SEARCH_MINSLOTSAVAILABLE filter: %s"), *InSearchParam->ToString());
 			return true;
 		};
 
@@ -41,7 +41,7 @@ namespace
 
 		if (!galaxyUserID.IsValid() || galaxyUserID.GetIDType() != galaxy::api::GalaxyID::ID_TYPE_USER)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Invalid UserID. Skipping SEARCH_USER filter: userID=%llu"), *userID.ToString());
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid UserID. Skipping SEARCH_USER filter: userID=%llu"), *userID.ToString());
 			return true;
 		}
 
@@ -51,7 +51,7 @@ namespace
 			auto err = galaxy::api::GetError();
 			if (err)
 			{
-				UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby members for lobby. Skipping SEARCH_USER filter: sessionID=%s; %s; %s"),
+				UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to get lobby members for lobby. Skipping SEARCH_USER filter: sessionID=%s; %s; %s"),
 					*InSearchResult.Session.GetSessionIdStr(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 				return true;
 			}
@@ -124,11 +124,11 @@ void FRequestLobbyListListener::TriggerOnFindSessionsCompleteDelegates(bool InIs
 
 void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, galaxy::api::LobbyListResult lobbyListResult)
 {
-	UE_LOG_ONLINE(Display, TEXT("FRequestLobbyListListener::OnLobbyList()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FRequestLobbyListListener::OnLobbyList()"));
 
 	if (lobbyListResult != galaxy::api::LOBBY_LIST_RESULT_SUCCESS)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to retrieve lobby list: %s"), *ToString(lobbyListResult));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to retrieve lobby list: %s"), *ToString(lobbyListResult));
 
 		TriggerOnFindSessionsCompleteDelegates(false);
 		return;
@@ -136,7 +136,7 @@ void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, galaxy::api::
 
 	if (InLobbyCount == 0)
 	{
-		UE_LOG_ONLINE(Display, TEXT("Empty lobby list"));
+		UE_LOG_ONLINE_SESSION(Display, TEXT("Empty lobby list"));
 		searchSettings->SearchResults.Empty();
 		TriggerOnFindSessionsCompleteDelegates(true);
 		return;
@@ -148,7 +148,7 @@ void FRequestLobbyListListener::OnLobbyList(uint32_t InLobbyCount, galaxy::api::
 		return;
 	};
 
-	UE_LOG_ONLINE(Display, TEXT("Waiting for lobby data to be retrieved: pendingLobbyListSize=%d"), pendingLobbyList.Num());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("Waiting for lobby data to be retrieved: pendingLobbyListSize=%d"), pendingLobbyList.Num());
 }
 
 bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
@@ -159,7 +159,7 @@ bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby from list. Ignoring: lobbyIdx=%u, %s; %s"), lobbbyIdx, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to get lobby from list. Ignoring: lobbyIdx=%u, %s; %s"), lobbbyIdx, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			continue;
 		}
 
@@ -167,7 +167,7 @@ bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data. Ignoring: lobbyID=%llu; %s; %s"), lobbbyIdx, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to request lobby data. Ignoring: lobbyID=%llu; %s; %s"), lobbbyIdx, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			continue;
 		}
 
@@ -176,7 +176,7 @@ bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
 
 	if (!pendingLobbyList.Num())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Lobby list retrieved, yet no lobby data requested"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Lobby list retrieved, yet no lobby data requested"));
 		return false;
 	}
 
@@ -186,14 +186,14 @@ bool FRequestLobbyListListener::RequestLobbiesData(uint32_t InLobbyCount)
 
 void FRequestLobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::GalaxyID& InLobbyID)
 {
-	UE_LOG_ONLINE(Display, TEXT("FRequestLobbyListListener::OnLobbyDataRetrieveSuccess()"), InLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FRequestLobbyListListener::OnLobbyDataRetrieveSuccess()"), InLobbyID.ToUint64());
 
 	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	FOnlineSessionSearchResult newSearchResult;
 	if (!OnlineSessionUtils::Fill(InLobbyID, newSearchResult))
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to create Session data: lobbyID=%llu"), InLobbyID.ToUint64());
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to create Session data: lobbyID=%llu"), InLobbyID.ToUint64());
 		TriggerOnFindSessionsCompleteDelegates(false);
 		return;
 	}
@@ -207,7 +207,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveSuccess(const galaxy::api::Ga
 
 void FRequestLobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataRetrieveListener::FailureReason InFailureReason)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLobbyDataRetrieveFailure, lobbyID=%llu"), InLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("OnLobbyDataRetrieveFailure, lobbyID=%llu"), InLobbyID.ToUint64());
 
 	verifyf(pendingLobbyList.RemoveSwap(InLobbyID) > 0, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
@@ -215,7 +215,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Ga
 	{
 		case galaxy::api::ILobbyDataRetrieveListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST:
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get lobby data. Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to get lobby data. Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
 			pendingLobbyList.RemoveSwap(InLobbyID);
 
 			if (pendingLobbyList.Num() == 0)
@@ -226,7 +226,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Ga
 		}
 		case galaxy::api::ILobbyDataRetrieveListener::FAILURE_REASON_UNDEFINED:
 		default:
-			UE_LOG_ONLINE(Error, TEXT("Unknown failure when retrieving lobby data: lobbyID=%llu"), InLobbyID.ToUint64());
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Unknown failure when retrieving lobby data: lobbyID=%llu"), InLobbyID.ToUint64());
 	}
 
 	TriggerOnFindSessionsCompleteDelegates(false);

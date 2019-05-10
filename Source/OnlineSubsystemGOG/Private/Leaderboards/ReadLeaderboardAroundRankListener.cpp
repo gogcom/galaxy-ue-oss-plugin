@@ -1,4 +1,5 @@
 #include "ReadLeaderboardAroundRankListener.h"
+#include "OnlineLeaderboardsGOG.h"
 
 #include <limits>
 #include <algorithm>
@@ -26,7 +27,7 @@ void FReadLeaderboardAroundRankListener::RequestLeaderboardEntries()
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to request leaderboard entries around rank: leaderboardName='%s', rank=%d, range=%u; %s; %s"),
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to request leaderboard entries around rank: leaderboardName='%s', rank=%d, range=%u; %s; %s"),
 			*readLeaderboard->LeaderboardName.ToString(), rank, range, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		TriggerOnLeaderboardReadCompleteDelegates(false);

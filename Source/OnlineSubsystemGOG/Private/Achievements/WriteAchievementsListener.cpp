@@ -18,14 +18,14 @@ FWriteAchievementsListener::FWriteAchievementsListener(
 
 void FWriteAchievementsListener::OnUserStatsAndAchievementsStoreSuccess()
 {
-	UE_LOG_ONLINE(Display, TEXT("OnUserStatsAndAchievementsStoreSuccess()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("OnUserStatsAndAchievementsStoreSuccess()"));
 
 	TriggerOnAchievementsWrittenDelegate(true);
 }
 
 void FWriteAchievementsListener::OnUserStatsAndAchievementsStoreFailure(galaxy::api::IStatsAndAchievementsStoreListener::FailureReason InFailureReason)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnUserStatsAndAchievementsStoreFailure"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("OnUserStatsAndAchievementsStoreFailure"));
 
 	TriggerOnAchievementsWrittenDelegate(false);
 }

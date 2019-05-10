@@ -1,5 +1,6 @@
 #include "ReadLeaderboardForUsersListener.h"
 
+#include "OnlineLeaderboardsGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 
 FReadLeaderboardForUsersListener::FReadLeaderboardForUsersListener(
@@ -21,7 +22,7 @@ void FReadLeaderboardForUsersListener::RequestLeaderboardEntries()
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to request leaderboard entries for users: leaderboardName='%s', playerCount='%d'; %s; %s"),
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to request leaderboard entries for users: leaderboardName='%s', playerCount='%d'; %s; %s"),
 			*readLeaderboard->LeaderboardName.ToString(), players.Num(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		TriggerOnLeaderboardReadCompleteDelegates(false);

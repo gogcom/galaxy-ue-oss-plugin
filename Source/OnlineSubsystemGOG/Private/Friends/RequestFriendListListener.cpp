@@ -11,13 +11,13 @@ FRequestFriendListListener::FRequestFriendListListener(FOnlineFriendsGOG& InFrie
 
 void FRequestFriendListListener::OnFriendListRetrieveSuccess()
 {
-	UE_LOG_ONLINE(Display, TEXT("FRequestFriendListListener: OnFriendListRetrieveSuccess()"));
+	UE_LOG_ONLINE_FRIEND(Display, TEXT("FRequestFriendListListener: OnFriendListRetrieveSuccess()"));
 	TriggerOnReadFriendsListCompleteDelegates(true);
 }
 
 void FRequestFriendListListener::OnFriendListRetrieveFailure(galaxy::api::IFriendListListener::FailureReason /*InFailureReason*/)
 {
-	UE_LOG_ONLINE(Warning, TEXT("FRequestFriendListListener::OnFriendListRetrieveFailure()"));
+	UE_LOG_ONLINE_FRIEND(Warning, TEXT("FRequestFriendListListener::OnFriendListRetrieveFailure()"));
 	TriggerOnReadFriendsListCompleteDelegates(false, TEXT("Undefined error"));
 }
 

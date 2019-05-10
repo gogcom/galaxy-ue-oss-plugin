@@ -1,6 +1,7 @@
 #include "OnlineLeaderboardsGOG.h"
 
 #include "OnlineSubsystemGOG.h"
+#include "Loggers.h"
 #include "ReadLeaderboardForUsersListener.h"
 #include "ReadLeaderboardAroundRankListener.h"
 #include "ReadLeaderboardAroundUserListener.h"
@@ -53,7 +54,7 @@ namespace
 		auto ratedStat = InWriteLeaderboard.FindStatByName(InWriteLeaderboard.RatedStat);
 		if (!ratedStat)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Rated stat not found in leaderboard data"));
+			UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Rated stat not found in leaderboard data"));
 			return false;
 		}
 
@@ -75,7 +76,7 @@ namespace
 
 		if (CharLen(serializedData) > MAX_LEADERBOARD_DETAIL_SIZE)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Serialized data for leaderboard is to long. Please report this to the GalaxySDK team: datailsSize=%d"), CharLen(serializedData));
+			UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Serialized data for leaderboard is to long. Please report this to the GalaxySDK team: datailsSize=%d"), CharLen(serializedData));
 			check(false && "Serialized data for leaderboard is to long. Please report this to the GalaxySDK team");
 		}
 
@@ -101,14 +102,14 @@ bool FOnlineLeaderboardsGOG::MarkLeaderboardStarted(FOnlineLeaderboardReadRef& I
 {
 	if (InOutReadLeaderboard->ReadState == EOnlineAsyncTaskState::InProgress)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("There seems to be another ReadLeaderboard() call made: leaderboardName='%s'"), *InOutReadLeaderboard->LeaderboardName.ToString());
+		UE_LOG_ONLINE_LEADERBOARD(Warning, TEXT("There seems to be another ReadLeaderboard() call made: leaderboardName='%s'"), *InOutReadLeaderboard->LeaderboardName.ToString());
 		// Everything else will be done by appropriate call
 		return false;
 	}
 
 	if (InOutReadLeaderboard->LeaderboardName.IsNone())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Empty leaderboard name"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Empty leaderboard name"));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 		onlineLeaderboardsInterface->TriggerOnLeaderboardReadCompleteDelegates(false);
 		return false;
@@ -120,11 +121,11 @@ bool FOnlineLeaderboardsGOG::MarkLeaderboardStarted(FOnlineLeaderboardReadRef& I
 
 bool FOnlineLeaderboardsGOG::ReadLeaderboards(const TArray<TSharedRef<const FUniqueNetId>>& InPlayers, FOnlineLeaderboardReadRef& InOutReadLeaderboard)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboards()"));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboards()"));
 
 	if (!InPlayers.Num())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Empty users array"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Empty users array"));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 		TriggerOnLeaderboardReadCompleteDelegates(false);
 		return false;
@@ -142,7 +143,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboards(const TArray<TSharedRef<const FUni
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to request leaderboard definitions: leaderboardName='%s'; %s; %s"),
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to request leaderboard definitions: leaderboardName='%s'; %s; %s"),
 			*InOutReadLeaderboard->LeaderboardName.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 
@@ -157,14 +158,14 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboards(const TArray<TSharedRef<const FUni
 
 bool FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends(int32 InLocalUserNum, FOnlineLeaderboardReadRef& InOutReadLeaderboard)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends()"));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends()"));
 
 	CheckLocalUserNum(InLocalUserNum);
 
 	auto onlineFriendsInterface = StaticCastSharedPtr<FOnlineFriendsGOG>(onlineSubsystemGOG.GetFriendsInterface());
 	if (!onlineFriendsInterface.IsValid())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid OnlineFriends interface"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid OnlineFriends interface"));
 
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 		TriggerOnLeaderboardReadCompleteDelegates(false);
@@ -192,11 +193,11 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsForFriends(int32 InLocalUserNum, FO
 
 bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InRange, FOnlineLeaderboardReadRef& InOutReadLeaderboard)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank()"));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank()"));
 
 	if (InRank < 0)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid rank or range: rank=%d"), InRank);
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid rank or range: rank=%d"), InRank);
 
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 		TriggerOnLeaderboardReadCompleteDelegates(false);
@@ -214,7 +215,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InR
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to request leaderboard definitions: leaderboardName='%s'; %s; %s"),
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to request leaderboard definitions: leaderboardName='%s'; %s; %s"),
 			*InOutReadLeaderboard->LeaderboardName.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 
@@ -229,11 +230,11 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundRank(int32 InRank, uint32 InR
 
 bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser(TSharedRef<const FUniqueNetId> InPlayer, uint32 InRange, FOnlineLeaderboardReadRef& InOutReadLeaderboard)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser()"));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser()"));
 
 	if (!InPlayer->IsValid())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid Player ID: playerID='%s'"), *InPlayer->ToString());
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid Player ID: playerID='%s'"), *InPlayer->ToString());
 
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 		TriggerOnLeaderboardReadCompleteDelegates(false);
@@ -250,7 +251,7 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser(TSharedRef<const FUnique
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to request leaderboard definitions: leaderboardName='%s'; %s; %s"),
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to request leaderboard definitions: leaderboardName='%s'; %s; %s"),
 			*InOutReadLeaderboard->LeaderboardName.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InOutReadLeaderboard->ReadState = EOnlineAsyncTaskState::Failed;
 
@@ -265,29 +266,29 @@ bool FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser(TSharedRef<const FUnique
 
 void FOnlineLeaderboardsGOG::FreeStats(FOnlineLeaderboardRead& InOutReadLeaderboard)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser"));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser"));
 	// Nothing to do
 }
 
 bool FOnlineLeaderboardsGOG::WriteLeaderboards(const FName& InSessionName, const FUniqueNetId& InPlayer, FOnlineLeaderboardWrite& InWriteLeaderboard)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::WriteLeaderboards()"));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::WriteLeaderboards()"));
 
 	if (*ownUserOnlineAccount->GetUserId() != InPlayer)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid Player ID"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid Player ID"));
 		return false;
 	}
 
 	if (!InWriteLeaderboard.LeaderboardNames.Num())
 	{
-		UE_LOG_ONLINE(Error, TEXT("No leaderboard names provided"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("No leaderboard names provided"));
 		return false;
 	}
 
 	if (!InWriteLeaderboard.Properties.Num())
 	{
-		UE_LOG_ONLINE(Display, TEXT("No stats to be written"));
+		UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("No stats to be written"));
 		return false;
 	}
 
@@ -299,7 +300,7 @@ bool FOnlineLeaderboardsGOG::UpdateWriteCache(const FName& InSessionName, FOnlin
 	int32 newScore;
 	if (!GetMainLeaderboardScore(InWriteLeaderboard, newScore))
 	{
-		UE_LOG_ONLINE(Error, TEXT("Rated stat must be an integer value in Int32 range"));
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Rated stat must be an integer value in Int32 range"));
 		return false;
 	}
 
@@ -332,12 +333,12 @@ bool FOnlineLeaderboardsGOG::UpdateWriteCache(const FName& InSessionName, FOnlin
 
 bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::FlushLeaderboards()"), *InSessionName.ToString());
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::FlushLeaderboards()"), *InSessionName.ToString());
 
 	auto cachedLeaderboards = writeLeaderboardCache.Find(InSessionName);
 	if (!cachedLeaderboards)
 	{
-		UE_LOG_ONLINE(Display, TEXT("Leaderboard not found or already flushed"), *InSessionName.ToString());
+		UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("Leaderboard not found or already flushed"), *InSessionName.ToString());
 		TriggerOnLeaderboardFlushCompleteDelegates(InSessionName, false);
 		return false;
 	}
@@ -356,7 +357,7 @@ bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to find or create leaderboard: sessionName='%s', leaderboardName='%s', %s; %s"),
+			UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to find or create leaderboard: sessionName='%s', leaderboardName='%s', %s; %s"),
 				*InSessionName.ToString(), *cachedLeaderboard.Key.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 			FreeListener(MoveTemp(listener.Key));
@@ -371,7 +372,7 @@ bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 
 bool FOnlineLeaderboardsGOG::WriteOnlinePlayerRatings(const FName&, int32, const TArray<FOnlinePlayerScore>&)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser"));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser"));
 	// TODO: FOnlinePlayerScore is not implemented in UE4
 	return false;
 }

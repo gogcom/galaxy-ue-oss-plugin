@@ -19,12 +19,12 @@ FGameInvitationReceivedListener::FGameInvitationReceivedListener(
 
 void FGameInvitationReceivedListener::OnLobbyDataRetrieveSuccess(const galaxy::api::GalaxyID& InLobbyID)
 {
-	UE_LOG_ONLINE(Display, TEXT("FGameInvitationReceivedListener::OnLobbyDataRetrieveSuccess: lobbyID=%llu"), InLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FGameInvitationReceivedListener::OnLobbyDataRetrieveSuccess: lobbyID=%llu"), InLobbyID.ToUint64());
 
 	FOnlineSessionSearchResult invitedSession;
 	if (!OnlineSessionUtils::Fill(InLobbyID, invitedSession))
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to fetch important information for incoming game invitation: lobbyID=%llu"), InLobbyID.ToUint64());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to fetch important information for incoming game invitation: lobbyID=%llu"), InLobbyID.ToUint64());
 		Finalize();
 		return;
 	}
@@ -35,18 +35,18 @@ void FGameInvitationReceivedListener::OnLobbyDataRetrieveSuccess(const galaxy::a
 
 void FGameInvitationReceivedListener::OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataRetrieveListener::FailureReason InFailureReason)
 {
-	UE_LOG_ONLINE(Warning, TEXT("FGameInvitationReceivedListener::OnLobbyDataRetrieveFailure: lobbyID=%llu"), InLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Warning, TEXT("FGameInvitationReceivedListener::OnLobbyDataRetrieveFailure: lobbyID=%llu"), InLobbyID.ToUint64());
 
 	switch (InFailureReason)
 	{
 		case galaxy::api::ILobbyDataRetrieveListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST:
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Receieved game invitation for session that is does not exist anymore: lobbyID=%llu"), InLobbyID.ToUint64());
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Receieved game invitation for session that is does not exist anymore: lobbyID=%llu"), InLobbyID.ToUint64());
 			break;
 		}
 
 		default:
-			UE_LOG_ONLINE(Warning, TEXT("Undefined error"));
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Undefined error"));
 			break;
 	}
 

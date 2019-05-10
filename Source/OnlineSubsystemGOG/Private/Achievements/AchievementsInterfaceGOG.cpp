@@ -1,5 +1,6 @@
 #include "AchievementsInterfaceGOG.h"
 
+#include "Loggers.h"
 #include "OnlineSubsystemGOG.h"
 #include "QueryAchievementsListener.h"
 #include "WriteAchievementsListener.h"
@@ -23,19 +24,19 @@ FOnlineAchievementsGOG::FOnlineAchievementsGOG(FOnlineSubsystemGOG& InSubsystem,
 {
 	if (!GConfig->GetArray(TEXT_CONFIG_SECTION_GOG, TEXT_CONFIG_KEY_ACHIEVEMENTS, achievementIDs, GEngineIni))
 		// Assert not declared achievements only when they are actually used (any methods is called)
-		UE_LOG_ONLINE(Display, TEXT("Achievements declarations not found in Engine.ini configuration file"));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("Achievements declarations not found in Engine.ini configuration file"));
 }
 
 void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, FOnlineAchievementsWriteRef& InWriteObject, const FOnAchievementsWrittenDelegate& InDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::WriteAchievements()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::WriteAchievements()"));
 
 	if (!AssertAchievementsCount())
 		return;
 
 	if (*ownUserOnlineAccount->GetUserId() != InPlayerId)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Achivements can be written only for self"));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Warning, TEXT("Achivements can be written only for self"));
 		InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 		InDelegate.ExecuteIfBound(InPlayerId, false);
 		return;
@@ -43,7 +44,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 
 	if (!InWriteObject->Properties.Num())
 	{
-		UE_LOG_ONLINE(Display, TEXT("Empty achivements list"));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("Empty achivements list"));
 		InWriteObject->WriteState = EOnlineAsyncTaskState::Done;
 		InDelegate.ExecuteIfBound(InPlayerId, true);
 		return;
@@ -64,7 +65,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 	{
 		if (GetCachedAchievementDescription(achievement.Key.ToString(), achievementDescription) == EOnlineCachedResult::NotFound)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Unknown achivement: achievementID='%s'"), *achievement.Key.ToString());
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Unknown achivement: achievementID='%s'"), *achievement.Key.ToString());
 			InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 			InDelegate.ExecuteIfBound(InPlayerId, false);
 			return;
@@ -77,7 +78,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to unlock player achievement: playerID='%s'; achivementID='%s'; %s; %s"),
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to unlock player achievement: playerID='%s'; achivementID='%s'; %s; %s"),
 				*InPlayerId.ToString(), *achievement.Key.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 			InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
@@ -92,7 +93,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to store unlocked player achievements: playerID='%s'; %s; %s"),
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to store unlocked player achievements: playerID='%s'; %s; %s"),
 			*InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InWriteObject->WriteState = EOnlineAsyncTaskState::Failed;
 
@@ -105,7 +106,7 @@ void FOnlineAchievementsGOG::WriteAchievements(const FUniqueNetId& InPlayerId, F
 
 void FOnlineAchievementsGOG::QueryAchievements(const FUniqueNetId& InPlayerId, const FOnQueryAchievementsCompleteDelegate& InDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::QueryAchievements()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::QueryAchievements()"));
 
 	if (!AssertAchievementsCount())
 		return;
@@ -116,7 +117,7 @@ void FOnlineAchievementsGOG::QueryAchievements(const FUniqueNetId& InPlayerId, c
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to query player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to query player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
 
@@ -126,7 +127,7 @@ void FOnlineAchievementsGOG::QueryAchievements(const FUniqueNetId& InPlayerId, c
 
 void FOnlineAchievementsGOG::QueryAchievementDescriptions(const FUniqueNetId& InPlayerId, const FOnQueryAchievementsCompleteDelegate& InDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::QueryAchievementDescriptions()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::QueryAchievementDescriptions()"));
 
 	if (!AssertAchievementsCount())
 	{
@@ -148,7 +149,7 @@ void FOnlineAchievementsGOG::QueryAchievementDescriptions(const FUniqueNetId& In
 
 EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievement(const FUniqueNetId& InPlayerId, const FString& InAchievementId, FOnlineAchievement& OutAchievement)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::GetCachedAchievement()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::GetCachedAchievement()"));
 
 	if (!AssertAchievementsCount())
 		return EOnlineCachedResult::NotFound;
@@ -164,7 +165,7 @@ EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievement(const FUn
 
 	if (!cachedPlayerAchievement)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Specified achivement not found for the player: playerID='%s', achivementID='%s'"), *InPlayerId.ToString(), *InAchievementId);
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Specified achivement not found for the player: playerID='%s', achivementID='%s'"), *InPlayerId.ToString(), *InAchievementId);
 		return EOnlineCachedResult::NotFound;
 	}
 
@@ -175,21 +176,21 @@ EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievement(const FUn
 
 EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievements(const FUniqueNetId& InPlayerId, TArray<FOnlineAchievement>& OutAchievements)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::GetCachedAchievements()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::GetCachedAchievements()"));
 
 	if (!AssertAchievementsCount())
 		return EOnlineCachedResult::NotFound;
 
 	if (!cachedAchievements.Num())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Achievements are not found. Please request achievements first with QueryAchievements"));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Achievements are not found. Please request achievements first with QueryAchievements"));
 		return EOnlineCachedResult::NotFound;
 	}
 
 	const auto playerCachedAchievements = cachedAchievements.Find(InPlayerId);
 	if (!playerCachedAchievements)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Achivements are not found for the player. Please request achievements first with QueryAchievements: playerID='%s'"), *InPlayerId.ToString());
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Achivements are not found for the player. Please request achievements first with QueryAchievements: playerID='%s'"), *InPlayerId.ToString());
 		return EOnlineCachedResult::NotFound;
 	}
 
@@ -199,21 +200,21 @@ EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievements(const FU
 
 EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievementDescription(const FString& InAchievementId, FOnlineAchievementDesc& OutAchievementDesc)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::GetCachedAchievementDescription()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::GetCachedAchievementDescription()"));
 
 	if (!AssertAchievementsCount())
 		return EOnlineCachedResult::NotFound;
 
 	if (!AreAchivementsDescriptionsAvailable())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Achievement descriptions are not found. Please request achievement descriptions first with QueryAchievementDescriptions: achievementId='%s'"), *InAchievementId);
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Achievement descriptions are not found. Please request achievement descriptions first with QueryAchievementDescriptions: achievementId='%s'"), *InAchievementId);
 		return EOnlineCachedResult::NotFound;
 	}
 
 	const auto achievementDescription = cachedAchievementDescriptions.Find(InAchievementId);
 	if (!achievementDescription)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Description is not found for the specified achivement. Please request achievement descriptions first with QueryAchievementDescriptions: achievementId='%s'"), *InAchievementId);
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Description is not found for the specified achivement. Please request achievement descriptions first with QueryAchievementDescriptions: achievementId='%s'"), *InAchievementId);
 		return EOnlineCachedResult::NotFound;
 	}
 
@@ -224,7 +225,7 @@ EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievementDescriptio
 #if !UE_BUILD_SHIPPING
 bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::ResetAchievements()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::ResetAchievements()"));
 
 	if (!AssertAchievementsCount())
 		return false;
@@ -243,7 +244,7 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to reset player achievements: playerID='%s'; achivementID='%s'; %s; %s"),
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to reset player achievements: playerID='%s'; achivementID='%s'; %s; %s"),
 				*InPlayerId.ToString(), *achivement.Id, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 			continue;
@@ -254,7 +255,7 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to reset player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to reset player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
@@ -291,7 +292,7 @@ inline bool FOnlineAchievementsGOG::AssertAchievementsCount() const
 {
 	if (AchivementsCount() < 0)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Achievements declarations not found in Engine.ini configuration file. Please provide achievements declaration before using them."));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Achievements declarations not found in Engine.ini configuration file. Please provide achievements declaration before using them."));
 		check(false && "Achievements declarations not found in Engine.ini configuration file. Please provide achievements declaration before using them.")
 			return false;
 	}
@@ -306,21 +307,21 @@ bool FOnlineAchievementsGOG::AreAchivementsDescriptionsAvailable() const
 
 void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineAchievementsGOG::OnAchievementUnlocked()"));
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::OnAchievementUnlocked()"));
 
 	FString achievementName{UTF8_TO_TCHAR(InName)};
 
 	auto ownUserID = ownUserOnlineAccount->GetUserId();
 	if (!ownUserID->IsValid())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Cannot unlock player achivement. Invalid local user ID: achivementName='%s'"), *achievementName);
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Cannot unlock player achivement. Invalid local user ID: achivementName='%s'"), *achievementName);
 		return;
 	}
 
 	auto playerCachedAchievements = cachedAchievements.Find(*ownUserID);
 	if (!playerCachedAchievements)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Cannot unlock player achivement. Player achievements not found: achivementName='%s', playerID='%s'"), *achievementName, *ownUserID->ToString());
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Cannot unlock player achivement. Player achievements not found: achivementName='%s', playerID='%s'"), *achievementName, *ownUserID->ToString());
 		checkf(false, TEXT("Cannot find achievements to unlock: achivementName='%s'"), *achievementName);
 		return;
 	}
@@ -332,7 +333,7 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 
 	if (!playerCachedAchievement)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Unlocked achivement not found. Achivements IDs missing in Engine.ini? : achivementKey='%s'"), *achievementName);
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Unlocked achivement not found. Achivements IDs missing in Engine.ini? : achivementKey='%s'"), *achievementName);
 		return;
 	}
 
@@ -363,7 +364,7 @@ void FOnlineAchievementsGOG::AddOrReplacePlayerAchievements(const FUniqueNetIdGO
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement for player: achievementID='%s'; playerID='%s'; %s; %s"),
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achivement for player: achievementID='%s'; playerID='%s'; %s; %s"),
 				*achievementID, *InPlayerID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return;
 		}
@@ -392,7 +393,7 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement title: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achivement title: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 		title = UTF8_TO_TCHAR(achivementInfoBuffer.data());
@@ -401,7 +402,7 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to read achivement description: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achivement description: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 		description = UTF8_TO_TCHAR(achivementInfoBuffer.data());
@@ -410,7 +411,7 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to get achievement visibility: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to get achievement visibility: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 

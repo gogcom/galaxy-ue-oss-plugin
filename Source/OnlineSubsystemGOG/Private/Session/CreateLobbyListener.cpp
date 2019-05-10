@@ -22,7 +22,7 @@ namespace
 		auto newSession = InSessionInterface.AddNamedSession(InSessionName, InSessionSettings);
 		if (!newSession)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to create new local session (NULL)"));
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to create new local session (NULL)"));
 			return false;
 		}
 
@@ -41,7 +41,7 @@ namespace
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to make session joinable: lobbyID=%llu; %s: %s"), InLobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to make session joinable: lobbyID=%llu; %s: %s"), InLobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
 
@@ -67,11 +67,11 @@ FCreateLobbyListener::FCreateLobbyListener(
 
 void FCreateLobbyListener::OnLobbyCreated(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyCreateResult InResult)
 {
-	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnLobbyCreated: lobbyID=%llu, result=%d"), InLobbyID.ToUint64(), static_cast<int>(InResult));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnLobbyCreated: lobbyID=%llu, result=%d"), InLobbyID.ToUint64(), static_cast<int>(InResult));
 
 	if (InResult != galaxy::api::LOBBY_CREATE_RESULT_SUCCESS)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to create a lobby: lobbyID=%llu"), newLobbyID.ToUint64());
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to create a lobby: lobbyID=%llu"), newLobbyID.ToUint64());
 
 		TriggerOnCreateSessionCompleteDelegates(false);
 		return;
@@ -85,7 +85,7 @@ void FCreateLobbyListener::OnLobbyCreated(const galaxy::api::GalaxyID& InLobbyID
 
 void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)
 {
-	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnLobbyEntered: lobbyID=%llu, result=%d"), InLobbyID.ToUint64(), static_cast<int>(InResult));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnLobbyEntered: lobbyID=%llu, result=%d"), InLobbyID.ToUint64(), static_cast<int>(InResult));
 
 	checkf(newLobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
@@ -96,19 +96,19 @@ void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID
 		{
 			case galaxy::api::LOBBY_ENTER_RESULT_LOBBY_DOES_NOT_EXIST:
 			{
-				UE_LOG_ONLINE(Error, TEXT("Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
+				UE_LOG_ONLINE_SESSION(Error, TEXT("Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
 				break;
 			}
 
 			case galaxy::api::LOBBY_ENTER_RESULT_LOBBY_IS_FULL:
 			{
-				UE_LOG_ONLINE(Display, TEXT("Lobby is full: lobbyID=%llu"), InLobbyID.ToUint64());
+				UE_LOG_ONLINE_SESSION(Display, TEXT("Lobby is full: lobbyID=%llu"), InLobbyID.ToUint64());
 				break;
 			}
 
 			case galaxy::api::LOBBY_ENTER_RESULT_ERROR:
 			{
-				UE_LOG_ONLINE(Error, TEXT("Unknown error when entering lobby: lobbyID=%llu"), InLobbyID.ToUint64());
+				UE_LOG_ONLINE_SESSION(Error, TEXT("Unknown error when entering lobby: lobbyID=%llu"), InLobbyID.ToUint64());
 				break;
 			}
 		}
@@ -132,25 +132,25 @@ void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID
 
 void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& InLobbyID)
 {
-	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnLobbyDataUpdateSuccess: lobbyID=%llu"), InLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnLobbyDataUpdateSuccess: lobbyID=%llu"), InLobbyID.ToUint64());
 
 	checkf(newLobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	auto isLobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(InLobbyID);
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Error, TEXT("Failed to check lobby joinability: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to check lobby joinability: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	if (!isLobbyJoinable)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Cannot mark lobby as joinable"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Cannot mark lobby as joinable"));
 		TriggerOnCreateSessionCompleteDelegates(false);
 		return;
 	}
 
 	if (!AddLocalSession(sessionInterface, newLobbyID, sessionName, sessionOwnerID, sessionOwnerName, sessionSettings))
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to add local session: sessionName=%s"), *sessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to add local session: sessionName=%s"), *sessionName.ToString());
 		TriggerOnCreateSessionCompleteDelegates(false);
 		return;
 	}
@@ -175,7 +175,7 @@ bool FCreateLobbyListener::AdvertiseToFriends()
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
@@ -184,17 +184,17 @@ bool FCreateLobbyListener::AdvertiseToFriends()
 
 void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason)
 {
-	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnLobbyDataUpdateFailure: lobbyID=%llu"), InLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnLobbyDataUpdateFailure: lobbyID=%llu"), InLobbyID.ToUint64());
 
 	checkf(newLobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	if (InFailureReason == galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Specified lobby does not exists"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Specified lobby does not exists"));
 	}
 	else
 	{
-		UE_LOG_ONLINE(Error, TEXT("Unknown error"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Unknown error"));
 	}
 
 	TriggerOnCreateSessionCompleteDelegates(false);
@@ -202,14 +202,14 @@ void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID&
 
 void FCreateLobbyListener::OnRichPresenceChangeSuccess()
 {
-	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnRichPresenceChangeSuccess: lobbyID=%llu"), newLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnRichPresenceChangeSuccess: lobbyID=%llu"), newLobbyID.ToUint64());
 
 	TriggerOnCreateSessionCompleteDelegates(true);
 }
 
 void FCreateLobbyListener::OnRichPresenceChangeFailure(galaxy::api::IRichPresenceChangeListener::FailureReason InFailureReason)
 {
-	UE_LOG_ONLINE(Display, TEXT("FCreateLobbyListener::OnRichPresenceChangeFailure: lobbyID=%llu"), newLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnRichPresenceChangeFailure: lobbyID=%llu"), newLobbyID.ToUint64());
 
 	TriggerOnCreateSessionCompleteDelegates(false);
 }
