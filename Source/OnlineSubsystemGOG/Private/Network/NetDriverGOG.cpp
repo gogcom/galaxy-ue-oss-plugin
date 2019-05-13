@@ -90,7 +90,11 @@ bool UNetDriverGOG::InitConnect(FNetworkNotify* InNotify, const FURL& InConnectU
 
 	ServerConnection->InitLocalConnection(this, /*no socket*/ nullptr, InConnectURL, USOCK_Open);
 
+#if ENGINE_MINOR_VERSION >= 22
+	CreateInitialClientChannels();
+#else
 	ServerConnection->CreateChannel(CHTYPE_Control, true, INDEX_NONE);
+#endif
 
 	return true;
 }
@@ -304,7 +308,12 @@ bool UNetDriverGOG::ChallengeConnectingClient(const FUrlGOG& InRemoteUrl, void* 
 		return false;
 	}
 
+#if ENGINE_MINOR_VERSION >= 22
+	bool isHandshakeRestarted{false};
+	if (!statelessHandshakeComponent->HasPassedChallenge(inRemoteAddress, isHandshakeRestarted))
+#else
 	if (!statelessHandshakeComponent->HasPassedChallenge(inRemoteAddress))
+#endif
 	{
 		UE_LOG_NETWORKING(Warning, TEXT("Client failed handshake challenge: remoteAddress='%s'"), *inRemoteAddress);
 		return false;

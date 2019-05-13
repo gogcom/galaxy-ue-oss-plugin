@@ -53,5 +53,5 @@ PACKAGE_SCOPE:
 
 private:
 
-	uint64 id;
+	uint64 id{galaxy::api::GalaxyID::UNASSIGNED_VALUE};
 };

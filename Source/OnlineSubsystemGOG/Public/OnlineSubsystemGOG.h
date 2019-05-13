@@ -52,7 +52,6 @@ public:
 
 	STUB_ONLINE_INTERFACE(UserCloud);
 
-
 	STUB_ONLINE_INTERFACE(Chat);
 
 	STUB_ONLINE_INTERFACE(SharedCloud);
@@ -87,6 +86,9 @@ public:
 
 #if ENGINE_MINOR_VERSION >= 21
 	STUB_ONLINE_INTERFACE(Tournament);
+#endif
+#if ENGINE_MINOR_VERSION >= 22
+	STUB_ONLINE_INTERFACE(Stats);
 #endif
 
 PACKAGE_SCOPE:
