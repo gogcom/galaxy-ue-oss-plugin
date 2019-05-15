@@ -9,9 +9,9 @@ public:
 
 	FOnlineFactoryGOG();
 
-	virtual ~FOnlineFactoryGOG();
+	~FOnlineFactoryGOG() override;
 
-	virtual IOnlineSubsystemPtr CreateSubsystem(FName InInstanceName) override;
+	IOnlineSubsystemPtr CreateSubsystem(FName InInstanceName) override;
 
 private:
 
