@@ -5,6 +5,7 @@
 	"Version": 1,
 	"VersionName": "0.3.0",
 	"VersionDescription": "Add host/port configuration; Add lobby pings; Add connection state handling; Several fixes",
+	"SupportedEngineAssociation": ["4.19"],
 	"GalaxySDKVersion": "1.133.6",
 	"Description": "GOG online features",
 	"Category": "Online Platform",
