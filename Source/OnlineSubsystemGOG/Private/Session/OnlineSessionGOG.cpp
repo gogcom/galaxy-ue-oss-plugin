@@ -18,8 +18,8 @@
 
 #include "Online.h"
 #include "OnlineSubsystemUtils.h"
-#include "OnlineLeaderboardInterface.h"
-#include "NumericLimits.h"
+#include "Interfaces/OnlineLeaderboardInterface.h"
+#include "Math/NumericLimits.h"
 
 #include <algorithm>
 

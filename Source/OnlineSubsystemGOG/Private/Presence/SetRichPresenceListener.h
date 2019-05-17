@@ -2,7 +2,7 @@
 
 #include "Types/IListenerGOG.h"
 #include "Types/UniqueNetIdGOG.h"
-#include "OnlinePresenceInterface.h"
+#include "Interfaces/OnlinePresenceInterface.h"
 
 class FSetRichPresenceListener
 	: public IListenerGOG

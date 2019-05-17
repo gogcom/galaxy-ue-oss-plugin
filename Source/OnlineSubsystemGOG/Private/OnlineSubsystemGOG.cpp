@@ -8,7 +8,7 @@
 #include "Presence/OnlinePresenceGOG.h"
 
 #include "Runtime/Launch/Resources/Version.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include <algorithm>
 
 namespace

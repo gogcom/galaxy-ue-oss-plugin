@@ -4,7 +4,7 @@
 #include "Types/UniqueNetIdGOG.h"
 #include "ListenerManager.h"
 
-#include "OnlineFriendsInterface.h"
+#include "Interfaces/OnlineFriendsInterface.h"
 
 namespace
 {

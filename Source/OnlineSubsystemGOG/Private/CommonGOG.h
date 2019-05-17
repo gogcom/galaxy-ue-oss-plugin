@@ -1,7 +1,6 @@
 #pragma once
 
-// TODO: consider replacing with "CoreMinimal.h" and "UObject/CoreOnline.h" to reduce compilation time
-#include "Core.h"
+#include "UObject/CoreOnline.h"
 #include "OnlineSubsystem.h"
 
 #include <galaxy/GalaxyApi.h>

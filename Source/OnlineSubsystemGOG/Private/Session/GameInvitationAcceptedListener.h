@@ -3,7 +3,7 @@
 #include "Types/IListenerGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 
-#include "OnlineSessionInterface.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
 
 class FGameInvitationAcceptedListener

@@ -3,7 +3,7 @@
 #include "OnlineUserGOG.h"
 
 #include "OnlineSubsystemTypes.h"
-#include "OnlinePresenceInterface.h"
+#include "Interfaces/OnlinePresenceInterface.h"
 
 class FOnlineFriendGOG : public FOnlineFriend, public FOnlineUserGOG
 {

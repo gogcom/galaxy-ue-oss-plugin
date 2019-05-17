@@ -4,7 +4,7 @@
 
 #include "Types/UniqueNetIdGOG.h"
 
-#include "OnlineAchievementsInterface.h"
+#include "Interfaces/OnlineAchievementsInterface.h"
 
 class FWriteAchievementsListener
 	: public IListenerGOG

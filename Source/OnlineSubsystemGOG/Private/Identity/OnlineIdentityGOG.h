@@ -3,7 +3,7 @@
 #include "CommonGOG.h"
 #include "Types/UserOnlineAccountGOG.h"
 
-#include "OnlineIdentityInterface.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 
 class FOnlineIdentityGOG
 	: public IOnlineIdentity

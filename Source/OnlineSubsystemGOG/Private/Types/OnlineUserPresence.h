@@ -1,6 +1,6 @@
 #pragma once
 
-#include "OnlinePresenceInterface.h"
+#include "Interfaces/OnlinePresenceInterface.h"
 #include "UniqueNetIdGOG.h"
 
 namespace OnlineUserPresence

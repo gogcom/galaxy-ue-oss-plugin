@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JsonObject.h"
+#include "Dom/JsonObject.h"
 
 namespace JsonConverter
 {

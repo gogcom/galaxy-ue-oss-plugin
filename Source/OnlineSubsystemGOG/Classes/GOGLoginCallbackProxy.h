@@ -1,8 +1,7 @@
 #pragma once
 
-#include "OnlineIdentityInterface.h"
-#include "DelegateCombinations.h"
-#include "OnlineBlueprintCallProxyBase.h"
+#include "Interfaces/OnlineIdentityInterface.h"
+#include "Net/OnlineBlueprintCallProxyBase.h"
 #include "GameFramework/PlayerController.h"
 
 #include "GOGLoginCallbackProxy.generated.h"

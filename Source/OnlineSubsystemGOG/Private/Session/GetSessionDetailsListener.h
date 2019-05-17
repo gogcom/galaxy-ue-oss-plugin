@@ -4,7 +4,7 @@
 #include "Types/UniqueNetIdGOG.h"
 #include "ListenerManager.h"
 
-#include "OnlineSessionInterface.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
 
 class FGetSessionDetailsListener

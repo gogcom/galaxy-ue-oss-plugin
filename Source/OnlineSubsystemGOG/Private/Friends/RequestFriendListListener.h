@@ -3,7 +3,7 @@
 #include "Types/IListenerGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 
-#include "OnlineFriendsInterface.h"
+#include "Interfaces/OnlineFriendsInterface.h"
 
 class FRequestFriendListListener
 	: public IListenerGOG
