@@ -1,6 +1,7 @@
 ### Supported baseline:
-- UnrealEngine 4.19
-- Galaxy SDK1.133.6### Known issues and limitations:
+- UnrealEngine 4.19, 4.20, 4.21, 4.22
+- Galaxy SDK1.133.6
+### Known issues and limitations:
 - GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
 - A player has to be logged on to GOG backend services prior to using any features from OnlineSubsystemGOG
 - Dedicated servers are not supported yet

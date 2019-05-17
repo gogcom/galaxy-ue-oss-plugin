@@ -10,7 +10,7 @@ namespace NamedVariantDataConverter
 	namespace
 	{
 
-		constexpr auto CONVERTED_NAME_FORMAT = TEXT("%c_%s");
+		#define CONVERTED_NAME_FORMAT TEXT("%c_%s")
 		constexpr uint32 NAME_TYPE_PREFIX_LENGTH = 2;
 		constexpr uint32 NAME_TYPE_PREFIX_POSITION = 0;
 

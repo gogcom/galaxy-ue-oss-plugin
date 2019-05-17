@@ -1,5 +1,6 @@
 #include "OnlinePresenceGOG.h"
 
+#include "Loggers.h"
 #include "OnlineSubsystemGOG.h"
 #include "SetRichPresenceListener.h"
 #include "RequestRichPresenceListener.h"
@@ -15,11 +16,11 @@ FOnlinePresenceGOG::FOnlinePresenceGOG(const class FOnlineSubsystemGOG& InOnline
 
 void FOnlinePresenceGOG::SetPresence(const FUniqueNetId& InUserID, const FOnlineUserPresenceStatus& InStatus, const FOnPresenceTaskCompleteDelegate& InDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlinePresenceGOG::SetPresence()"));
+	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FOnlinePresenceGOG::SetPresence()"));
 
 	if (*ownUserOnlineAccount->GetUserId() != InUserID)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("User presence can only be set for own player: userID='%s', ownUserID='%s'"),
+		UE_LOG_ONLINE_PRESENCE(Warning, TEXT("User presence can only be set for own player: userID='%s', ownUserID='%s'"),
 			*InUserID.ToString(), *ownUserOnlineAccount->GetUserId()->ToString());
 		InDelegate.ExecuteIfBound(InUserID, false);
 		return;
@@ -29,7 +30,7 @@ void FOnlinePresenceGOG::SetPresence(const FUniqueNetId& InUserID, const FOnline
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to set rich presence status: %s; %s: %s"), *InStatus.StatusStr, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_PRESENCE(Warning, TEXT("Failed to set rich presence status: %s; %s: %s"), *InStatus.StatusStr, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		InDelegate.ExecuteIfBound(InUserID, false);
 		return;
@@ -39,7 +40,7 @@ void FOnlinePresenceGOG::SetPresence(const FUniqueNetId& InUserID, const FOnline
 	auto numOfNonCustomProperties = InStatus.Properties.Num() - (presenceMetaData ? 1 : 0);
 	if (numOfNonCustomProperties > 0)
 		// TODO: re-consider if more RichPresence data is implemented
-		UE_LOG_ONLINE(Warning, TEXT("GalaxySDK only supports '%s' as a custom rich presence property. All other properties will be ignored"), *DefaultPresenceKey);
+		UE_LOG_ONLINE_PRESENCE(Warning, TEXT("GalaxySDK only supports '%s' as a custom rich presence property. All other properties will be ignored"), *DefaultPresenceKey);
 
 	// Specific listener is given only to the last set as they will be squashed into one operation
 	auto listener = CreateListener<FSetRichPresenceListener>(*this, InUserID, InDelegate);
@@ -48,7 +49,7 @@ void FOnlinePresenceGOG::SetPresence(const FUniqueNetId& InUserID, const FOnline
 	err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to set rich presence metadata: %s; %s: %s"), *presenceMetaData->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_PRESENCE(Warning, TEXT("Failed to set rich presence metadata: %s; %s: %s"), *presenceMetaData->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
 
@@ -59,7 +60,7 @@ void FOnlinePresenceGOG::SetPresence(const FUniqueNetId& InUserID, const FOnline
 
 void FOnlinePresenceGOG::QueryPresence(const FUniqueNetId& InUserID, const FOnPresenceTaskCompleteDelegate& InDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlinePresenceGOG::SetPresence()"));
+	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FOnlinePresenceGOG::SetPresence()"));
 
 	FUniqueNetIdGOG userID{InUserID};
 
@@ -69,7 +70,7 @@ void FOnlinePresenceGOG::QueryPresence(const FUniqueNetId& InUserID, const FOnPr
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to request rich presence: userID='%s'; %s: %s"), *userID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_PRESENCE(Warning, TEXT("Failed to request rich presence: userID='%s'; %s: %s"), *userID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
 
@@ -80,12 +81,12 @@ void FOnlinePresenceGOG::QueryPresence(const FUniqueNetId& InUserID, const FOnPr
 
 EOnlineCachedResult::Type FOnlinePresenceGOG::GetCachedPresence(const FUniqueNetId& InUserID, TSharedPtr<FOnlineUserPresence>& OutPresence)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlinePresenceGOG::GetCachedPresence()"));
+	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FOnlinePresenceGOG::GetCachedPresence()"));
 
 	auto cachedUserPresence = presenceCache.Find(InUserID);
 	if (!cachedUserPresence)
 	{
-		UE_LOG_ONLINE(Display, TEXT("Presence for user not found in cache: userID='%s'"), *InUserID.ToString());
+		UE_LOG_ONLINE_PRESENCE(Display, TEXT("Presence for user not found in cache: userID='%s'"), *InUserID.ToString());
 		return EOnlineCachedResult::NotFound;
 	}
 
@@ -99,8 +100,8 @@ EOnlineCachedResult::Type FOnlinePresenceGOG::GetCachedPresenceForApp(
 	const FString& /*InAppId*/,
 	TSharedPtr<FOnlineUserPresence>& /*OutPresence*/)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlinePresenceGOG::GetCachedPresenceForApp()"));
-	UE_LOG_ONLINE(Warning, TEXT("GalaxySDK has no support for Application IDs yet. Ignored."));
+	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FOnlinePresenceGOG::GetCachedPresenceForApp()"));
+	UE_LOG_ONLINE_PRESENCE(Warning, TEXT("GalaxySDK has no support for Application IDs yet. Ignored."));
 	return EOnlineCachedResult::NotFound;
 }
 
@@ -119,14 +120,14 @@ TSharedRef<FOnlineUserPresence> FOnlinePresenceGOG::AddOrReplaceUserPresence(con
 
 void FOnlinePresenceGOG::OnRichPresenceUpdated(galaxy::api::GalaxyID InUserID)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlinePresenceGOG::OnRichPresenceUpdated(%llu)"), InUserID.ToUint64());
+	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FOnlinePresenceGOG::OnRichPresenceUpdated(%llu)"), InUserID.ToUint64());
 
 	FUniqueNetIdGOG userID{InUserID};
 
 	FOnlineUserPresence userPresence;
 	if (!OnlineUserPresence::Fill(InUserID, userPresence))
 	{
-		UE_LOG_ONLINE(Display, TEXT("Failed to get online presence for user: userID='%llu'"), InUserID.ToUint64());
+		UE_LOG_ONLINE_PRESENCE(Display, TEXT("Failed to get online presence for user: userID='%llu'"), InUserID.ToUint64());
 		return;
 	}
 
@@ -145,7 +146,7 @@ void FOnlinePresenceGOG::OnRichPresenceUpdated(galaxy::api::GalaxyID InUserID)
 	TSharedPtr<FOnlineFriendsGOG, ESPMode::ThreadSafe> onlineFriendsGOG{StaticCastSharedPtr<FOnlineFriendsGOG>(onlineSubsystemGOG.GetFriendsInterface())};
 	if (!onlineFriendsGOG.IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot update rich presence for a user as Friends Interface is NULL: userID=%llu"), InUserID.ToUint64());
+		UE_LOG_ONLINE_PRESENCE(Warning, TEXT("Cannot update rich presence for a user as Friends Interface is NULL: userID=%llu"), InUserID.ToUint64());
 		return;
 	}
 

@@ -22,8 +22,11 @@ public:
 
 	void InitLocalConnection(UNetDriver* InDriver, class FSocket* InSocket, const FURL& InURL, EConnectionState InState, int32 InMaxPacket = 0, int32 InPacketOverhead = 0) override;
 
+#if ENGINE_MINOR_VERSION >= 21
+	void LowLevelSend(void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;
+#else
 	void LowLevelSend(void* InData, int32 InCountBytes, int32 InCountBits) override;
-
+#endif
 	FString LowLevelGetRemoteAddress(bool InAppendPort = false) override;
 
 	FString LowLevelDescribe() override;

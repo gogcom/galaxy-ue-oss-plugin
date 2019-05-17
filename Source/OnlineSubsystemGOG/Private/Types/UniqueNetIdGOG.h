@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CommonGOG.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 class FUniqueNetIdGOG : public FUniqueNetId
 {
@@ -40,11 +41,17 @@ public:
 
 	bool operator==(const galaxy::api::GalaxyID& InGalaxyID) const;
 
+	friend FArchive& operator<<(FArchive& InArchive, FUniqueNetIdGOG& InUniqueNetId);
+
+#if ENGINE_MINOR_VERSION >= 20
+	FName GetType() const override;
+#endif
+
 PACKAGE_SCOPE:
 
 	FUniqueNetIdGOG() = default;
 
 private:
 
-	uint64 id;
+	uint64 id{galaxy::api::GalaxyID::UNASSIGNED_VALUE};
 };

@@ -14,14 +14,14 @@ FFriendDeleteListener::FFriendDeleteListener(
 
 void FFriendDeleteListener::OnFriendDeleteSuccess(galaxy::api::GalaxyID InUserID)
 {
-	UE_LOG_ONLINE(Display, TEXT("FFriendDeleteListener::OnFriendDeleteSuccess()"));
+	UE_LOG_ONLINE_FRIEND(Display, TEXT("FFriendDeleteListener::OnFriendDeleteSuccess()"));
 	check(InUserID == friendId);
 	TriggerOnDeleteFriendCompleteDelegates(true);
 }
 
 void FFriendDeleteListener::OnFriendDeleteFailure(galaxy::api::GalaxyID InUserID, galaxy::api::IFriendDeleteListener::FailureReason InFailureReason)
 {
-	UE_LOG_ONLINE(Warning, TEXT("FFriendDeleteListener::OnFriendDeleteFailure()"));
+	UE_LOG_ONLINE_FRIEND(Warning, TEXT("FFriendDeleteListener::OnFriendDeleteFailure()"));
 	check(InUserID == friendId);
 	TriggerOnDeleteFriendCompleteDelegates(false, TEXT("Undefined error"));
 }

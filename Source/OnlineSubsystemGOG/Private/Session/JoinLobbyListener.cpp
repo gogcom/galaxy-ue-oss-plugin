@@ -25,7 +25,7 @@ void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCom
 
 void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLobbyEntered: lobbyID=%llu"), InLobbyID.ToUint64());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("OnLobbyEntered: lobbyID=%llu"), InLobbyID.ToUint64());
 
 	if (InResult != galaxy::api::LOBBY_ENTER_RESULT_SUCCESS)
 	{
@@ -33,7 +33,7 @@ void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, 
 		{
 			case galaxy::api::LOBBY_ENTER_RESULT_LOBBY_DOES_NOT_EXIST:
 			{
-				UE_LOG_ONLINE(Error, TEXT("Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
+				UE_LOG_ONLINE_SESSION(Error, TEXT("Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
 
 				TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::SessionDoesNotExist);
 				return;
@@ -41,7 +41,7 @@ void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, 
 
 			case galaxy::api::LOBBY_ENTER_RESULT_LOBBY_IS_FULL:
 			{
-				UE_LOG_ONLINE(Display, TEXT("Lobby is full: lobbyID=%llu"), InLobbyID.ToUint64());
+				UE_LOG_ONLINE_SESSION(Display, TEXT("Lobby is full: lobbyID=%llu"), InLobbyID.ToUint64());
 
 				TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::SessionIsFull);
 				return;
@@ -50,7 +50,7 @@ void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, 
 
 			case galaxy::api::LOBBY_ENTER_RESULT_ERROR:
 			{
-				UE_LOG_ONLINE(Error, TEXT("Unknown error when entering lobby: lobbyID=%llu"), InLobbyID.ToUint64());
+				UE_LOG_ONLINE_SESSION(Error, TEXT("Unknown error when entering lobby: lobbyID=%llu"), InLobbyID.ToUint64());
 
 				TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::UnknownError);
 				return;

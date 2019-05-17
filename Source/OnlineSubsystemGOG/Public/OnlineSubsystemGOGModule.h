@@ -17,12 +17,12 @@ public:
 
 	FOnlineSubsystemGOGModule();
 
-	virtual ~FOnlineSubsystemGOGModule();
+	~FOnlineSubsystemGOGModule();
 
 	// Entry point for this class. The exact time this method is executed depends on configuration from .uplugin
-	virtual void StartupModule() override;
+	void StartupModule() override;
 
-	virtual void ShutdownModule() override;
+	void ShutdownModule() override;
 
 private:
 

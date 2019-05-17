@@ -1,7 +1,7 @@
 #include "QueryAchievementsListener.h"
 
 #include "AchievementsInterfaceGOG.h"
-
+#include "Loggers.h"
 #include "Online.h"
 
 FQueryAchievementsListener::FQueryAchievementsListener(
@@ -16,7 +16,7 @@ FQueryAchievementsListener::FQueryAchievementsListener(
 
 void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveSuccess(galaxy::api::GalaxyID InUserID)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnUserStatsAndAchievementsRetrieveSuccess: userID=%llu"), InUserID.ToUint64());
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("OnUserStatsAndAchievementsRetrieveSuccess: userID=%llu"), InUserID.ToUint64());
 
 	check(InUserID == playerId && "Achievements retrieved for unknown user. This shall not be happening with Galaxy specific listeners");
 
@@ -27,7 +27,7 @@ void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveSuccess(galax
 
 void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveFailure(galaxy::api::GalaxyID InUserID, galaxy::api::IUserStatsAndAchievementsRetrieveListener::FailureReason)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnUserStatsAndAchievementsRetrieveFailure: userID=%llu"), InUserID.ToUint64());
+	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("OnUserStatsAndAchievementsRetrieveFailure: userID=%llu"), InUserID.ToUint64());
 
 	check(InUserID == playerId && "Achievements retrieved for unknown user. This shall not be happening with Galaxy specific listeners");
 

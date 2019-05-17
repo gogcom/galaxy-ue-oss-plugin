@@ -1,5 +1,7 @@
 #include "ReadLeaderboardAroundUserListener.h"
 
+#include "OnlineLeaderboardsGOG.h"
+
 FReadLeaderboardAroundUserListener::FReadLeaderboardAroundUserListener(
 	class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
 	TSharedRef<const FUniqueNetIdGOG> InPlayer,
@@ -18,7 +20,7 @@ void FReadLeaderboardAroundUserListener::RequestLeaderboardEntries()
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to request leaderboard entries around user: leaderboardName='%s', playerID='%s', range=%u; %s; %s"),
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Failed to request leaderboard entries around user: leaderboardName='%s', playerID='%s', range=%u; %s; %s"),
 			*readLeaderboard->LeaderboardName.ToString(), *player->ToString(), range, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		TriggerOnLeaderboardReadCompleteDelegates(false);

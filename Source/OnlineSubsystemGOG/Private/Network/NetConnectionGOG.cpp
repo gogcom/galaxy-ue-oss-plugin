@@ -54,7 +54,11 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 	SetExpectedClientLoginMsgType(NMT_Hello);
 }
 
+#if ENGINE_MINOR_VERSION >= 21
+void UNetConnectionGOG::LowLevelSend(void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
+#else
 void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBits*/, int32 InCountBits)
+#endif
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::LowLevelSend()"));
 
@@ -68,8 +72,11 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBits*/, int32 
 
 	if (Handler.IsValid() && !Handler->GetRawSend())
 	{
+#if ENGINE_MINOR_VERSION >= 21
+		const auto processedDataPacket = Handler->Outgoing(dataToSend, InCountBits, OutTraits);
+#else
 		const auto processedDataPacket = Handler->Outgoing(dataToSend, InCountBits);
-
+#endif
 		if (processedDataPacket.bError)
 		{
 			UE_LOG_TRAFFIC(Error, TEXT("Error processing packet with connectionless handler"));

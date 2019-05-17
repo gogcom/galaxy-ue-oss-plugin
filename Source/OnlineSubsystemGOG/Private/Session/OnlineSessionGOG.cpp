@@ -12,6 +12,7 @@
 #include "Types/UrlGOG.h"
 #include "Types/UserOnlineAccountGOG.h"
 #include "Converters/NamedVariantDataConverter.h"
+#include "Loggers.h"
 #include "OnlineSessionUtils.h"
 #include "VariantDataUtils.h"
 
@@ -32,7 +33,7 @@ namespace
 		auto onlineLeaderboardsInterface = InSubsystem.GetLeaderboardsInterface();
 		if (!onlineLeaderboardsInterface.IsValid())
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to flush leaderboards: NULL leaderboards interface"));
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to flush leaderboards: NULL leaderboards interface"));
 			return;
 		}
 
@@ -77,7 +78,7 @@ namespace
 			case EOnlineComparisonOp::In:
 			case EOnlineComparisonOp::NotIn:
 			default:
-				UE_LOG_ONLINE(Error, TEXT("Unsupported comparison operation: type=%s"), EOnlineComparisonOp::ToString(InComparisonType));
+				UE_LOG_ONLINE_SESSION(Error, TEXT("Unsupported comparison operation: type=%s"), EOnlineComparisonOp::ToString(InComparisonType));
 		}
 
 		return false;
@@ -89,7 +90,7 @@ namespace
 		int32 filterValue;
 		if (!GetInt32ValueFromType<IntType>(InSearchQueryParam.Value.Data, filterValue))
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Numerical value for session search query param is out of int32 range. Skipping: searchParamName=%s, %s"),
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Numerical value for session search query param is out of int32 range. Skipping: searchParamName=%s, %s"),
 				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
 
 			return;
@@ -103,7 +104,7 @@ namespace
 			auto err = galaxy::api::GetError();
 			if (err)
 			{
-				UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter near value: searchQueryParamName=%s, %d; %s; %s"),
+				UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed add request lobby filter near value: searchQueryParamName=%s, %d; %s; %s"),
 					*filter.Key, filterValue, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 
 				return;
@@ -113,7 +114,7 @@ namespace
 		galaxy::api::LobbyComparisonType lobbyComparisonType;
 		if (!ConvertToLobbySearchComparisonType(InSearchQueryParam.Value.ComparisonOp, lobbyComparisonType))
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryParamName=%s, %s"),
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryParamName=%s, %s"),
 				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
 
 			return;
@@ -123,7 +124,7 @@ namespace
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for numerical value: searchQueryParamName=%s, %d; %s: %s"),
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed add request lobby filter for numerical value: searchQueryParamName=%s, %d; %s: %s"),
 				*filter.Key, filterValue, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 
 			return;
@@ -137,7 +138,7 @@ namespace
 		const auto& filter = NamedVariantDataConverter::ToLobbyDataEntry(InSearchQueryParam.Key, InSearchQueryParam.Value.Data);
 		if (filter.Value.IsEmpty())
 		{
-			UE_LOG_ONLINE(Display, TEXT("Empty filter. Skipping: searchQueryParamName=%s, %s"),
+			UE_LOG_ONLINE_SESSION(Display, TEXT("Empty filter. Skipping: searchQueryParamName=%s, %s"),
 				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
 			return;
 		}
@@ -145,7 +146,7 @@ namespace
 		galaxy::api::LobbyComparisonType lobbyComparisonType;
 		if (!ConvertToLobbySearchComparisonType(InSearchQueryParam.Value.ComparisonOp, lobbyComparisonType))
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryParamName=%s, %s"),
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Unsupported comparison operation for session search query. Skipping: searchQueryParamName=%s, %s"),
 				*InSearchQueryParam.Key.ToString(), *InSearchQueryParam.Value.ToString());
 
 			return;
@@ -154,7 +155,7 @@ namespace
 		galaxy::api::Matchmaking()->AddRequestLobbyListStringFilter(TCHAR_TO_UTF8(*filter.Key), TCHAR_TO_UTF8(*filter.Value), lobbyComparisonType);
 		auto err = galaxy::api::GetError();
 		if (err)
-			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby filter for string value: searchQueryParamName=%s, %s; %s: %s"),
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed add request lobby filter for string value: searchQueryParamName=%s, %s; %s: %s"),
 				*filter.Key, *filter.Value, ANSI_TO_TCHAR(err->GetName()), ANSI_TO_TCHAR(err->GetMsg()));
 	}
 
@@ -177,7 +178,7 @@ namespace
 			|| key == SEARCH_PRESENCE
 			|| key == SEARCH_EXCLUDE_UNIQUEIDS)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Search param is not supported. Skipping: searchParamName=%s"), *key.ToString());
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Search param is not supported. Skipping: searchParamName=%s"), *key.ToString());
 			return true;
 		}
 
@@ -230,7 +231,7 @@ namespace
 				case EOnlineKeyValuePairDataType::Blob:
 				default:
 				{
-					UE_LOG_ONLINE(Warning, TEXT("Unsupported session search param type. Skipping: searchParamName=%s, %s"),
+					UE_LOG_ONLINE_SESSION(Warning, TEXT("Unsupported session search param type. Skipping: searchParamName=%s, %s"),
 						*searchQueryParam.Key.ToString(), *searchQueryParam.Value.ToString());
 					continue;
 				}
@@ -255,12 +256,12 @@ FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem, TSharedRef<c
 	: subsystemGOG{InSubsystem}
 	, ownUserOnlineAccount{MoveTemp(InUserOnlineAccount)}
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::ctor()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::ctor()"));
 }
 
 FOnlineSessionGOG::~FOnlineSessionGOG()
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::dtor()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::dtor()"));
 
 	for (const auto& session : storedSessions)
 	{
@@ -271,30 +272,30 @@ FOnlineSessionGOG::~FOnlineSessionGOG()
 
 bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::CreateSession: sessionName='%s'"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::CreateSession: sessionName='%s'"), *InSessionName.ToString());
 
 	CheckLocalUserNum(InHostingPlayerNum);
 
 	if (InSessionSettings.NumPublicConnections < 0)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid number of public connections"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Invalid number of public connections"));
 		return false;
 	}
 
 	if (InSessionSettings.NumPrivateConnections > 0)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Private connections are not supported for GOG sessions"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Private connections are not supported for GOG sessions"));
 	}
 
 	if (InSessionSettings.bIsLANMatch)
-		UE_LOG_ONLINE(Warning, TEXT("LAN matches are not supported on GOG platform"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("LAN matches are not supported on GOG platform"));
 
 	if (InSessionSettings.bIsDedicated)
-		UE_LOG_ONLINE(Warning, TEXT("Dedicated servers are not implemented yet by GOG platform"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Dedicated servers are not implemented yet by GOG platform"));
 
 	if (GetNamedSession(InSessionName) != nullptr)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot create the same session twice: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot create the same session twice: sessionName='%s'"), *InSessionName.ToString());
 		TriggerOnCreateSessionCompleteDelegates(InSessionName, false);
 		return false;
 	}
@@ -317,7 +318,7 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to create lobby[0]: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to create lobby[0]: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
 
@@ -335,14 +336,14 @@ bool FOnlineSessionGOG::CreateSession(const FUniqueNetId& InHostingPlayerId, FNa
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSessionSettings& InSessionSettings)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
 
 	return CreateNamedSession(MoveTemp(InSessionName), InSessionSettings);
 }
 
 FNamedOnlineSession* FOnlineSessionGOG::AddNamedSession(FName InSessionName, const FOnlineSession& InSession)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::AddNamedSession('%s')"), *InSessionName.ToString());
 
 	return CreateNamedSession(MoveTemp(InSessionName), InSession);
 }
@@ -354,7 +355,7 @@ FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName)
 
 const FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionName) const
 {
-	UE_LOG_ONLINE(VeryVerbose, TEXT("FOnlineSessionGOG::GetNamedSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(VeryVerbose, TEXT("FOnlineSessionGOG::GetNamedSession('%s')"), *InSessionName.ToString());
 
 	return storedSessions.FindByPredicate([&](const auto& session) {
 		return session.SessionName == InSessionName;
@@ -363,7 +364,7 @@ const FNamedOnlineSession* FOnlineSessionGOG::GetNamedSession(FName InSessionNam
 
 void FOnlineSessionGOG::RemoveNamedSession(FName InSessionName)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::RemoveNamedSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::RemoveNamedSession('%s')"), *InSessionName.ToString());
 
 	storedSessions.RemoveAllSwap([&](const auto& session) {
 		return session.SessionName == InSessionName;
@@ -372,7 +373,7 @@ void FOnlineSessionGOG::RemoveNamedSession(FName InSessionName)
 
 bool FOnlineSessionGOG::HasPresenceSession()
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::HasPresenceSession()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::HasPresenceSession()"));
 
 	return storedSessions.FindByPredicate([&](auto& session) {
 		return session.SessionSettings.bUsesPresence;
@@ -381,7 +382,7 @@ bool FOnlineSessionGOG::HasPresenceSession()
 
 EOnlineSessionState::Type FOnlineSessionGOG::GetSessionState(FName InSessionName) const
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::GetSessionState('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::GetSessionState('%s')"), *InSessionName.ToString());
 
 	auto storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
@@ -392,12 +393,12 @@ EOnlineSessionState::Type FOnlineSessionGOG::GetSessionState(FName InSessionName
 
 bool FOnlineSessionGOG::StartSession(FName InSessionName)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::StartSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::StartSession('%s')"), *InSessionName.ToString());
 
 	FNamedOnlineSession* storedSession = GetNamedSession(InSessionName);
 	if (storedSession == nullptr)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Cannot start a session as it does not exist: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Cannot start a session as it does not exist: sessionName='%s'"), *InSessionName.ToString());
 
 		TriggerOnStartSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -405,7 +406,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 
 	if (storedSession->SessionState == EOnlineSessionState::Starting)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Session is already marked as starting. Skipping: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Session is already marked as starting. Skipping: sessionName='%s'"), *InSessionName.ToString());
 		// Delegate will be triggered by the initial call
 		return false;
 	}
@@ -413,7 +414,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 	if (storedSession->SessionState != EOnlineSessionState::Pending
 		&& storedSession->SessionState != EOnlineSessionState::Ended)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot start a session in current state: sessionName='%s', state='%s'"), *InSessionName.ToString(), EOnlineSessionState::ToString(storedSession->SessionState));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot start a session in current state: sessionName='%s', state='%s'"), *InSessionName.ToString(), EOnlineSessionState::ToString(storedSession->SessionState));
 
 		TriggerOnStartSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -421,7 +422,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 
 	if (!storedSession->SessionInfo.IsValid() || !storedSession->SessionInfo->IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Ivalid session info"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Ivalid session info"));
 		TriggerOnStartSessionCompleteDelegates(InSessionName, false);
 		return false;
 	}
@@ -434,7 +435,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to get lobby joinability: sessionName='%s', lobbyID=%llu, %s: %s"),
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to get lobby joinability: sessionName='%s', lobbyID=%llu, %s: %s"),
 			*InSessionName.ToString(), lobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		storedSession->SessionState = EOnlineSessionState::Pending;
@@ -455,7 +456,7 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 	err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID=%llu, %s: %s"),
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to change lobby joinability: lobbyID=%llu, %s: %s"),
 			lobbyID.ToUint64(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
@@ -469,19 +470,19 @@ bool FOnlineSessionGOG::StartSession(FName InSessionName)
 
 bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSettings& InUpdatedSessionSettings, bool InShouldRefreshOnlineData)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::UpdateSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::UpdateSession('%s')"), *InSessionName.ToString());
 
 	auto* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot update a session that does not exists: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot update a session that does not exists: sessionName='%s'"), *InSessionName.ToString());
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
 		return false;
 	}
 
 	if (*storedSession->OwningUserId != *ownUserOnlineAccount->GetUserId())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot update session. Player is not a session owner: sessionName='%s', sessionOwnerID='%s', userID='%s'"),
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot update session. Player is not a session owner: sessionName='%s', sessionOwnerID='%s', userID='%s'"),
 			*InSessionName.ToString(), *storedSession->OwningUserId->ToString(), *ownUserOnlineAccount->GetUserId()->ToString());
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -489,7 +490,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 
 	if (!InShouldRefreshOnlineData)
 	{
-		UE_LOG_ONLINE(VeryVerbose, TEXT("Received local session update"));
+		UE_LOG_ONLINE_SESSION(VeryVerbose, TEXT("Received local session update"));
 		storedSession->SessionSettings = InUpdatedSessionSettings;
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, true);
 		return true;
@@ -532,7 +533,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 		&& (storedSession->SessionState != EOnlineSessionState::InProgress
 			|| InUpdatedSessionSettings.bAllowJoinInProgress == storedSession->SessionSettings.bAllowJoinInProgress))
 	{
-		UE_LOG_ONLINE(Display, TEXT("No changes in Session settings"));
+		UE_LOG_ONLINE_SESSION(Display, TEXT("No changes in Session settings"));
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, true);
 		return true;
 	}
@@ -548,7 +549,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to update lobby type: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to update lobby type: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -558,7 +559,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 	err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Failed to update lobby maximum size: lobbyID='%s'; %s: %s"),
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to update lobby maximum size: lobbyID='%s'; %s: %s"),
 			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -575,7 +576,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 		err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"),
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"),
 				UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		}
 	}
@@ -590,7 +591,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 	err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to change lobby joinability: lobbyID='%s'; %s: %s"),
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to change lobby joinability: lobbyID='%s'; %s: %s"),
 			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
@@ -604,19 +605,19 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 
 bool FOnlineSessionGOG::EndSession(FName InSessionName)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::EndSession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::EndSession('%s')"), *InSessionName.ToString());
 
 	auto* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot end a session that does not exists: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot end a session that does not exists: sessionName='%s'"), *InSessionName.ToString());
 		TriggerOnEndSessionCompleteDelegates(InSessionName, false);
 		return false;
 	}
 
 	if (storedSession->SessionState != EOnlineSessionState::InProgress)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot end a session that was not started: sessionName='%s', state='%s'"), *InSessionName.ToString(), EOnlineSessionState::ToString(storedSession->SessionState));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot end a session that was not started: sessionName='%s', state='%s'"), *InSessionName.ToString(), EOnlineSessionState::ToString(storedSession->SessionState));
 		TriggerOnEndSessionCompleteDelegates(InSessionName, false);
 		return false;
 	}
@@ -633,12 +634,12 @@ bool FOnlineSessionGOG::EndSession(FName InSessionName)
 
 bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySessionCompleteDelegate& InCompletionDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::DestroySession('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::DestroySession('%s')"), *InSessionName.ToString());
 
 	FNamedOnlineSession* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Trying to destroy a session that does not exist: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Trying to destroy a session that does not exist: sessionName='%s'"), *InSessionName.ToString());
 		InCompletionDelegate.ExecuteIfBound(InSessionName, false);
 		TriggerOnDestroySessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -646,7 +647,7 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 
 	if (storedSession->SessionState == EOnlineSessionState::Destroying)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Session is already marked to be destroyed. Skipping: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Session is already marked to be destroyed. Skipping: sessionName='%s'"), *InSessionName.ToString());
 		InCompletionDelegate.ExecuteIfBound(InSessionName, false);
 		// Initial operation will trigger global delegate
 		return false;
@@ -655,7 +656,7 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 	if (storedSession->SessionState == EOnlineSessionState::Starting
 		|| storedSession->SessionState == EOnlineSessionState::InProgress)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Destroying a '%s' session: sessionName='%s'"), EOnlineSessionState::ToString(storedSession->SessionState), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Destroying a '%s' session: sessionName='%s'"), EOnlineSessionState::ToString(storedSession->SessionState), *InSessionName.ToString());
 	}
 
 	storedSession->SessionState = EOnlineSessionState::Destroying;
@@ -665,7 +666,7 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 	if (!storedSession->SessionInfo.IsValid()
 		|| !storedSession->SessionInfo->IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Invalid session info"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid session info"));
 		InCompletionDelegate.ExecuteIfBound(InSessionName, false);
 		TriggerOnDestroySessionCompleteDelegates(InSessionName, false);
 		return false;
@@ -674,12 +675,12 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 	galaxy::api::Friends()->DeleteRichPresence("connect");
 	auto err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Error, TEXT("Failed to delete players connect presence informatio: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to delete players connect presence informatio: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	galaxy::api::Matchmaking()->LeaveLobby(FUniqueNetIdGOG{storedSession->SessionInfo->GetSessionId()});
 	err = galaxy::api::GetError();
 	if (err)
-		UE_LOG_ONLINE(Error, TEXT("Failed to leave lobby: lobbyID=%llu, %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to leave lobby: lobbyID=%llu, %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	RemoveNamedSession(InSessionName);
 
@@ -690,12 +691,12 @@ bool FOnlineSessionGOG::DestroySession(FName InSessionName, const FOnDestroySess
 
 bool FOnlineSessionGOG::IsPlayerInSession(FName InSessionName, const FUniqueNetId& InUniqueId)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::IsPlayerInSession('%s', '%s')"), *InSessionName.ToString(), *InUniqueId.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::IsPlayerInSession('%s', '%s')"), *InSessionName.ToString(), *InUniqueId.ToString());
 
 	auto storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Session not found"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Session not found"));
 		return false;
 	}
 
@@ -706,9 +707,9 @@ bool FOnlineSessionGOG::IsPlayerInSession(FName InSessionName, const FUniqueNetI
 
 bool FOnlineSessionGOG::StartMatchmaking(const TArray<TSharedRef<const FUniqueNetId>>&, FName InSessionName, const FOnlineSessionSettings&, TSharedRef<FOnlineSessionSearch>&)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::StartMatchmaking('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::StartMatchmaking('%s')"), *InSessionName.ToString());
 
-	UE_LOG_ONLINE(Error, TEXT("Matchmaking is not implemented yet"));
+	UE_LOG_ONLINE_SESSION(Error, TEXT("Matchmaking is not implemented yet"));
 	TriggerOnMatchmakingCompleteDelegates(InSessionName, false);
 
 	return false;
@@ -716,9 +717,9 @@ bool FOnlineSessionGOG::StartMatchmaking(const TArray<TSharedRef<const FUniqueNe
 
 bool FOnlineSessionGOG::CancelMatchmaking(int32, FName InSessionName)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::CancelMatchmaking('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::CancelMatchmaking('%s')"), *InSessionName.ToString());
 
-	UE_LOG_ONLINE(Error, TEXT("Matchmaking is not implemented yet"));
+	UE_LOG_ONLINE_SESSION(Error, TEXT("Matchmaking is not implemented yet"));
 	TriggerOnCancelMatchmakingCompleteDelegates(InSessionName, false);
 
 	return false;
@@ -731,25 +732,25 @@ bool FOnlineSessionGOG::CancelMatchmaking(const FUniqueNetId& /*InSearchingPlaye
 
 bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRef<FOnlineSessionSearch>& InOutSearchSettings)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::FindSessions()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::FindSessions()"));
 
 	CheckLocalUserNum(InSearchingPlayerNum);
 
 	if (InOutSearchSettings->SearchState == EOnlineAsyncTaskState::InProgress)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("A session search is already pending. Ignoring this request"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("A session search is already pending. Ignoring this request"));
 		// Delegate will be triggered by initial call
 		return false;
 	}
 
 	if (InOutSearchSettings->bIsLanQuery)
-		UE_LOG_ONLINE(Warning, TEXT("LAN is not supported by GOG platform. Ignoring this value"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("LAN is not supported by GOG platform. Ignoring this value"));
 
 	if (InOutSearchSettings->TimeoutInSeconds > 0)
-		UE_LOG_ONLINE(Warning, TEXT("Search timeout is not supported. Ignoring this value"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Search timeout is not supported. Ignoring this value"));
 
 	if (InOutSearchSettings->PingBucketSize > 0)
-		UE_LOG_ONLINE(Warning, TEXT("Ping-based search is not supported. Ignoring this value"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Ping-based search is not supported. Ignoring this value"));
 
 	if (InOutSearchSettings->MaxSearchResults > 0)
 	{
@@ -757,7 +758,7 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed add request lobby count filter: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed add request lobby count filter: %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 			InOutSearchSettings->SearchState = EOnlineAsyncTaskState::Failed;
 			TriggerOnFindSessionsCompleteDelegates(false);
@@ -765,7 +766,7 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 		}
 	}
 	else
-		UE_LOG_ONLINE(Warning, TEXT("Invalid number of max search results. Ignoring this value"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid number of max search results. Ignoring this value"));
 
 	FSearchParams postOperationSearchQueryParams;
 	ParseAndApplyLobbySearchFilters(InOutSearchSettings->QuerySettings, postOperationSearchQueryParams);
@@ -776,7 +777,7 @@ bool FOnlineSessionGOG::FindSessions(int32 InSearchingPlayerNum, const TSharedRe
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby list: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to request lobby list: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
 
@@ -801,12 +802,12 @@ bool FOnlineSessionGOG::FindSessionById(
 	const FUniqueNetId& InFriendId,
 	const FOnSingleSessionResultCompleteDelegate& InCompletionDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::FindSessionById: sessionID='%s'"), *InSessionId.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::FindSessionById: sessionID='%s'"), *InSessionId.ToString());
 
 	FUniqueNetIdGOG sessionID{InSessionId};
 	if (!sessionID.IsValid() || !sessionID.IsLobby())
 	{
-		UE_LOG_ONLINE(Display, TEXT("Invalid SessionID: sessionID='%s'"), *InSessionId.ToString());
+		UE_LOG_ONLINE_SESSION(Display, TEXT("Invalid SessionID: sessionID='%s'"), *InSessionId.ToString());
 		InCompletionDelegate.ExecuteIfBound(LOCAL_USER_NUM, false, {});
 		return false;
 	}
@@ -817,7 +818,7 @@ bool FOnlineSessionGOG::FindSessionById(
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to request session data: sessionID='%s'; %s: %s"),
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to request session data: sessionID='%s'; %s: %s"),
 			*InSessionId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
@@ -831,9 +832,9 @@ bool FOnlineSessionGOG::FindSessionById(
 
 bool FOnlineSessionGOG::CancelFindSessions()
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::CancelFindSessions()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::CancelFindSessions()"));
 
-	UE_LOG_ONLINE(Error, TEXT("CancelFindSessions is not implemented yet"));
+	UE_LOG_ONLINE_SESSION(Error, TEXT("CancelFindSessions is not implemented yet"));
 
 	TriggerOnCancelFindSessionsCompleteDelegates(false);
 	return false;
@@ -841,9 +842,9 @@ bool FOnlineSessionGOG::CancelFindSessions()
 
 bool FOnlineSessionGOG::PingSearchResults(const FOnlineSessionSearchResult& InSearchResult)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::PingSearchResults('%s')"), *InSearchResult.GetSessionIdStr());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::PingSearchResults('%s')"), *InSearchResult.GetSessionIdStr());
 
-	UE_LOG_ONLINE(Error, TEXT("PingSearchResults is not avaialable yet on GOG platform"));
+	UE_LOG_ONLINE_SESSION(Error, TEXT("PingSearchResults is not avaialable yet on GOG platform"));
 
 	TriggerOnPingSearchResultsCompleteDelegates(false);
 	return false;
@@ -851,18 +852,18 @@ bool FOnlineSessionGOG::PingSearchResults(const FOnlineSessionSearchResult& InSe
 
 bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, const FOnlineSessionSearchResult& InDesiredSession)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::JoinSession('%s', '%s')"), *InSessionName.ToString(), *InDesiredSession.GetSessionIdStr());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::JoinSession('%s', '%s')"), *InSessionName.ToString(), *InDesiredSession.GetSessionIdStr());
 
 	if (GetNamedSession(InSessionName) != nullptr)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Cannot join a session twice: joiningSession='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot join a session twice: joiningSession='%s'"), *InSessionName.ToString());
 		TriggerOnJoinSessionCompleteDelegates(InSessionName, EOnJoinSessionCompleteResult::AlreadyInSession);
 		return false;
 	}
 
 	if (!InDesiredSession.IsValid())
 	{
-		UE_LOG_ONLINE(Error, TEXT("Invalid session"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Invalid session"));
 		TriggerOnJoinSessionCompleteDelegates(InSessionName, EOnJoinSessionCompleteResult::CouldNotRetrieveAddress);
 		return false;
 	}
@@ -875,7 +876,7 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to join lobby: lobbyID=%s; %s; %s"), *sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to join lobby: lobbyID=%s; %s; %s"), *sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		TriggerOnJoinSessionCompleteDelegates(InSessionName, EOnJoinSessionCompleteResult::UnknownError);
 
 		FreeListener(MoveTemp(listener.Key));
@@ -893,9 +894,9 @@ bool FOnlineSessionGOG::JoinSession(const FUniqueNetId& /*InPlayerId*/, FName In
 
 bool FOnlineSessionGOG::FindFriendSession(int32 InLocalUserNum, const FUniqueNetId&)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::FindFriendSession()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::FindFriendSession()"));
 
-	UE_LOG_ONLINE(Error, TEXT("FindFriendSession is not supported by GOG platform"));
+	UE_LOG_ONLINE_SESSION(Error, TEXT("FindFriendSession is not supported by GOG platform"));
 
 	TriggerOnFindFriendSessionCompleteDelegates(InLocalUserNum, false, {});
 
@@ -904,9 +905,9 @@ bool FOnlineSessionGOG::FindFriendSession(int32 InLocalUserNum, const FUniqueNet
 
 bool FOnlineSessionGOG::FindFriendSession(const FUniqueNetId&, const FUniqueNetId&)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::FindFriendSession()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::FindFriendSession()"));
 
-	UE_LOG_ONLINE(Error, TEXT("FindFriendSession is not supported by GOG platform"));
+	UE_LOG_ONLINE_SESSION(Error, TEXT("FindFriendSession is not supported by GOG platform"));
 
 	TriggerOnFindFriendSessionCompleteDelegates(LOCAL_USER_NUM, false, {});
 
@@ -915,9 +916,9 @@ bool FOnlineSessionGOG::FindFriendSession(const FUniqueNetId&, const FUniqueNetI
 
 bool FOnlineSessionGOG::FindFriendSession(const FUniqueNetId&, const TArray<TSharedRef<const FUniqueNetId>>&)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::FindFriendSession()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::FindFriendSession()"));
 
-	UE_LOG_ONLINE(Error, TEXT("FindFriendSession is not supported by GOG platform"));
+	UE_LOG_ONLINE_SESSION(Error, TEXT("FindFriendSession is not supported by GOG platform"));
 
 	TriggerOnFindFriendSessionCompleteDelegates(LOCAL_USER_NUM, false, {});
 
@@ -936,18 +937,18 @@ bool FOnlineSessionGOG::SendSessionInviteToFriend(const FUniqueNetId& /*InLocalU
 
 bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InFriends)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::SendSessionInviteToFriends('%s', %d)"), *InSessionName.ToString(), InFriends.Num());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::SendSessionInviteToFriends('%s', %d)"), *InSessionName.ToString(), InFriends.Num());
 
 	auto storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Invalid session"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid session"));
 		return false;
 	}
 
 	if (!storedSession->SessionInfo.IsValid() || !storedSession->SessionInfo->IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Invalid session info"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid session info"));
 		return false;
 	}
 
@@ -962,7 +963,7 @@ bool FOnlineSessionGOG::SendSessionInviteToFriends(int32 InLocalUserNum, FName I
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s: %s"),
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to invite a friend: friendId='%s'; %s: %s"),
 				*invitedFriend->ToDebugString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			invitationSentSuccessfully = false;
 		}
@@ -981,7 +982,7 @@ bool FOnlineSessionGOG::GetResolvedConnectStringFromSession(const FOnlineSession
 	if (!InSession.SessionInfo.IsValid()
 		|| !InSession.SessionInfo->IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Invalid SessionInfo"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid SessionInfo"));
 		return false;
 	}
 
@@ -991,12 +992,12 @@ bool FOnlineSessionGOG::GetResolvedConnectStringFromSession(const FOnlineSession
 
 bool FOnlineSessionGOG::GetResolvedConnectString(FName InSessionName, FString& OutConnectInfo, FName)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::GetResolvedConnectString('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::GetResolvedConnectString('%s')"), *InSessionName.ToString());
 
 	auto storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Session info not found"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Session info not found"));
 		return false;
 	}
 
@@ -1005,11 +1006,11 @@ bool FOnlineSessionGOG::GetResolvedConnectString(FName InSessionName, FString& O
 
 bool FOnlineSessionGOG::GetResolvedConnectString(const FOnlineSessionSearchResult& InSearchResult, const FName, FString& OutConnectInfo)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::GetResolvedConnectString()"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::GetResolvedConnectString()"));
 
 	if (!InSearchResult.IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Invalid session info"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid session info"));
 		return false;
 	}
 
@@ -1018,12 +1019,12 @@ bool FOnlineSessionGOG::GetResolvedConnectString(const FOnlineSessionSearchResul
 
 FOnlineSessionSettings* FOnlineSessionGOG::GetSessionSettings(FName InSessionName)
 {
-	UE_LOG_ONLINE(VeryVerbose, TEXT("FOnlineSessionGOG::GetResolvedConnectString('%s')"), *InSessionName.ToString());
+	UE_LOG_ONLINE_SESSION(VeryVerbose, TEXT("FOnlineSessionGOG::GetResolvedConnectString('%s')"), *InSessionName.ToString());
 
 	auto storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Session not found"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Session not found"));
 		return nullptr;
 	}
 
@@ -1037,12 +1038,12 @@ bool FOnlineSessionGOG::RegisterPlayer(FName InSessionName, const FUniqueNetId& 
 
 bool FOnlineSessionGOG::RegisterPlayers(FName InSessionName, const TArray< TSharedRef<const FUniqueNetId> >& InPlayers, bool InWasInvited)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::RegisterPlayers('%s', %d)"), *InSessionName.ToString(), InPlayers.Num());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::RegisterPlayers('%s', %d)"), *InSessionName.ToString(), InPlayers.Num());
 
 	auto* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Session not found"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Session not found"));
 
 		TriggerOnRegisterPlayersCompleteDelegates(InSessionName, InPlayers, false);
 		return false;
@@ -1050,7 +1051,7 @@ bool FOnlineSessionGOG::RegisterPlayers(FName InSessionName, const TArray< TShar
 
 	if (!storedSession->SessionInfo.IsValid() || !storedSession->SessionInfo->IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Invalid session info"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid session info"));
 
 		TriggerOnRegisterPlayersCompleteDelegates(InSessionName, InPlayers, false);
 		return false;
@@ -1060,19 +1061,19 @@ bool FOnlineSessionGOG::RegisterPlayers(FName InSessionName, const TArray< TShar
 	{
 		if (storedSession->RegisteredPlayers.Find(playerID) != INDEX_NONE)
 		{
-			UE_LOG_ONLINE(Verbose, TEXT("A player already registered in a session. Skipping: playerID=%s, sessionName='%s'"), *playerID->ToDebugString(), *InSessionName.ToString());
+			UE_LOG_ONLINE_SESSION(Verbose, TEXT("A player already registered in a session. Skipping: playerID=%s, sessionName='%s'"), *playerID->ToDebugString(), *InSessionName.ToString());
 			continue;
 		}
 
 		if (!playerID->IsValid())
-			UE_LOG_ONLINE(Warning, TEXT("Invalid player ID"));
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Invalid player ID"));
 
 		storedSession->RegisteredPlayers.Add(playerID);
 
 		galaxy::api::Friends()->RequestUserInformation(FUniqueNetIdGOG{*playerID});
 		auto err = galaxy::api::GetError();
 		if (err)
-			UE_LOG_ONLINE(Warning, TEXT("Failed to request information for user: userID='%s'; '%s'; '%s'"), *playerID->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to request information for user: userID='%s'; '%s'; '%s'"), *playerID->ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 	}
 
 	TriggerOnRegisterPlayersCompleteDelegates(InSessionName, InPlayers, true);
@@ -1086,12 +1087,12 @@ bool FOnlineSessionGOG::UnregisterPlayer(FName InSessionName, const FUniqueNetId
 
 bool FOnlineSessionGOG::UnregisterPlayers(FName InSessionName, const TArray<TSharedRef<const FUniqueNetId>>& InPlayers)
 {
-	UE_LOG_ONLINE(Warning, TEXT("FOnlineSessionGOG::UnregisterPlayers('%s', %d)"), *InSessionName.ToString(), InPlayers.Num());
+	UE_LOG_ONLINE_SESSION(Warning, TEXT("FOnlineSessionGOG::UnregisterPlayers('%s', %d)"), *InSessionName.ToString(), InPlayers.Num());
 
 	auto* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Error, TEXT("Session not found"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Session not found"));
 
 		TriggerOnUnregisterPlayersCompleteDelegates(InSessionName, InPlayers, false);
 		return false;
@@ -1099,7 +1100,7 @@ bool FOnlineSessionGOG::UnregisterPlayers(FName InSessionName, const TArray<TSha
 
 	if (!storedSession->SessionInfo.IsValid() || !storedSession->SessionInfo->IsValid())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Session info is invalid: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Session info is invalid: sessionName='%s'"), *InSessionName.ToString());
 
 		TriggerOnUnregisterPlayersCompleteDelegates(InSessionName, InPlayers, false);
 		return false;
@@ -1110,7 +1111,7 @@ bool FOnlineSessionGOG::UnregisterPlayers(FName InSessionName, const TArray<TSha
 		auto playerIdx = storedSession->RegisteredPlayers.Find(playerID);
 		if (playerIdx == INDEX_NONE)
 		{
-			UE_LOG_ONLINE(Verbose, TEXT("Player is not registered for a session. Skipping: playerID=%s, sessionName='%s'"), *playerID->ToDebugString(), *InSessionName.ToString());
+			UE_LOG_ONLINE_SESSION(Verbose, TEXT("Player is not registered for a session. Skipping: playerID=%s, sessionName='%s'"), *playerID->ToDebugString(), *InSessionName.ToString());
 			continue;
 		}
 
@@ -1123,28 +1124,28 @@ bool FOnlineSessionGOG::UnregisterPlayers(FName InSessionName, const TArray<TSha
 
 void FOnlineSessionGOG::RegisterLocalPlayer(const FUniqueNetId& InPlayerId, FName InSessionName, const FOnRegisterLocalPlayerCompleteDelegate& InDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::RegisterLocalPlayer('%s', '%s')"), *InSessionName.ToString(), *InPlayerId.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::RegisterLocalPlayer('%s', '%s')"), *InSessionName.ToString(), *InPlayerId.ToString());
 
 	InDelegate.ExecuteIfBound(InPlayerId, EOnJoinSessionCompleteResult::Success);
 }
 
 void FOnlineSessionGOG::UnregisterLocalPlayer(const FUniqueNetId& InPlayerId, FName InSessionName, const FOnUnregisterLocalPlayerCompleteDelegate& InDelegate)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::UnregisterLocalPlayer('%s', '%s')"), *InSessionName.ToString(), *InPlayerId.ToString());
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::UnregisterLocalPlayer('%s', '%s')"), *InSessionName.ToString(), *InPlayerId.ToString());
 
 	InDelegate.ExecuteIfBound(InPlayerId, true);
 }
 
 int32 FOnlineSessionGOG::GetNumSessions()
 {
-	UE_LOG_ONLINE(VeryVerbose, TEXT("GetNumSessions"));
+	UE_LOG_ONLINE_SESSION(VeryVerbose, TEXT("GetNumSessions"));
 
 	return storedSessions.Num();
 }
 
 void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason InLeaveReason)
 {
-	UE_LOG_ONLINE(Log, TEXT("FOnlineSessionGOG::OnLobbyLeft()"));
+	UE_LOG_ONLINE_SESSION(Log, TEXT("FOnlineSessionGOG::OnLobbyLeft()"));
 
 	if (InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_USER_LEFT)
 		return;
@@ -1152,7 +1153,7 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, gala
 	auto storedSession = FindSession(InLobbyID);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Lobby left listener called for an unknown session. Ignoring"));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Lobby left listener called for an unknown session. Ignoring"));
 		return;
 	}
 
@@ -1162,14 +1163,14 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, gala
 
 void FOnlineSessionGOG::OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
 
 	auto sessionUrl = FUrlGOG{UTF8_TO_TCHAR(InConnectString)};
 
 	auto sessionID = FUniqueNetIdGOG{sessionUrl.Host};
 	if (!sessionID.IsValid() && !sessionID.IsLobby())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
 		return;
 	}
 
@@ -1185,7 +1186,7 @@ void FOnlineSessionGOG::OnGameInvitationReceived(galaxy::api::GalaxyID InUserID,
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
 			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
@@ -1195,14 +1196,14 @@ void FOnlineSessionGOG::OnGameInvitationReceived(galaxy::api::GalaxyID InUserID,
 
 void FOnlineSessionGOG::OnGameJoinRequested(galaxy::api::GalaxyID InUserID, const char* InConnectString)
 {
-	UE_LOG_ONLINE(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::OnGameInvitationReceived(%s)"), UTF8_TO_TCHAR(InConnectString));
 
 	auto sessionUrl = FUrlGOG{UTF8_TO_TCHAR(InConnectString)};
 
 	auto sessionID = FUniqueNetIdGOG{sessionUrl.Host};
 	if (!sessionID.IsValid() && !sessionID.IsLobby())
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to parse SessionID from game invitation: connectString=%s"), UTF8_TO_TCHAR(InConnectString));
 		return;
 	}
 
@@ -1218,7 +1219,7 @@ void FOnlineSessionGOG::OnGameJoinRequested(galaxy::api::GalaxyID InUserID, cons
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to request lobby data: lobbyID='%s'; %s: %s"),
 			*sessionID.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 		FreeListener(MoveTemp(listener.Key));
@@ -1228,7 +1229,7 @@ void FOnlineSessionGOG::OnGameJoinRequested(galaxy::api::GalaxyID InUserID, cons
 
 void FOnlineSessionGOG::DumpSessionState()
 {
-	UE_LOG_ONLINE(Display, TEXT("DumpSessionState"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("DumpSessionState"));
 
 	for (const auto& session : storedSessions)
 		DumpNamedSession(&session);
@@ -1244,11 +1245,11 @@ FNamedOnlineSession* FOnlineSessionGOG::FindSession(const FUniqueNetIdGOG& InSes
 
 void FOnlineSessionGOG::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& InMemberID)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLobbyDataUpdated"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("OnLobbyDataUpdated"));
 
 	if (InMemberID.IsValid())
 	{
-		UE_LOG_ONLINE(VeryVerbose, TEXT("Received member data update. Ignored"));
+		UE_LOG_ONLINE_SESSION(VeryVerbose, TEXT("Received member data update. Ignored"));
 		return;
 	}
 
@@ -1258,7 +1259,7 @@ void FOnlineSessionGOG::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyI
 	if (!storedSession)
 	{
 		// Session from StartSession, RequestLobbyData e.t.c will not be handed here as session are not known at this point
-		UE_LOG_ONLINE(VeryVerbose, TEXT("Received unknown session data update. Ignored"));
+		UE_LOG_ONLINE_SESSION(VeryVerbose, TEXT("Received unknown session data update. Ignored"));
 		return;
 	}
 
@@ -1266,7 +1267,7 @@ void FOnlineSessionGOG::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyI
 	if (!OnlineSessionUtils::Fill(sessionID, updatedSessionSettings)
 		|| !OnlineSessionUtils::GetSessionOpenConnections(sessionID, *storedSession))
 	{
-		UE_LOG_ONLINE(Error, TEXT("Error updating Session"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Error updating Session"));
 		return;
 	}
 
@@ -1276,12 +1277,12 @@ void FOnlineSessionGOG::OnLobbyDataUpdated(const galaxy::api::GalaxyID& InLobbyI
 
 void FOnlineSessionGOG::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& InLobbyID, const galaxy::api::GalaxyID& /*InMemberID*/, galaxy::api::LobbyMemberStateChange InMemberStateChange)
 {
-	UE_LOG_ONLINE(Display, TEXT("OnLobbyMemberStateChanged"));
+	UE_LOG_ONLINE_SESSION(Display, TEXT("OnLobbyMemberStateChanged"));
 
 	auto storedSession = FindSession(InLobbyID);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE(VeryVerbose, TEXT("Received unknown session member state update. Ignored"));
+		UE_LOG_ONLINE_SESSION(VeryVerbose, TEXT("Received unknown session member state update. Ignored"));
 		return;
 	}
 
@@ -1290,3 +1291,20 @@ void FOnlineSessionGOG::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& I
 	else
 		++storedSession->NumOpenPublicConnections;
 }
+
+#if ENGINE_MINOR_VERSION >= 20
+TSharedPtr<const FUniqueNetId> FOnlineSessionGOG::CreateSessionIdFromString(const FString& InSessionIdStr)
+{
+	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::CreateSessionIdFromString()"));
+
+	auto sessionID = MakeShared<const FUniqueNetIdGOG>(InSessionIdStr);
+
+	if (!sessionID->IsValid() || !sessionID->IsLobby())
+	{
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to create valid SessionID from string: sessionIDStr='%s'"), *InSessionIdStr);
+		return nullptr;
+	}
+
+	return sessionID;
+}
+#endif

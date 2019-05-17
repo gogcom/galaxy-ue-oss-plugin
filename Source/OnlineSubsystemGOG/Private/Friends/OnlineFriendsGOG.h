@@ -57,6 +57,10 @@ public:
 
 	static const FString& GetDefaultFriendsListName();
 
+#if ENGINE_MINOR_VERSION >= 21
+	void DumpRecentPlayers() const override;
+#endif
+
 PACKAGE_SCOPE:
 
 	FOnlineFriendsGOG(class FOnlineSubsystemGOG& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount);

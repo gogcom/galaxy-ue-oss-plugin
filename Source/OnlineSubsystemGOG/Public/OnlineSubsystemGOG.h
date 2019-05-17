@@ -9,19 +9,19 @@ class ONLINESUBSYSTEMGOG_API FOnlineSubsystemGOG : public FOnlineSubsystemImpl
 {
 public:
 
-	virtual FString GetAppId() const override;
+	FString GetAppId() const override;
 
-	virtual FText GetOnlineServiceName() const override;
+	FText GetOnlineServiceName() const override;
 
-	virtual bool Init() override;
+	bool Init() override;
 
-	virtual bool IsLocalPlayer(const FUniqueNetId& InUniqueId) const override;
+	bool IsLocalPlayer(const FUniqueNetId& InUniqueId) const override;
 
-	virtual bool Exec(class UWorld* InWorld, const TCHAR* InCmd, FOutputDevice& OutAr) override;
+	bool Exec(class UWorld* InWorld, const TCHAR* InCmd, FOutputDevice& OutAr) override;
 
-	virtual bool Shutdown() override;
+	bool Shutdown() override;
 
-	virtual ~FOnlineSubsystemGOG() override;
+	~FOnlineSubsystemGOG() override;
 
 	// Implementation of the IOnlineSubsystem
 
@@ -30,7 +30,7 @@ public:
 		IOnline##interfaceName##Ptr galaxy##interfaceName##Interface; \
 		\
 	public: \
-		virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
+		IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
 		{ \
 			return galaxy##interfaceName##Interface; \
 		}
@@ -43,7 +43,7 @@ public:
 	DECLARE_ONLINE_INTERFACE(Presence);
 
 #define STUB_ONLINE_INTERFACE(interfaceName) \
-	virtual IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
+	IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
 	{ \
 		return nullptr; \
 	}
@@ -51,7 +51,6 @@ public:
 	STUB_ONLINE_INTERFACE(User);
 
 	STUB_ONLINE_INTERFACE(UserCloud);
-
 
 	STUB_ONLINE_INTERFACE(Chat);
 
@@ -85,9 +84,14 @@ public:
 
 	STUB_ONLINE_INTERFACE(TurnBased);
 
-PACKAGE_SCOPE:
+#if ENGINE_MINOR_VERSION >= 21
+	STUB_ONLINE_INTERFACE(Tournament);
+#endif
+#if ENGINE_MINOR_VERSION >= 22
+	STUB_ONLINE_INTERFACE(Stats);
+#endif
 
-	FOnlineSubsystemGOG();
+PACKAGE_SCOPE:
 
 	FOnlineSubsystemGOG(FName InInstanceName);
 

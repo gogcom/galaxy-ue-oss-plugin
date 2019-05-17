@@ -14,14 +14,14 @@ FSetRichPresenceListener::FSetRichPresenceListener(
 
 void FSetRichPresenceListener::OnRichPresenceChangeSuccess()
 {
-	UE_LOG_ONLINE(Display, TEXT("FSetRichPresenceListener: OnRichPresenceChangeSuccess()"));
+	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FSetRichPresenceListener: OnRichPresenceChangeSuccess()"));
 
 	TriggerOnPresenceChangeCompleteDelegate(true);
 }
 
 void FSetRichPresenceListener::OnRichPresenceChangeFailure(galaxy::api::IRichPresenceChangeListener::FailureReason /*InFailureReason*/)
 {
-	UE_LOG_ONLINE(Warning, TEXT("FSetRichPresenceListener::OnRichPresenceChangeFailure()"));
+	UE_LOG_ONLINE_PRESENCE(Warning, TEXT("FSetRichPresenceListener::OnRichPresenceChangeFailure()"));
 
 	TriggerOnPresenceChangeCompleteDelegate(false);
 }

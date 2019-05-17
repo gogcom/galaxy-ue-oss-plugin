@@ -38,7 +38,7 @@ FFriendInvitationSendListener::FFriendInvitationSendListener(
 
 void FFriendInvitationSendListener::OnFriendInvitationSendSuccess(galaxy::api::GalaxyID InUserID)
 {
-	UE_LOG_ONLINE(Display, TEXT("FFriendInvitationSendListener::OnFriendInvitationSendSuccess()"));
+	UE_LOG_ONLINE_FRIEND(Display, TEXT("FFriendInvitationSendListener::OnFriendInvitationSendSuccess()"));
 	check(InUserID == friendId);
 	TriggerOnSendInviteCompleteDelegates(true);
 }
@@ -48,7 +48,7 @@ void FFriendInvitationSendListener::OnFriendInvitationSendFailure(galaxy::api::G
 	check(InUserID == friendId);
 
 	auto errorMsg = ToString(InFailureReason);
-	UE_LOG_ONLINE(Warning, TEXT("FFriendInvitationSendListener::OnFriendInvitationSendFailure(): %s"), *errorMsg);
+	UE_LOG_ONLINE_FRIEND(Warning, TEXT("FFriendInvitationSendListener::OnFriendInvitationSendFailure(): %s"), *errorMsg);
 
 	TriggerOnSendInviteCompleteDelegates(false, MoveTemp(errorMsg));
 }
