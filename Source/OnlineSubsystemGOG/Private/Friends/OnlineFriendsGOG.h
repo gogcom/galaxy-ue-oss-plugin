@@ -5,7 +5,7 @@
 #include "Types/IListenerGOG.h"
 #include "ListenerManager.h"
 
-#include "OnlineFriendsInterface.h"
+#include "Interfaces/OnlineFriendsInterface.h"
 
 class FOnlineFriendsGOG
 	: public IOnlineFriends

@@ -3,10 +3,10 @@
 #include "OnlineFactoryGOG.h"
 
 #include "CoreMinimal.h"
-#include "ModuleManager.h"
+#include "Modules/ModuleManager.h"
 #include "Modules/ModuleInterface.h"
 
-#include "UniquePtr.h"
+#include "Templates/UniquePtr.h"
 
 // Online subsystem module for GOG online services.
 

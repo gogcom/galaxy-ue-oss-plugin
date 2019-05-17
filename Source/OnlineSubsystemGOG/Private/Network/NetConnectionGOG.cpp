@@ -5,7 +5,7 @@
 #include "Loggers.h"
 
 #include "Net/DataChannel.h"
-#include "StatelessConnectHandlerComponent.h"
+#include "PacketHandlers/StatelessConnectHandlerComponent.h"
 
 void UNetConnectionGOG::InitBase(UNetDriver* InDriver, class FSocket* InSocket, const FURL& InURL, EConnectionState InState, int32 InMaxPacket, int32 InPacketOverhead)
 {

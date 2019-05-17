@@ -3,7 +3,7 @@
 #include "Types/IListenerGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 
-#include "OnlineAchievementsInterface.h"
+#include "Interfaces/OnlineAchievementsInterface.h"
 
 class FQueryAchievementsListener
 	: public IListenerGOG
