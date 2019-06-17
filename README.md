@@ -1,4 +1,5 @@
 ### Known issues and limitations:
+- UnrealEngine 4.16 is not fully tested yet
 - GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
 - A player has to be logged on to GOG backend services prior to using any features from OnlineSubsystemGOG
 - Dedicated servers are not supported yet
@@ -36,7 +37,7 @@ DefaultPlatformService=GOG
 [OnlineSubsystemGOG]
 ClientID=<CLIENT_ID>
 ClientSecret=<CLIENT_SECRET>
-; Port can be overriden with -port=<port>
+; Port Can be overriden with -port=<port>
 Port=<LOCAL_PORT>
 ; Host be overriden with -multihome=<host>
 Host=<LOCAL_HOST>

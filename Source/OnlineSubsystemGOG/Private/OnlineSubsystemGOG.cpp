@@ -144,12 +144,14 @@ bool FOnlineSubsystemGOG::ReadEngineConfiguration()
 	return !clientID.IsEmpty() && !clientSecret.IsEmpty();
 }
 
+#if ENGINE_MINOR_VERSION >= 19
 FText FOnlineSubsystemGOG::GetOnlineServiceName() const
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::GetOnlineServiceName()"));
 
 	return NSLOCTEXT("OnlineSubsystemGOG", "OnlineServiceName", "GOG");
 }
+#endif
 
 bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 {

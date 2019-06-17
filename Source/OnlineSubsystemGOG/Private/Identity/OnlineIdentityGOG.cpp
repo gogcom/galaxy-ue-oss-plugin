@@ -335,7 +335,11 @@ void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPri
 	InDelegate.ExecuteIfBound(InUserId, InPrivilege, privilegeResult);
 }
 
+#if ENGINE_MINOR_VERSION >= 19
 FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId) const
+#else
+FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId)
+#endif
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId()"));
 
@@ -344,13 +348,7 @@ FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniq
 	return LOCAL_USER_NUM;
 }
 
-FString FOnlineIdentityGOG::GetAuthType() const
-{
-	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetAuthType()"));
-
-	return TEXT("galaxy");
-};
-
+#if ENGINE_MINOR_VERSION >= 19
 void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOnRevokeAuthTokenCompleteDelegate& InDelegate)
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::RevokeAuthToken()"));
@@ -368,6 +366,14 @@ void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOn
 	ownUserOnlineAccount->GetAccessToken().Empty();
 	InDelegate.ExecuteIfBound(InUserId, FOnlineError{true});
 }
+#endif
+
+FString FOnlineIdentityGOG::GetAuthType() const
+{
+	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetAuthType()"));
+
+	return TEXT("galaxy");
+};
 
 void FOnlineIdentityGOG::OnAuthSuccess()
 {

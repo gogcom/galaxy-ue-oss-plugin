@@ -15,6 +15,24 @@ public class GalaxySDK : ModuleRules
 		get { return Path.GetFullPath(Path.Combine(ModuleDirectory, "Libraries")); }
 	}
 
+	private void AddRuntimeDependency(string dllPath)
+	{
+#if UE_4_18_OR_LATER
+		RuntimeDependencies.Add(dllPath);
+#else
+		RuntimeDependencies.Add(new RuntimeDependency(dllPath));
+#endif
+	}
+
+	private void AddPublicDefinition(string definition)
+	{
+#if UE_4_18_OR_LATER
+		PublicDefinitions.Add(definition);
+#else
+		Definitions.Add(definition);
+#endif
+	}
+
 	public GalaxySDK(ReadOnlyTargetRules Target) : base(Target)
 	{
 		Type = ModuleType.External;
@@ -72,7 +90,7 @@ public class GalaxySDK : ModuleRules
 			throw new BuildException(Err);
 		}
 
-		PublicDefinitions.Add("GALAXY_DLL_NAME=" + galaxyDLLName);
-		RuntimeDependencies.Add(Path.Combine(LibrariesPath, galaxyDLLName));
+		AddPublicDefinition("GALAXY_DLL_NAME=" + galaxyDLLName);
+		AddRuntimeDependency(Path.Combine(LibrariesPath, galaxyDLLName));
 	}
 }

@@ -3,6 +3,7 @@
 #include "CommonGOG.h"
 
 #include "OnlineSubsystemImpl.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "HAL/RunnableThread.h"
 
 class ONLINESUBSYSTEMGOG_API FOnlineSubsystemGOG : public FOnlineSubsystemImpl
@@ -11,7 +12,9 @@ public:
 
 	FString GetAppId() const override;
 
+#if ENGINE_MINOR_VERSION >= 19
 	FText GetOnlineServiceName() const override;
+#endif
 
 	bool Init() override;
 

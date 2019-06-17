@@ -12,7 +12,11 @@ UGOGLoginCallbackProxy::UGOGLoginCallbackProxy(const FObjectInitializer& ObjectI
 
 UGOGLoginCallbackProxy* UGOGLoginCallbackProxy::Login(UObject* InWorldContextObject, class APlayerController* InPlayerController, FString AuthType, FString InUserID, FString InUserToken)
 {
+#if ENGINE_MINOR_VERSION >= 19
 	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, EGetWorldErrorMode::ReturnNull));
+#else
+	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, true));
+#endif
 	if (onlineSubsystem == nullptr)
 	{
 		FFrame::KismetExecutionMessage(*FString::Printf(TEXT("Login - Invalid or uninitialized OnlineSubsystem"), "Login"), ELogVerbosity::Warning);

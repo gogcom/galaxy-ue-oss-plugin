@@ -4,6 +4,7 @@
 #include <limits>
 #include <algorithm>
 
+#pragma warning (disable: 4868)
 FReadLeaderboardAroundRankListener::FReadLeaderboardAroundRankListener(
 	class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
 	int32 InRank,
@@ -15,6 +16,7 @@ FReadLeaderboardAroundRankListener::FReadLeaderboardAroundRankListener(
 {
 	check(rank > 0 && "Rank cannot be negative");
 }
+#pragma warning (default: 4868)
 
 void FReadLeaderboardAroundRankListener::RequestLeaderboardEntries()
 {
