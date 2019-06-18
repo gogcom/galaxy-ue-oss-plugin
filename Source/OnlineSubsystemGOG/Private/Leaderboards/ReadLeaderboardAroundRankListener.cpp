@@ -14,7 +14,8 @@ FReadLeaderboardAroundRankListener::FReadLeaderboardAroundRankListener(
 	, rank{InRank}
 	, range{InRange}
 {
-	check(rank > 0 && "Rank cannot be negative");
+	if (rank <= 0)
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Rank cannot be negative or zero"));
 }
 #pragma warning (default: 4868)
 

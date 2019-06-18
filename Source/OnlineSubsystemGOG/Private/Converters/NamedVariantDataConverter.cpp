@@ -51,7 +51,7 @@ namespace NamedVariantDataConverter
 				case EOnlineKeyValuePairDataType::Empty:
 				case EOnlineKeyValuePairDataType::Blob:
 				default:
-					checkf(false, TEXT("Unsupported VariantData type '%s'"), EOnlineKeyValuePairDataType::ToString(InType));
+					UE_LOG_ONLINE(Error, TEXT("Unsupported VariantData type '%s'"), EOnlineKeyValuePairDataType::ToString(InType));
 					return InternalDataType::INVALID_TYPE;
 			}
 		}

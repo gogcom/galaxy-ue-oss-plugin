@@ -26,8 +26,12 @@ void UNetConnectionGOG::InitLocalConnection(UNetDriver* InDriver, class FSocket*
 
 	remotePeerID = FUniqueNetIdGOG{InURL.Host};
 
-	checkf(remotePeerID.IsValid() && remotePeerID.IsLobby(), TEXT("Remote PeerID expected to be a lobby: remotePeerID='%s', remoteUrl='%s'"),
-		*remotePeerID.ToString(), *InURL.ToString(true));
+	if (!remotePeerID.IsValid() || !remotePeerID.IsLobby())
+	{
+		UE_LOG_NETWORKING(Error, TEXT("Remote PeerID expected to be a lobby: remotePeerID='%s', remoteUrl='%s'"),
+			*remotePeerID.ToString(), *InURL.ToString(true));
+		return;
+	}
 
 	galaxyNetworking = galaxy::api::Networking();
 	check(galaxyNetworking);
@@ -40,8 +44,12 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitRemoteConnection()"));
 
 	remotePeerID = FUniqueNetIdGOG{InURL.Host};
-	checkf(remotePeerID.IsValid() && remotePeerID.IsUser(), TEXT("Remote PeerID expected to be an user: remotePeerID='%s', remoteUrl='%s'"),
-		*remotePeerID.ToString(), *InURL.ToString(true));
+	if (!remotePeerID.IsValid() || !remotePeerID.IsUser())
+	{
+		UE_LOG_NETWORKING(Error, TEXT("Remote PeerID expected to be an user: remotePeerID='%s', remoteUrl='%s'"),
+			*remotePeerID.ToString(), *InURL.ToString(true));
+		return;
+	}
 
 	galaxyNetworking = galaxy::api::ServerNetworking();
 	check(galaxyNetworking);

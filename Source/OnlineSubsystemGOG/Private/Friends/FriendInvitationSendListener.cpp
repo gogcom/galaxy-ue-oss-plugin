@@ -39,14 +39,11 @@ FFriendInvitationSendListener::FFriendInvitationSendListener(
 void FFriendInvitationSendListener::OnFriendInvitationSendSuccess(galaxy::api::GalaxyID InUserID)
 {
 	UE_LOG_ONLINE_FRIEND(Display, TEXT("FFriendInvitationSendListener::OnFriendInvitationSendSuccess()"));
-	check(InUserID == friendId);
 	TriggerOnSendInviteCompleteDelegates(true);
 }
 
 void FFriendInvitationSendListener::OnFriendInvitationSendFailure(galaxy::api::GalaxyID InUserID, galaxy::api::IFriendInvitationSendListener::FailureReason InFailureReason)
 {
-	check(InUserID == friendId);
-
 	auto errorMsg = ToString(InFailureReason);
 	UE_LOG_ONLINE_FRIEND(Warning, TEXT("FFriendInvitationSendListener::OnFriendInvitationSendFailure(): %s"), *errorMsg);
 

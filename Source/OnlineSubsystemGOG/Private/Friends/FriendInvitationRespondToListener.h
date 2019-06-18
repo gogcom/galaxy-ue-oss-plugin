@@ -56,15 +56,11 @@ private:
 	void OnFriendInvitationRespondToSuccess(galaxy::api::GalaxyID InUserID, bool InAccept) override
 	{
 		UE_LOG_ONLINE_FRIEND(Display, TEXT("FFriendInvitationRespondToListener::OnFriendInvitationRespondToSuccess()"));
-		check(InUserID == friendId);
-		check(InAccept == IsInvitationAccepted);
 		TriggerOnInvitationRespondCompleteDelegates(true);
 	}
 
 	void OnFriendInvitationRespondToFailure(galaxy::api::GalaxyID InUserID, galaxy::api::IFriendInvitationRespondToListener::FailureReason InFailureReason) override
 	{
-		check(InUserID == friendId);
-
 		auto errorMsg = ToString(InFailureReason);
 		UE_LOG_ONLINE_FRIEND(Warning, TEXT("FFriendInvitationRespondToListener::OnFriendInvitationRespondToFailure(%s): %s"),
 			IsInvitationAccepted ? TEXT("accept") : TEXT("reject"),

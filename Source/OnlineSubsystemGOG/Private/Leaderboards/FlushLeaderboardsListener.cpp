@@ -61,7 +61,6 @@ void FFlushLeaderboardsListener::OnLeaderboardScoreUpdateSuccess(const char* InN
 	if (!leaderboardsDetails.Remove(UTF8_TO_TCHAR(InName)))
 	{
 		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Updated scores for unknown leaderboard"));
-		check(false && "Updated scores for unknown leaderboard. This shall never happen");
 		TriggerOnLeaderboardFlushComplete(false);
 		return;
 	}

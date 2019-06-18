@@ -262,7 +262,12 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 				continue;
 			}
 
-			check(ServerConnection && "Client received a packet yet server connection is NULL");
+			if (!ServerConnection)
+			{
+				UE_LOG_TRAFFIC(Error, TEXT("Client received a packet yet server connection is NULL"));
+				continue;
+			}
+
 			connection = ServerConnection;
 		}
 

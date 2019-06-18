@@ -18,8 +18,6 @@ void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveSuccess(galax
 {
 	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("OnUserStatsAndAchievementsRetrieveSuccess: userID=%llu"), InUserID.ToUint64());
 
-	check(InUserID == playerId && "Achievements retrieved for unknown user. This shall not be happening with Galaxy specific listeners");
-
 	achivementsInterface.OnAchievementsRetrieved(InUserID);
 
 	TriggerOnQueryAchievementsCompleteDelegate(true);
@@ -28,8 +26,6 @@ void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveSuccess(galax
 void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveFailure(galaxy::api::GalaxyID InUserID, galaxy::api::IUserStatsAndAchievementsRetrieveListener::FailureReason)
 {
 	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("OnUserStatsAndAchievementsRetrieveFailure: userID=%llu"), InUserID.ToUint64());
-
-	check(InUserID == playerId && "Achievements retrieved for unknown user. This shall not be happening with Galaxy specific listeners");
 
 	TriggerOnQueryAchievementsCompleteDelegate(false);
 }

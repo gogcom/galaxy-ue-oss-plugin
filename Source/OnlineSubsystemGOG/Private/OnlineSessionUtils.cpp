@@ -159,7 +159,6 @@ bool OnlineSessionUtils::Fill(const FUniqueNetIdGOG& InLobbyID, FOnlineSessionSe
 		return false;
 	}
 	InOutOnlineSessionSettings.NumPublicConnections = maxLobbyMembers;
-	check(InOutOnlineSessionSettings.NumPrivateConnections == 0);
 
 	return true;
 }

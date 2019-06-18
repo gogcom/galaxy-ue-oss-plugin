@@ -61,9 +61,7 @@ FCreateLobbyListener::FCreateLobbyListener(
 	, sessionSettings{MoveTemp(InSettings)}
 	, sessionOwnerID{MoveTemp(InSessionOwnerID)}
 	, sessionOwnerName{MoveTemp(InSessionOwnerName)}
-{
-	checkf(!sessionOwnerName.IsEmpty() && sessionOwnerID->IsValid(), TEXT("Invalid session owner information"));
-}
+{}
 
 void FCreateLobbyListener::OnLobbyCreated(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyCreateResult InResult)
 {
@@ -77,7 +75,6 @@ void FCreateLobbyListener::OnLobbyCreated(const galaxy::api::GalaxyID& InLobbyID
 		return;
 	}
 
-	check(InLobbyID.IsValid());
 	newLobbyID = InLobbyID;
 
 	// Wait till OnLobbyEntered
@@ -86,8 +83,6 @@ void FCreateLobbyListener::OnLobbyCreated(const galaxy::api::GalaxyID& InLobbyID
 void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)
 {
 	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnLobbyEntered: lobbyID=%llu, result=%d"), InLobbyID.ToUint64(), static_cast<int>(InResult));
-
-	checkf(newLobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	if (InResult != galaxy::api::LOBBY_ENTER_RESULT_SUCCESS)
 	{
@@ -133,8 +128,6 @@ void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID
 void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& InLobbyID)
 {
 	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnLobbyDataUpdateSuccess: lobbyID=%llu"), InLobbyID.ToUint64());
-
-	checkf(newLobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	auto isLobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(InLobbyID);
 	auto err = galaxy::api::GetError();
@@ -185,8 +178,6 @@ bool FCreateLobbyListener::AdvertiseToFriends()
 void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason)
 {
 	UE_LOG_ONLINE_SESSION(Display, TEXT("FCreateLobbyListener::OnLobbyDataUpdateFailure: lobbyID=%llu"), InLobbyID.ToUint64());
-
-	checkf(newLobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	if (InFailureReason == galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST)
 	{
