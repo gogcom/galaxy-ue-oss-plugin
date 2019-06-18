@@ -258,7 +258,8 @@ ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(const FUniqueNetId& InUser
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetLoginStatus()"));
 
-	checkf(InUserId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
+	if(InUserId != *ownUserOnlineAccount->GetUserId())
+		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Only single local player is supported"));
 
 	return GetLoginStatus(LOCAL_USER_NUM);
 }
@@ -302,7 +303,11 @@ void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPri
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetUserPrivilege()"));
 
-	checkf(InUserId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
+	if (InUserId != *ownUserOnlineAccount->GetUserId())
+	{
+		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Only single local player is supported"));
+		return;
+	}
 
 	auto privilegeResult = static_cast<uint32>(EPrivilegeResults::NoFailures);
 	switch (InPrivilege)
@@ -329,33 +334,37 @@ void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPri
 			break;
 
 		default:
-			check(false && "Unknown privilege type");
+			UE_LOG_ONLINE_IDENTITY(Error, TEXT("Unknown privilege type"));
 	}
 
 	InDelegate.ExecuteIfBound(InUserId, InPrivilege, privilegeResult);
 }
 
+#if ENGINE_MINOR_VERSION >= 19
 FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId) const
+#else
+FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId)
+#endif
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId()"));
 
-	checkf(InUniqueNetId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
+	if(InUniqueNetId != *ownUserOnlineAccount->GetUserId())
+		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Only single local player is supported"));
 
 	return LOCAL_USER_NUM;
 }
 
-FString FOnlineIdentityGOG::GetAuthType() const
-{
-	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetAuthType()"));
-
-	return TEXT("galaxy");
-};
-
+#if ENGINE_MINOR_VERSION >= 19
 void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOnRevokeAuthTokenCompleteDelegate& InDelegate)
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::RevokeAuthToken()"));
 
-	checkf(InUserId == *ownUserOnlineAccount->GetUserId(), TEXT("Only single local user is supported by GOG platform"));
+	if (InUserId != *ownUserOnlineAccount->GetUserId())
+	{
+		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Only single local player is supported"));
+		InDelegate.ExecuteIfBound(InUserId, FOnlineError{false});
+		return;
+	}
 
 	galaxy::api::User()->ReportInvalidAccessToken(TCHAR_TO_UTF8(*ownUserOnlineAccount->GetAccessToken()));
 	auto err = galaxy::api::GetError();
@@ -368,6 +377,14 @@ void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOn
 	ownUserOnlineAccount->GetAccessToken().Empty();
 	InDelegate.ExecuteIfBound(InUserId, FOnlineError{true});
 }
+#endif
+
+FString FOnlineIdentityGOG::GetAuthType() const
+{
+	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetAuthType()"));
+
+	return TEXT("galaxy");
+};
 
 void FOnlineIdentityGOG::OnAuthSuccess()
 {
@@ -378,7 +395,6 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 	isAuthInProgress = false;
 
 	auto ownUserID = UserInfoUtils::GetOwnUserID();
-	check(ownUserID.IsValid() && ownUserID.IsUser())
 
 	// Update cached info keeping shared ref
 	*ownUserOnlineAccount = FUserOnlineAccountGOG{ownUserID};

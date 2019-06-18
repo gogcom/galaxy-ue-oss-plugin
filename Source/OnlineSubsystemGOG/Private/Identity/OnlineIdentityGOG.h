@@ -45,10 +45,13 @@ public:
 
 	void GetUserPrivilege(const FUniqueNetId& InUserId, EUserPrivileges::Type InPrivilege, const FOnGetUserPrivilegeCompleteDelegate& InDelegate) override;
 
+#if ENGINE_MINOR_VERSION >= 19
 	FPlatformUserId GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId) const override;
 
 	void RevokeAuthToken(const FUniqueNetId& InUserId, const FOnRevokeAuthTokenCompleteDelegate& InDelegate) override;
-
+#else
+	FPlatformUserId GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId) override;
+#endif
 	FString GetAuthType() const override;
 
 	TSharedRef<FUserOnlineAccountGOG> GetOwnUserOnlineAccount() const;

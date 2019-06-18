@@ -118,7 +118,7 @@ void UNetDriverGOG::ProcessRemoteFunction(class AActor* InActor, class UFunction
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ProcessRemoteFunction()"));
 
-#if !UE_BUILD_SHIPPING
+#if ENGINE_MINOR_VERSION >= 19 && !UE_BUILD_SHIPPING
 	bool outBlockSendRPC = false;
 
 	SendRPCDel.ExecuteIfBound(InActor, InFunction, InParameters, OutParms, InStack, InSubObject, outBlockSendRPC);
@@ -262,7 +262,12 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 				continue;
 			}
 
-			check(ServerConnection && "Client received a packet yet server connection is NULL");
+			if (!ServerConnection)
+			{
+				UE_LOG_TRAFFIC(Error, TEXT("Client received a packet yet server connection is NULL"));
+				continue;
+			}
+
 			connection = ServerConnection;
 		}
 
@@ -339,13 +344,17 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUrlGOG& InR
 
 	int32 serverSequence = 0;
 	int32 clientSequence = 0;
+#if ENGINE_MINOR_VERSION >= 19
 	statelessHandshakeHandler->GetChallengeSequence(serverSequence, clientSequence);
-	newIncomingConnection->InitSequence(clientSequence, serverSequence);
 
+	newIncomingConnection->InitSequence(clientSequence, serverSequence);
+#endif
 	newIncomingConnection->InitRemoteConnection(this, nullptr, InRemoteUrl, /*not used*/*ISocketSubsystem::Get()->CreateInternetAddr(), USOCK_Open);
 
+#if ENGINE_MINOR_VERSION >= 19
 	if (newIncomingConnection->Handler.IsValid())
 		newIncomingConnection->Handler->BeginHandshaking();
+#endif
 
 	Notify->NotifyAcceptedConnection(newIncomingConnection);
 	AddClientConnection(newIncomingConnection);

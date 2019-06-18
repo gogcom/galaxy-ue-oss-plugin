@@ -29,7 +29,7 @@ namespace
 				return galaxy::api::LEADERBOARD_SORT_METHOD_DESCENDING;
 		}
 
-		checkf(false, TEXT("Invalid leaderboard sort method: %u"), InSortMethod);
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid leaderboard sort method: %u"), InSortMethod);
 		return galaxy::api::LEADERBOARD_SORT_METHOD_NONE;
 	}
 
@@ -45,7 +45,7 @@ namespace
 				return galaxy::api::LEADERBOARD_DISPLAY_TYPE_TIME_MILLISECONDS;
 		}
 
-		checkf(false, TEXT("Invalid leaderboard display type: %u"), InDisplayFormat);
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid leaderboard display type: %u"), InDisplayFormat);
 		return galaxy::api::LEADERBOARD_DISPLAY_TYPE_NONE;
 	}
 
@@ -75,10 +75,7 @@ namespace
 		constexpr uint32_t MAX_LEADERBOARD_DETAIL_SIZE = 3071;
 
 		if (CharLen(serializedData) > MAX_LEADERBOARD_DETAIL_SIZE)
-		{
 			UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Serialized data for leaderboard is to long. Please report this to the GalaxySDK team: datailsSize=%d"), CharLen(serializedData));
-			check(false && "Serialized data for leaderboard is to long. Please report this to the GalaxySDK team");
-		}
 
 		return serializedData;
 	}

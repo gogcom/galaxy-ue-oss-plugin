@@ -30,7 +30,7 @@ namespace
 				return EOnlineServerConnectionStatus::NotAuthorized;
 
 			default:
-				checkf(false, TEXT("Unsupported connection state: %u"), InConnectionState);
+				UE_LOG_ONLINE(Display, TEXT("Unsupported connection state: %u"), InConnectionState);
 			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
 				return EOnlineServerConnectionStatus::Normal;
 		}
@@ -123,10 +123,7 @@ FString ReadStrFromConfig(const char* InKey)
 
 	FString str = GConfig->GetStr(TEXT_CONFIG_SECTION_GOG, UTF8_TO_TCHAR(InKey), GEngineIni);
 	if (str.IsEmpty())
-	{
 		UE_LOG_ONLINE(Error, TEXT("%s missing parameter: %s"), *GEngineIni, UTF8_TO_TCHAR(InKey));
-		check(false && "Missing configuration parameter");
-	}
 
 	return str;
 }
@@ -144,12 +141,14 @@ bool FOnlineSubsystemGOG::ReadEngineConfiguration()
 	return !clientID.IsEmpty() && !clientSecret.IsEmpty();
 }
 
+#if ENGINE_MINOR_VERSION >= 19
 FText FOnlineSubsystemGOG::GetOnlineServiceName() const
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::GetOnlineServiceName()"));
 
 	return NSLOCTEXT("OnlineSubsystemGOG", "OnlineServiceName", "GOG");
 }
+#endif
 
 bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 {

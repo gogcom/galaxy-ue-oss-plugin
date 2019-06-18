@@ -76,8 +76,8 @@ FString FUniqueNetIdGOG::ToDebugString() const
 			return FString::Printf(TEXT("Unassigned GalaxyID: %llu"), id);
 
 		default:
-			check(false && "Invalid GalaxyID type");
-			return FString::Printf(TEXT("Invalid GalaxyID type: type=%u, id=%llu"), static_cast<uint32>(tmpGalaxyID.GetIDType()), id);
+			UE_LOG_ONLINE(Error, TEXT("Invalid GalaxyID type: type=%u, id=%llu"), static_cast<uint32>(tmpGalaxyID.GetIDType()), id);
+			return FString::Printf(TEXT("Invalid GalaxyID type: type=%u, id=%llu"), static_cast<uint32>(tmpGalaxyID.GetIDType()), id);;
 	}
 }
 
@@ -93,8 +93,6 @@ FUniqueNetIdGOG::operator galaxy::api::GalaxyID() const
 
 FUniqueNetIdGOG& FUniqueNetIdGOG::operator=(const galaxy::api::GalaxyID& InGalaxyID)
 {
-	check(InGalaxyID.IsValid());
-
 	id = InGalaxyID.ToUint64();
 
 	return *this;

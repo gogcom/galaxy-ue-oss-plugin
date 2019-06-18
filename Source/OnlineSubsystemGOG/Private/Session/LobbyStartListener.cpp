@@ -16,8 +16,6 @@ void FLobbyStartListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& 
 {
 	UE_LOG_ONLINE_SESSION(Display, TEXT("OnLobbyDataUpdated: lobbyID=%llu"), InLobbyID.ToUint64());
 
-	checkf(lobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
-
 	auto isLobbyJoinable = galaxy::api::Matchmaking()->IsLobbyJoinable(InLobbyID);
 	auto err = galaxy::api::GetError();
 	if (err)
@@ -32,8 +30,6 @@ void FLobbyStartListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID& 
 void FLobbyStartListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataUpdateListener::FailureReason InFailureReason)
 {
 	UE_LOG_ONLINE_SESSION(Display, TEXT("FLobbyStartListener::OnLobbyDataUpdateFailure: lobbyID=%llu"), InLobbyID.ToUint64());
-
-	checkf(lobbyID == InLobbyID, TEXT("Unknown lobby (lobbyID=%llu). This shall never happen. Please contact GalaxySDK team"), InLobbyID.ToUint64());
 
 	if (InFailureReason == galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST)
 	{

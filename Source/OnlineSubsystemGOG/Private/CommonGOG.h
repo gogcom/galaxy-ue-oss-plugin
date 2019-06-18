@@ -20,7 +20,8 @@ constexpr int32 LOCAL_USER_NUM{0};
 
 inline void CheckLocalUserNum(int32 InLocalUserNum)
 {
-	check(InLocalUserNum == LOCAL_USER_NUM && "Only single local player is supported")
+	if(InLocalUserNum != LOCAL_USER_NUM)
+		UE_LOG_ONLINE(Error, TEXT("Only single local player is supported"));
 }
 
 inline uint64 CharLen(const FString& InString)

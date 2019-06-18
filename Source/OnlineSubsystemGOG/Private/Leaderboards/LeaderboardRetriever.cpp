@@ -25,8 +25,12 @@ namespace
 		FString playerNickname;
 		if (!UserInfoUtils::GetPlayerNickname(*userID, playerNickname))
 			return false;
-
+#if ENGINE_MINOR_VERSION >= 19
 		auto& newEntry = InOutReadLeaderboard->Rows.Emplace_GetRef(MoveTemp(playerNickname), MoveTemp(userID));
+#else
+		const auto newEntryIdx = InOutReadLeaderboard->Rows.Emplace(MoveTemp(playerNickname), MoveTemp(userID));
+		auto& newEntry = InOutReadLeaderboard->Rows[newEntryIdx];
+#endif
 		newEntry.Rank = InRank;
 
 		newEntry.Columns.Add(InOutReadLeaderboard->SortedColumn, InScore);

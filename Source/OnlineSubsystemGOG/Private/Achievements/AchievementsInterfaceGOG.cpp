@@ -293,8 +293,7 @@ inline bool FOnlineAchievementsGOG::AssertAchievementsCount() const
 	if (AchivementsCount() < 0)
 	{
 		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Achievements declarations not found in Engine.ini configuration file. Please provide achievements declaration before using them."));
-		check(false && "Achievements declarations not found in Engine.ini configuration file. Please provide achievements declaration before using them.")
-			return false;
+		return false;
 	}
 
 	return true;
@@ -321,8 +320,8 @@ void FOnlineAchievementsGOG::OnAchievementUnlocked(const char* InName)
 	auto playerCachedAchievements = cachedAchievements.Find(*ownUserID);
 	if (!playerCachedAchievements)
 	{
-		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Cannot unlock player achivement. Player achievements not found: achivementName='%s', playerID='%s'"), *achievementName, *ownUserID->ToString());
-		checkf(false, TEXT("Cannot find achievements to unlock: achivementName='%s'"), *achievementName);
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Cannot unlock player achivement. Player achievements not found: achivementName='%s', playerID='%s'"),
+			*achievementName, *ownUserID->ToString());
 		return;
 	}
 
