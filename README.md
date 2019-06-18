@@ -1,3 +1,7 @@
+- Compiler:
+	- Windows: Visual Studio 15 Update 3 or later
+	- Mac: Xcode 9.4 or later
+
 ### Known issues and limitations:
 - UnrealEngine 4.16 is not fully tested yet
 - GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
@@ -28,7 +32,7 @@
 	}
 ]
 ```
-- Update default engine configuration file (**"GameFolder/Config/DefaultEngine.ini"**):
+- Update default engine configuration file (**"GameFolder/Config/DefaultEngine.ini"**) providing values without angle brackets:
 
 ```
 [OnlineSubsystem]
@@ -37,10 +41,10 @@ DefaultPlatformService=GOG
 [OnlineSubsystemGOG]
 ClientID=<CLIENT_ID>
 ClientSecret=<CLIENT_SECRET>
-; Port Can be overriden with -port=<port>
-Port=<LOCAL_PORT>
-; Host be overriden with -multihome=<host>
-Host=<LOCAL_HOST>
+; The local port used to communicate with GOG Galaxy Multiplayer server and other players. Chosen automatically if not specified. Can also be overriden with -port=<port>
+; Port=<LOCAL_PORT>
+; The local IP address the game would bind to. Chosen automatically if not specified. Can also be overriden with -multihome=<host>
+; Host=<LOCAL_HOST>
 ; When authorizing with Galaxy, this flag controls whether user can play offline (using local profile from the GalaxyClient), or has to be logged on to Galaxy backend services
 ; When offline, achievements, stats and other data are stored locally until user is online, and some functionalities are unavailable, e.g. friends, multiplayer, rich presence
 bRequireBackendAuthorization=<IS_BACKEND_AUTH_REQUIRED>
@@ -59,6 +63,8 @@ NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
  Please contact your GOG.com tech representative for more info on how to obtain **ClientID** and **ClientSecret**
 
 # Logging in:
+In order to use all functionality user must be signed in GOG Galaxy Client after which game must be authorized using one of the above methods:
+
 - Using C++, IOnlineIdentity::Login() method is provided:
 
 ```
@@ -85,7 +91,7 @@ Prior to using the achivements:
 ```
 [OnlineSubsystemGOG]
 
-+Achievements=<ACHIEVEMENT_KEY_1>
-+Achievements=<ACHIEVEMENT_KEY_2>
++Achievements=ACHIEVEMENT_KEY_1
++Achievements=ACHIEVEMENT_KEY_2
 ... e.t.c.
 ```
