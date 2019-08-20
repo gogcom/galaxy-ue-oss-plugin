@@ -3,8 +3,8 @@
 
 	"FriendlyName": "Online Subsystem GOG",
 	"Version": 1,
-	"VersionName": "0.6.1",
-	"VersionDescription": "Several small fixes. Added support for 4.16",
+	"VersionName": "0.6.2",
+	"VersionDescription": "Improve networking.",
 	"SupportedEngineAssociation": ["4.19", "4.20", "4.21", "4.22"],
 	"GalaxySDKVersion": "1.133.6",
 	"Description": "GOG online features",
