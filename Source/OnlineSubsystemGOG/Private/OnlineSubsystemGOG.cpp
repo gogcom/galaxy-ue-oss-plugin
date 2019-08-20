@@ -14,28 +14,6 @@
 namespace
 {
 
-	EOnlineServerConnectionStatus::Type GetConnectionState(galaxy::api::GogServicesConnectionState InConnectionState)
-	{
-		using namespace galaxy::api;
-
-		switch (InConnectionState)
-		{
-			case GOG_SERVICES_CONNECTION_STATE_CONNECTED:
-				return EOnlineServerConnectionStatus::Connected;
-
-			case GOG_SERVICES_CONNECTION_STATE_DISCONNECTED:
-				return EOnlineServerConnectionStatus::ConnectionDropped;
-
-			case GOG_SERVICES_CONNECTION_STATE_AUTH_LOST:
-				return EOnlineServerConnectionStatus::NotAuthorized;
-
-			default:
-				UE_LOG_ONLINE(Display, TEXT("Unsupported connection state: %u"), InConnectionState);
-			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
-				return EOnlineServerConnectionStatus::Normal;
-		}
-	}
-
 	std::uint16_t GetPeerPort()
 	{
 		{
@@ -75,25 +53,35 @@ public:
 	{
 	}
 
+	EOnlineServerConnectionStatus::Type GetConnectionState(galaxy::api::GogServicesConnectionState InConnectionState)
+	{
+		using namespace galaxy::api;
+
+		switch (InConnectionState)
+		{
+			case GOG_SERVICES_CONNECTION_STATE_CONNECTED:
+				return EOnlineServerConnectionStatus::Connected;
+
+			case GOG_SERVICES_CONNECTION_STATE_DISCONNECTED:
+				return EOnlineServerConnectionStatus::ConnectionDropped;
+
+			case GOG_SERVICES_CONNECTION_STATE_AUTH_LOST:
+				return EOnlineServerConnectionStatus::NotAuthorized;
+
+			default:
+				UE_LOG_ONLINE(Display, TEXT("Unsupported connection state: %u"), InConnectionState);
+			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
+				return EOnlineServerConnectionStatus::Normal;
+		}
+	}
+
 	void OnConnectionStateChange(galaxy::api::GogServicesConnectionState InConnectionState)
 	{
-		auto newState = GetConnectionState(InConnectionState);
-
-#if ENGINE_MINOR_VERSION < 20
-		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(currentState, newState);
-#else
-		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(
-			subsystemGOG.GetSubsystemName().ToString(),
-			currentState,
-			newState
-		);
-#endif
-		currentState = newState;
+		subsystemGOG.OnConnectionStateChange(GetConnectionState(InConnectionState));
 	}
 
 private:
 
-	EOnlineServerConnectionStatus::Type currentState{EOnlineServerConnectionStatus::Normal};
 	FOnlineSubsystemGOG& subsystemGOG;
 };
 
@@ -160,6 +148,20 @@ bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 		UE_LOG_ONLINE(Error, TEXT("Failed to tick ProcessData(): %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 
 	return FOnlineSubsystemImpl::Tick(InDeltaTime);
+}
+
+void FOnlineSubsystemGOG::OnConnectionStateChange(EOnlineServerConnectionStatus::Type InConnectionState)
+{
+#if ENGINE_MINOR_VERSION < 20
+	TriggerOnConnectionStatusChangedDelegates(currentState, InConnectionState);
+#else
+	TriggerOnConnectionStatusChangedDelegates(
+		GetSubsystemName().ToString(),
+		currentState,
+		InConnectionState
+	);
+#endif
+	currentState = InConnectionState;
 }
 
 bool FOnlineSubsystemGOG::InitGalaxyPeer()
