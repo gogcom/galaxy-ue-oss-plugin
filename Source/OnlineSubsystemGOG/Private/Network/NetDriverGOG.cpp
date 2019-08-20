@@ -451,15 +451,22 @@ UNetDriverGOG::LobbyLeftListener::LobbyLeftListener(UNetDriverGOG& InDriver)
 {
 }
 
-void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason /*InLeaveReason*/)
+void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason InLeaveReason)
 {
-	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::OnLobbyMemberStateChanged()"));
+	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::OnLobbyLeft()"));
+
+	// TODO: ignore callbacks regarding other lobbies
+
+	// graceful session closing and host leaving shall be handled by the higher levels
+
+	if (InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_USER_LEFT
+		|| InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_LOBBY_CLOSED)
+		return;
 
 	if (driver.IsServer())
 	{
-		// TODO: neither NetDriver::Shutdown() nor OnDestroySessionCompleteDelegates() are closing
-		// lobby in a test game when OnLobbyLeft() is suddenly called. Did we forgot some delegate?
-		driver.Shutdown();
+		for (auto clientConnection : driver.ClientConnections)
+			clientConnection->State = EConnectionState::USOCK_Closed;
 	}
 	else
 	{
@@ -469,7 +476,7 @@ void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& 
 			return;
 		}
 
-		driver.ServerConnection->Close();
+		driver.ServerConnection->State = EConnectionState::USOCK_Closed;
 	}
 
 	galaxy::api::ListenerRegistrar()->Unregister(GetListenerType(), this);
