@@ -870,7 +870,11 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 
 	const auto& sessionID = InDesiredSession.Session.SessionInfo->GetSessionId();
 
-	auto listener = CreateListener<FJoinLobbyListener>(*this, InSessionName, InDesiredSession.Session);
+	auto listener = CreateListener<FJoinLobbyListener>(
+		*this,
+		InSessionName,
+		InDesiredSession.Session,
+		ownUserOnlineAccount->GetUserId());
 
 	galaxy::api::Matchmaking()->JoinLobby(FUniqueNetIdGOG{sessionID}, listener.Value);
 	auto err = galaxy::api::GetError();
