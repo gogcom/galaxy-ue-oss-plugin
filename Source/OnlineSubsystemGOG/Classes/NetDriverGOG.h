@@ -65,7 +65,7 @@ private:
 
 	TUniquePtr<LobbyLeftListener> lobbyLeftListener;
 
-	galaxy::api::INetworking* galaxyNetworking{nullptr};
+	galaxy::api::GalaxyID serverUserId;
 
 	std::array<uint8, PREALLOCATED_BUFFER_SIZE> inPacketBuffer;
 };

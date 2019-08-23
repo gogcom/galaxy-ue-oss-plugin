@@ -50,8 +50,6 @@ private:
 	FUniqueNetIdGOG remotePeerID;
 
 	TUniquePtr<LobbyMemberStateListener> serverMemberStateListener;
-
-	galaxy::api::INetworking* galaxyNetworking{nullptr};
 };
 
 

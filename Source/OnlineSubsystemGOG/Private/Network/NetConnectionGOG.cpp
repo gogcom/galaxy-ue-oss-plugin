@@ -33,9 +33,6 @@ void UNetConnectionGOG::InitLocalConnection(UNetDriver* InDriver, class FSocket*
 		return;
 	}
 
-	galaxyNetworking = galaxy::api::Networking();
-	check(galaxyNetworking);
-
 	InitBase(InDriver, InSocket, InURL, InState, InMaxPacket, InPacketOverhead);
 }
 
@@ -50,9 +47,6 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 			*remotePeerID.ToString(), *InURL.ToString(true));
 		return;
 	}
-
-	galaxyNetworking = galaxy::api::ServerNetworking();
-	check(galaxyNetworking);
 
 	InitBase(InDriver, InSocket, InURL, InState, InMaxPacket, InPacketOverhead);
 
@@ -115,7 +109,7 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBits*/, int32 
 
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("Low level send: remote='%s'; dataSize='%d' bytes"), *LowLevelGetRemoteAddress(), bytesToSend);
 
-	galaxyNetworking->SendP2PPacket(remotePeerID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
+	galaxy::api::Networking()->SendP2PPacket(remotePeerID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
 	auto err = galaxy::api::GetError();
 	if (err)
 		UE_LOG_TRAFFIC(Error, TEXT("Failed to send data: remote='%s'; %s; %s"), *LowLevelGetRemoteAddress(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
