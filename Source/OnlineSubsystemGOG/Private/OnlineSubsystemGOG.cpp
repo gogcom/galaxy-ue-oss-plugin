@@ -7,6 +7,8 @@
 #include "Friends/OnlineFriendsGOG.h"
 #include "Presence/OnlinePresenceGOG.h"
 
+#include "Misc/CommandLine.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Templates/SharedPointer.h"
 #include <algorithm>
