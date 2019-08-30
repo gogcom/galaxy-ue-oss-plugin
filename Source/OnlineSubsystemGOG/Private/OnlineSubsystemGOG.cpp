@@ -52,8 +52,7 @@ public:
 
 	GlobalConnectionListener(FOnlineSubsystemGOG& InSubsystemGOG)
 		: subsystemGOG{InSubsystemGOG}
-	{
-	}
+	{}
 
 	EOnlineServerConnectionStatus::Type GetConnectionState(galaxy::api::GogServicesConnectionState InConnectionState)
 	{
@@ -173,7 +172,7 @@ bool FOnlineSubsystemGOG::InitGalaxyPeer()
 	const auto host = GetPeerHost();
 	const auto port = GetPeerPort();
 
-	if(!host.IsEmpty() || port != 0 )
+	if (!host.IsEmpty() || port != 0)
 		UE_LOG_ONLINE(Display, TEXT("Binding Galaxy to adress %s:%u"), *host, port);
 
 	galaxy::api::Init({
@@ -221,10 +220,40 @@ bool FOnlineSubsystemGOG::Init()
 	galaxyFriendsInterface = MakeShared<FOnlineFriendsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyPresenceInterface = MakeShared<FOnlinePresenceGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 
-	// TODO: create more interfaces here
+#if !UE_BUILD_SHIPPING
+	// CLI authentication is for testing purpose only
 
-	bGalaxyPeerInitialized = true;
-	return bGalaxyPeerInitialized;
+	FOnlineAccountCredentials gogCredentials;
+
+	FParse::Value(FCommandLine::Get(), TEXT("login="), gogCredentials.Id);
+	if (!gogCredentials.Id.IsEmpty())
+	{
+
+		FParse::Value(FCommandLine::Get(), TEXT("pass="), gogCredentials.Token);
+		FParse::Value(FCommandLine::Get(), TEXT("login-type="), gogCredentials.Type);
+
+		if (gogCredentials.Type.IsEmpty())
+			gogCredentials.Type = "test";
+
+		bool isLoginComplete{false};
+
+		auto onLoginCompleteDelegateHandle = galaxyIdentityInterface->AddOnLoginCompleteDelegate_Handle(
+			LOCAL_USER_NUM, FOnLoginCompleteDelegate::CreateLambda(
+				[&isLoginComplete]
+				(int32 /*LocalUserNum*/, bool /*bWasSuccessful*/, const FUniqueNetId& /*UserId*/, const FString& /*Error*/)
+				{ isLoginComplete = true; }
+			)
+		);
+
+		identityInterfaceGOG->Login(LOCAL_USER_NUM, gogCredentials);
+		while (!isLoginComplete)
+			this->Tick(0.1);
+
+		galaxyIdentityInterface->ClearOnLoginCompleteDelegate_Handle(LOCAL_USER_NUM, onLoginCompleteDelegateHandle);
+	}
+#endif
+
+	return true;
 }
 
 bool FOnlineSubsystemGOG::IsLocalPlayer(const FUniqueNetId& InUniqueId) const
@@ -257,8 +286,6 @@ void FOnlineSubsystemGOG::ShutdownGalaxyPeer()
 bool FOnlineSubsystemGOG::ShutdownImpl()
 {
 	FOnlineSubsystemImpl::Shutdown();
-
-	// TODO: release all interfaces before shutting down
 
 	galaxyIdentityInterface.Reset();
 	galaxySessionInterface.Reset();
