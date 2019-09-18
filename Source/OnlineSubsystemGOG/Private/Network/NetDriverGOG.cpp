@@ -222,6 +222,8 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 		}
 
 		galaxy::api::Networking()->ReadP2PPacket(inPacketBuffer.data(), inPacketBuffer.size(), &actualPacketSize, senderGalaxyID);
+		UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ReadP2PPacket: size=%u bytes; data={%s}"), actualPacketSize, *BytesToHex(inPacketBuffer.data(), actualPacketSize));
+
 		err = galaxy::api::GetError();
 		if (err)
 		{
@@ -249,6 +251,8 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			connection = FindEstablishedConnection(remoteURL);
 			if (!connection)
 			{
+				UE_LOG_TRAFFIC(VeryVerbose, TEXT("No established connection yet : senderID='%s'"), *senderID.ToString());
+
 				if (!ChallengeConnectingClient(remoteURL, receivedPackedData, actualPacketSize))
 					continue;
 
@@ -276,6 +280,13 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 		if (!connection)
 		{
 			UE_LOG_TRAFFIC(Error, TEXT("Cannot receive packet; null connection: senderID='%s'"), *senderID.ToString());
+			continue;
+		}
+
+		UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ReceivedRawPacket: size=%u bytes; data={%s}"), actualPacketSize, *BytesToHex(receivedPackedData, actualPacketSize));
+		if (!actualPacketSize || !receivedPackedData)
+		{
+			UE_LOG_TRAFFIC(VeryVerbose, TEXT("No data left to process in packet: senderID='%s'"), *senderID.ToString());
 			continue;
 		}
 
@@ -343,25 +354,23 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUrlGOG& InR
 	auto newIncomingConnection = NewObject<UNetConnectionGOG>(NetConnectionClass);
 	check(newIncomingConnection);
 
-	// Set the initial packet sequence from the handshake data
+	newIncomingConnection->InitRemoteConnection(this, nullptr, InRemoteUrl, /*not used*/*ISocketSubsystem::Get()->CreateInternetAddr(), USOCK_Open);
+	AddClientConnection(newIncomingConnection);
 
 #if ENGINE_MINOR_VERSION >= 19
+	// Set the initial packet sequence from the handshake data
 	int32 serverSequence = 0;
 	int32 clientSequence = 0;
 
 	statelessHandshakeHandler->GetChallengeSequence(serverSequence, clientSequence);
 
 	newIncomingConnection->InitSequence(clientSequence, serverSequence);
-#endif
-	newIncomingConnection->InitRemoteConnection(this, nullptr, InRemoteUrl, /*not used*/*ISocketSubsystem::Get()->CreateInternetAddr(), USOCK_Open);
 
-#if ENGINE_MINOR_VERSION >= 19
 	if (newIncomingConnection->Handler.IsValid())
 		newIncomingConnection->Handler->BeginHandshaking();
 #endif
 
 	Notify->NotifyAcceptedConnection(newIncomingConnection);
-	AddClientConnection(newIncomingConnection);
 
 	return newIncomingConnection;
 }
@@ -384,7 +393,7 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits)
 #endif
 {
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend()"));
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend(): size=%u bits; data={%s}"), InCountBits, *BytesToHex(reinterpret_cast<uint8*>(InData), FMath::DivideAndRoundUp(InCountBits, 8)));
 
 	auto dataToSend = reinterpret_cast<uint8*>(InData);
 
@@ -419,7 +428,7 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 		return;
 	}
 
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("Low level send: remoteID='%s'; dataSize='%d' bytes"), *remoteID.ToString(), bytesToSend);
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::SendP2PPacket: remoteID='%s' bytes; size=%d data: {%s}"), *remoteID.ToString(), bytesToSend, *BytesToHex(dataToSend, bytesToSend));
 
 	galaxy::api::Networking()->SendP2PPacket(remoteID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
 
