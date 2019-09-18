@@ -45,7 +45,7 @@ public:
 
 private:
 
-	bool ChallengeConnectingClient(const class FUrlGOG& InRemoteUrl, void* InData, uint32_t InDataSize);
+	bool ChallengeConnectingClient(const class FUrlGOG& InRemoteUrl, uint8* InOutData, uint32_t& InOutDataSize);
 
 	UNetConnectionGOG* EstablishIncomingConnection(const class FUrlGOG& InRemoteUrl);
 
@@ -68,4 +68,5 @@ private:
 	galaxy::api::GalaxyID serverUserId;
 
 	std::array<uint8, PREALLOCATED_BUFFER_SIZE> inPacketBuffer;
+	uint8* receivedPackedData{nullptr};
 };

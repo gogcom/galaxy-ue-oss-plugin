@@ -239,6 +239,7 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			UE_LOG_TRAFFIC(Warning, TEXT("Actual packet size is different from expected packet size: expected='%u', actual='%u'"), expectedPacketSize, actualPacketSize);
 
 		auto senderID = FUniqueNetIdGOG{senderGalaxyID};
+		receivedPackedData = inPacketBuffer.data();
 
 		UNetConnection* connection{nullptr};
 		if (IsServer())
@@ -248,8 +249,8 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			connection = FindEstablishedConnection(remoteURL);
 			if (!connection)
 			{
-				if (!ChallengeConnectingClient(remoteURL, inPacketBuffer.data(), actualPacketSize))
-					return;
+				if (!ChallengeConnectingClient(remoteURL, receivedPackedData, actualPacketSize))
+					continue;
 
 				connection = EstablishIncomingConnection(remoteURL);
 			}
@@ -278,11 +279,11 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			continue;
 		}
 
-		connection->ReceivedRawPacket(inPacketBuffer.data(), actualPacketSize);
+		connection->ReceivedRawPacket(receivedPackedData, actualPacketSize);
 	}
 }
 
-bool UNetDriverGOG::ChallengeConnectingClient(const FUrlGOG& InRemoteUrl, void* InData, uint32_t InDataSize)
+bool UNetDriverGOG::ChallengeConnectingClient(const FUrlGOG& InRemoteUrl, uint8* InOutData, uint32_t& InOutDataSize)
 {
 	const auto& inRemoteAddress = InRemoteUrl.ToString();
 
@@ -298,14 +299,15 @@ bool UNetDriverGOG::ChallengeConnectingClient(const FUrlGOG& InRemoteUrl, void* 
 		return false;
 	}
 
-	auto dataToSend = reinterpret_cast<uint8*>(InData);
-
-	const auto unprocessedPacket = ConnectionlessHandler->IncomingConnectionless(inRemoteAddress, dataToSend, InDataSize);
+	const auto unprocessedPacket = ConnectionlessHandler->IncomingConnectionless(inRemoteAddress, InOutData, InOutDataSize);
 	if (unprocessedPacket.bError)
 	{
 		UE_LOG_NETWORKING(Warning, TEXT("Failed to process incoming handshake packet: remoteAddress='%s'"), *inRemoteAddress);
 		return false;
 	}
+
+	InOutDataSize = FMath::DivideAndRoundUp(unprocessedPacket.CountBits, 8);
+	InOutData = InOutDataSize > 0 ? unprocessedPacket.Data : nullptr;
 
 	auto statelessHandshakeComponent = StatelessConnectComponent.Pin();
 	if (!statelessHandshakeComponent.IsValid())
