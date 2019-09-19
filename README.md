@@ -2,11 +2,13 @@
 	- Windows: Visual Studio 15 Update 3 or later
 	- Mac: Xcode 9.4 or later
 
-### Known issues and limitations:
-- UnrealEngine 4.16 is not fully tested yet
+# Known issues and limitations:
 - GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
 - A player has to be logged on to GOG backend services prior to using any features from OnlineSubsystemGOG
 - Dedicated servers are not supported yet
+## UE4.20
+Multiplayer is broken for UE4.20 due to `FUniqueNetIdRepl` serialization bug in Engine.
+You can either cherry-pick the fix done by Michael.Kirzinger@epicgames.com from UnrealEngine repo(commit d2c61c90e1c203bd89d868950b552e5af7e0fe20), or apply diff-patch with these changes(Source/ue4.20-unique-net-id-serialization-fix.patch).
 
 # Installing plugin:
 
