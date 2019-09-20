@@ -6,7 +6,7 @@
 	"VersionName": "0.6.2",
 	"VersionDescription": "Improve networking.",
 	"SupportedEngineAssociation": ["4.19", "4.20", "4.21", "4.22"],
-	"GalaxySDKVersion": "1.138",
+	"GalaxySDKVersion": "1.138.1",
 	"Description": "GOG online features",
 	"Category": "Online Platform",
 	"CreatedBy": "GOG Galaxy SDK Dev Team",
