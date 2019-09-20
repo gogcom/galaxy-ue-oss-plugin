@@ -56,6 +56,13 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 }
 
 #if ENGINE_MINOR_VERSION >= 21
+TSharedPtr<FInternetAddr> UNetConnectionGOG::GetInternetAddr()
+{
+	// FInternetAddr is used by the engine for fast connection mapping, mainly to prevent DDoS when using IpNetDriver.
+	// We rely on the GalaxySDK, so this is not needed.
+	return {};
+}
+
 void UNetConnectionGOG::LowLevelSend(void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
 #else
 void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBytes*/, int32 InCountBits)

@@ -24,6 +24,8 @@ public:
 
 #if ENGINE_MINOR_VERSION >= 21
 	void LowLevelSend(void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;
+
+	TSharedPtr<FInternetAddr> GetInternetAddr() override;
 #else
 	void LowLevelSend(void* InData, int32 InCountBytes, int32 InCountBits) override;
 #endif
