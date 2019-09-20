@@ -226,15 +226,16 @@ bool FOnlineSubsystemGOG::Init()
 	FOnlineAccountCredentials gogCredentials;
 
 	FParse::Value(FCommandLine::Get(), TEXT("login="), gogCredentials.Id);
+	FParse::Value(FCommandLine::Get(), TEXT("login-type="), gogCredentials.Type);
 	if (!gogCredentials.Id.IsEmpty())
 	{
-
 		FParse::Value(FCommandLine::Get(), TEXT("pass="), gogCredentials.Token);
-		FParse::Value(FCommandLine::Get(), TEXT("login-type="), gogCredentials.Type);
-
 		if (gogCredentials.Type.IsEmpty())
 			gogCredentials.Type = "test";
+	}
 
+	if (!gogCredentials.Type.IsEmpty())
+	{
 		bool isLoginComplete{false};
 
 		auto onLoginCompleteDelegateHandle = galaxyIdentityInterface->AddOnLoginCompleteDelegate_Handle(
