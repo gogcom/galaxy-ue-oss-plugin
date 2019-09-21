@@ -67,7 +67,7 @@ NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
 # Logging in:
 In order to use all functionality user must be signed in GOG Galaxy Client after which game must be authorized using one of the above methods:
 
-- Using C++, IOnlineIdentity::Login() method is provided:
+- Using C++, `IOnlineIdentity::Login()` method is provided:
 
 ```
 auto onlineIdentityInterface = Online::GetIdentityInterface(TEXT("GOG"));
@@ -84,6 +84,25 @@ void OnLoginComplete(int32, bool, const FUniqueNetId&, const FString&)
 ```
 
 - Using Blueprints, you can find **Login** method under the **Online** category
+
+## Steam authentication
+Before authenticating using **EncryptedAppTicket** both AppID and PrivateKey have to bey configured in [GOG Devportal](https://devportal.gog.com "GOG Devportal"). Please contact your GOG.com tech representative for more info on how to configure them.
+
+To authenticate using Steam **EncryptedAppTicket**, it has to be first converted to a hex string, then passed to the **Login** method along with Steam user name:
+
+```
+FOnlineAccountCredentials accountCredentials;
+accountCredentials.Type = TEXT("steam");
+
+uint8 rgubTicket[1024];
+uint32 cubTicket;
+SteamUser()->GetEncryptedAppTicket(rgubTicket, sizeof(rgubTicket), &cubTicket);
+accountCredentials.Token = BytesToHex(rgubTicket, cubTicket);
+
+accountCredentials.Id = TEXT(SteamFriends()->GetPersonaName());
+
+Online::GetIdentityInterface(TEXT("GOG"))->Login(0, accountCredentials);
+```
 
 # Using the Achivements:
 Prior to using the achivements:
