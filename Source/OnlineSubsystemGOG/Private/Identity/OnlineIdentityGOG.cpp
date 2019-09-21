@@ -22,6 +22,7 @@ namespace
 		return true;
 	}
 
+	constexpr auto MAX_STEAM_APP_TICKET_SIZE = 1024;
 }
 
 FOnlineIdentityGOG::FOnlineIdentityGOG(FOnlineSubsystemGOG& InOnlineSubsystemGOG)
@@ -55,7 +56,12 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 	if (accountType == TEXT("steam"))
 	{
 		UE_LOG_ONLINE_IDENTITY(Display, TEXT("Trying to log in as Steam user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignInSteam(TCHAR_TO_UTF8(*InAccountCredentials.Token), CharLen(InAccountCredentials.Token), TCHAR_TO_UTF8(*InAccountCredentials.Id));
+
+		std::array<uint8, MAX_STEAM_APP_TICKET_SIZE> steamAppTicketBuffer;
+
+		const auto steamAppTicketSize = HexToBytes(InAccountCredentials.Token, steamAppTicketBuffer.data());
+
+		galaxy::api::User()->SignInSteam(steamAppTicketBuffer.data(), steamAppTicketSize, TCHAR_TO_UTF8(*InAccountCredentials.Id));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
