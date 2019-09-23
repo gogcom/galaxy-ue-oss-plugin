@@ -52,6 +52,10 @@ public:
 #endif
 #endif
 
+#if ENGINE_MINOR_VERSION >= 23
+	FName GetProtocolType() const override;
+#endif
+
 private:
 
 	FUniqueNetIdGOG uniqueNetID;

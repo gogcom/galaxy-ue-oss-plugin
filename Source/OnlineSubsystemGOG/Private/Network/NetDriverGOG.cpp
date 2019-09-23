@@ -115,6 +115,14 @@ bool UNetDriverGOG::InitListen(FNetworkNotify* InNotify, FURL& InLocalURL, bool 
 
 	InitConnectionlessHandler();
 
+#if ENGINE_MINOR_VERSION >= 23
+	auto ownUserID = UserInfoUtils::GetOwnUserID();
+	if (!ownUserID.IsValid())
+		return false;
+
+	LocalAddr = MakeShared<FInternetAddrGOG>(MoveTemp(ownUserID));
+#endif
+
 	return true;
 }
 
@@ -308,7 +316,12 @@ bool UNetDriverGOG::ChallengeConnectingClient(const FUniqueNetIdGOG& InSenderID,
 		return false;
 	}
 
+#if ENGINE_MINOR_VERSION >= 23
+	auto remoteAddress = MakeShared<FInternetAddrGOG>(InSenderID);
+#else
 	auto remoteAddress = FUrlGOG{InSenderID}.ToString();
+#endif
+
 	const auto unprocessedPacket = ConnectionlessHandler->IncomingConnectionless(remoteAddress, InOutData, InOutDataSize);
 	if (unprocessedPacket.bError)
 	{
@@ -388,7 +401,9 @@ UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUniqueNetIdGOG& 
 	return *storedConnectionIt;
 }
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 23
+void UNetDriverGOG::LowLevelSend(TSharedPtr<const FInternetAddr> InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
+#elif ENGINE_MINOR_VERSION >= 21
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
 #else
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits)
@@ -398,10 +413,18 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend(): size=%u bits; data={%s}"), InCountBits, *BytesToHex(dataToSend, FMath::DivideAndRoundUp(InCountBits, 8)));
 
+#if ENGINE_MINOR_VERSION >= 23
+	const auto rawIP = InAddress->GetRawIp();
+	auto remoteID = FUniqueNetIdGOG{rawIP.GetData(), rawIP.Num()};
+	if (!remoteID.IsValid())
+	{
+		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress->ToString(true));
+#else
 	auto remoteID = FUniqueNetIdGOG{InAddress};
 	if (!remoteID.IsValid())
 	{
 		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress);
+#endif
 		return;
 	}
 
@@ -442,7 +465,14 @@ FString UNetDriverGOG::LowLevelGetNetworkNumber()
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::LowLevelGetNetworkNumber()"));
 
+#if ENGINE_MINOR_VERSION >= 23
+	if(!LocalAddr)
+		return {};
+
+	return LocalAddr->ToString(true);
+#else
 	return UserInfoUtils::GetOwnUserID().ToString();
+#endif
 }
 
 ISocketSubsystem* UNetDriverGOG::GetSocketSubsystem()
