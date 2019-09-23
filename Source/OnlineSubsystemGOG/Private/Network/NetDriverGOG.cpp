@@ -3,6 +3,7 @@
 #include "Types/UrlGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 #include "Loggers.h"
+#include "UserInfoUtils.h"
 
 #include "PacketHandlers/StatelessConnectHandlerComponent.h"
 #include "Engine/Engine.h"
@@ -441,15 +442,7 @@ FString UNetDriverGOG::LowLevelGetNetworkNumber()
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::LowLevelGetNetworkNumber()"));
 
-	auto galaxyID = galaxy::api::User()->GetGalaxyID();
-	auto err = galaxy::api::GetError();
-	if (err || !galaxyID.IsValid())
-	{
-		UE_LOG_NETWORKING(Error, TEXT("Failed to get GOG UserId: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		return{};
-	}
-
-	return FUniqueNetIdGOG{galaxyID}.ToString();
+	return UserInfoUtils::GetOwnUserID().ToString();
 }
 
 ISocketSubsystem* UNetDriverGOG::GetSocketSubsystem()

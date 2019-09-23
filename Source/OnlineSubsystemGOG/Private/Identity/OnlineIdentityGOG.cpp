@@ -394,10 +394,8 @@ void FOnlineIdentityGOG::OnAuthSuccess()
 
 	isAuthInProgress = false;
 
-	auto ownUserID = UserInfoUtils::GetOwnUserID();
-
 	// Update cached info keeping shared ref
-	*ownUserOnlineAccount = FUserOnlineAccountGOG{ownUserID};
+	*ownUserOnlineAccount = FUserOnlineAccountGOG{UserInfoUtils::GetOwnUserID()};
 	if (!FUserOnlineAccountGOG::FillOwn(*ownUserOnlineAccount))
 		return;
 
