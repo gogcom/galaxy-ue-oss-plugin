@@ -45,11 +45,11 @@ public:
 
 private:
 
-	bool ChallengeConnectingClient(const class FUrlGOG& InRemoteUrl, uint8* InOutData, uint32_t& InOutDataSize);
+	bool ChallengeConnectingClient(const FUniqueNetIdGOG& InSenderID, uint8* InOutData, uint32_t& InOutDataSize);
 
-	UNetConnectionGOG* EstablishIncomingConnection(const class FUrlGOG& InRemoteUrl);
+	UNetConnectionGOG* EstablishIncomingConnection(const FUniqueNetIdGOG& InSenderID);
 
-	UNetConnection* FindEstablishedConnection(const FUrlGOG& InRemoteUrl);
+	UNetConnection* FindEstablishedConnection(const FUniqueNetIdGOG& InSenderID) const;
 
 	class LobbyLeftListener
 		: public galaxy::api::GlobalLobbyLeftListener
