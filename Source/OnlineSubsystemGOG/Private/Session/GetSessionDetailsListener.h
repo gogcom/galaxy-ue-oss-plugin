@@ -25,7 +25,7 @@ private:
 
 	void OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataRetrieveListener::FailureReason InFailureReason) override;
 
-	void TriggerOnSessionDetailsCompleteDelegate(FOnlineSessionSearchResult InOnlineSessionSearchResult = {});
+	void TriggerOnSessionDetailsCompleteDelegate(bool InWasSuccessful, FOnlineSessionSearchResult InOnlineSessionSearchResult = {});
 
 	FListenerManager& listenerManager;
 	FUniqueNetIdGOG sessionID;

@@ -26,7 +26,10 @@ namespace
 			return false;
 		}
 
+		newSession->bHosting = true;
 		newSession->SessionState = EOnlineSessionState::Pending;
+		newSession->HostingPlayerNum = LOCAL_USER_NUM;
+		newSession->LocalOwnerId = InSessionOwnerID;
 		newSession->SessionInfo = MakeShared<FOnlineSessionInfoGOG>(InLobbyID);
 		newSession->OwningUserId = InSessionOwnerID;
 		newSession->OwningUserName = InSessionOwnerName;

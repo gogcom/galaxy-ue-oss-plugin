@@ -33,7 +33,9 @@ public:
 
 	void TickDispatch(float InDeltaTime) override;
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 23
+	void LowLevelSend(TSharedPtr<const FInternetAddr> InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;
+#elif ENGINE_MINOR_VERSION >= 21
 	void LowLevelSend(FString InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;
 #else
 	void LowLevelSend(FString InAddress, void* InData, int32 InCountBits) override;
@@ -45,11 +47,11 @@ public:
 
 private:
 
-	bool ChallengeConnectingClient(const class FUrlGOG& InRemoteUrl, void* InData, uint32_t InDataSize);
+	bool ChallengeConnectingClient(const FUniqueNetIdGOG& InSenderID, uint8* InOutData, uint32_t& InOutDataSize);
 
-	UNetConnectionGOG* EstablishIncomingConnection(const class FUrlGOG& InRemoteUrl);
+	UNetConnectionGOG* EstablishIncomingConnection(const FUniqueNetIdGOG& InSenderID);
 
-	UNetConnection* FindEstablishedConnection(const FUrlGOG& InRemoteUrl);
+	UNetConnection* FindEstablishedConnection(const FUniqueNetIdGOG& InSenderID) const;
 
 	class LobbyLeftListener
 		: public galaxy::api::GlobalLobbyLeftListener
@@ -65,7 +67,8 @@ private:
 
 	TUniquePtr<LobbyLeftListener> lobbyLeftListener;
 
-	galaxy::api::INetworking* galaxyNetworking{nullptr};
+	galaxy::api::GalaxyID serverUserId;
 
 	std::array<uint8, PREALLOCATED_BUFFER_SIZE> inPacketBuffer;
+	uint8* receivedPackedData{nullptr};
 };

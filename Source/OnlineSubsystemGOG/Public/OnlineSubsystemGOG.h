@@ -100,6 +100,8 @@ PACKAGE_SCOPE:
 
 	bool Tick(float InDeltaTime) override;
 
+	void OnConnectionStateChange(EOnlineServerConnectionStatus::Type InConnectionState);
+
 private:
 
 	FString GetClientSecret() const;
@@ -119,6 +121,7 @@ private:
 
 	class GlobalConnectionListener;
 	TUniquePtr<GlobalConnectionListener> globalConnectionListener;
+	EOnlineServerConnectionStatus::Type currentState{EOnlineServerConnectionStatus::Normal};
 
 	bool ShutdownImpl();
 };

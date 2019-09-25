@@ -7,34 +7,14 @@
 #include "Friends/OnlineFriendsGOG.h"
 #include "Presence/OnlinePresenceGOG.h"
 
+#include "Misc/CommandLine.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Templates/SharedPointer.h"
 #include <algorithm>
 
 namespace
 {
-
-	EOnlineServerConnectionStatus::Type GetConnectionState(galaxy::api::GogServicesConnectionState InConnectionState)
-	{
-		using namespace galaxy::api;
-
-		switch (InConnectionState)
-		{
-			case GOG_SERVICES_CONNECTION_STATE_CONNECTED:
-				return EOnlineServerConnectionStatus::Connected;
-
-			case GOG_SERVICES_CONNECTION_STATE_DISCONNECTED:
-				return EOnlineServerConnectionStatus::ConnectionDropped;
-
-			case GOG_SERVICES_CONNECTION_STATE_AUTH_LOST:
-				return EOnlineServerConnectionStatus::NotAuthorized;
-
-			default:
-				UE_LOG_ONLINE(Display, TEXT("Unsupported connection state: %u"), InConnectionState);
-			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
-				return EOnlineServerConnectionStatus::Normal;
-		}
-	}
 
 	std::uint16_t GetPeerPort()
 	{
@@ -72,28 +52,37 @@ public:
 
 	GlobalConnectionListener(FOnlineSubsystemGOG& InSubsystemGOG)
 		: subsystemGOG{InSubsystemGOG}
+	{}
+
+	EOnlineServerConnectionStatus::Type GetConnectionState(galaxy::api::GogServicesConnectionState InConnectionState)
 	{
+		using namespace galaxy::api;
+
+		switch (InConnectionState)
+		{
+			case GOG_SERVICES_CONNECTION_STATE_CONNECTED:
+				return EOnlineServerConnectionStatus::Connected;
+
+			case GOG_SERVICES_CONNECTION_STATE_DISCONNECTED:
+				return EOnlineServerConnectionStatus::ConnectionDropped;
+
+			case GOG_SERVICES_CONNECTION_STATE_AUTH_LOST:
+				return EOnlineServerConnectionStatus::NotAuthorized;
+
+			default:
+				UE_LOG_ONLINE(Display, TEXT("Unsupported connection state: %u"), InConnectionState);
+			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
+				return EOnlineServerConnectionStatus::Normal;
+		}
 	}
 
 	void OnConnectionStateChange(galaxy::api::GogServicesConnectionState InConnectionState)
 	{
-		auto newState = GetConnectionState(InConnectionState);
-
-#if ENGINE_MINOR_VERSION < 20
-		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(currentState, newState);
-#else
-		subsystemGOG.TriggerOnConnectionStatusChangedDelegates(
-			subsystemGOG.GetSubsystemName().ToString(),
-			currentState,
-			newState
-		);
-#endif
-		currentState = newState;
+		subsystemGOG.OnConnectionStateChange(GetConnectionState(InConnectionState));
 	}
 
 private:
 
-	EOnlineServerConnectionStatus::Type currentState{EOnlineServerConnectionStatus::Normal};
 	FOnlineSubsystemGOG& subsystemGOG;
 };
 
@@ -162,6 +151,20 @@ bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 	return FOnlineSubsystemImpl::Tick(InDeltaTime);
 }
 
+void FOnlineSubsystemGOG::OnConnectionStateChange(EOnlineServerConnectionStatus::Type InConnectionState)
+{
+#if ENGINE_MINOR_VERSION < 20
+	TriggerOnConnectionStatusChangedDelegates(currentState, InConnectionState);
+#else
+	TriggerOnConnectionStatusChangedDelegates(
+		GetSubsystemName().ToString(),
+		currentState,
+		InConnectionState
+	);
+#endif
+	currentState = InConnectionState;
+}
+
 bool FOnlineSubsystemGOG::InitGalaxyPeer()
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::InitGalaxyPeer()"));
@@ -169,7 +172,7 @@ bool FOnlineSubsystemGOG::InitGalaxyPeer()
 	const auto host = GetPeerHost();
 	const auto port = GetPeerPort();
 
-	if(!host.IsEmpty() || port != 0 )
+	if (!host.IsEmpty() || port != 0)
 		UE_LOG_ONLINE(Display, TEXT("Binding Galaxy to adress %s:%u"), *host, port);
 
 	galaxy::api::Init({
@@ -217,10 +220,41 @@ bool FOnlineSubsystemGOG::Init()
 	galaxyFriendsInterface = MakeShared<FOnlineFriendsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyPresenceInterface = MakeShared<FOnlinePresenceGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 
-	// TODO: create more interfaces here
+#if !UE_BUILD_SHIPPING
+	// CLI authentication is for testing purpose only
 
-	bGalaxyPeerInitialized = true;
-	return bGalaxyPeerInitialized;
+	FOnlineAccountCredentials gogCredentials;
+
+	FParse::Value(FCommandLine::Get(), TEXT("login="), gogCredentials.Id);
+	FParse::Value(FCommandLine::Get(), TEXT("login-type="), gogCredentials.Type);
+	if (!gogCredentials.Id.IsEmpty())
+	{
+		FParse::Value(FCommandLine::Get(), TEXT("pass="), gogCredentials.Token);
+		if (gogCredentials.Type.IsEmpty())
+			gogCredentials.Type = "test";
+	}
+
+	if (!gogCredentials.Type.IsEmpty())
+	{
+		bool isLoginComplete{false};
+
+		auto onLoginCompleteDelegateHandle = galaxyIdentityInterface->AddOnLoginCompleteDelegate_Handle(
+			LOCAL_USER_NUM, FOnLoginCompleteDelegate::CreateLambda(
+				[&isLoginComplete]
+				(int32 /*LocalUserNum*/, bool /*bWasSuccessful*/, const FUniqueNetId& /*UserId*/, const FString& /*Error*/)
+				{ isLoginComplete = true; }
+			)
+		);
+
+		identityInterfaceGOG->Login(LOCAL_USER_NUM, gogCredentials);
+		while (!isLoginComplete)
+			this->Tick(0.1);
+
+		galaxyIdentityInterface->ClearOnLoginCompleteDelegate_Handle(LOCAL_USER_NUM, onLoginCompleteDelegateHandle);
+	}
+#endif
+
+	return true;
 }
 
 bool FOnlineSubsystemGOG::IsLocalPlayer(const FUniqueNetId& InUniqueId) const
@@ -253,8 +287,6 @@ void FOnlineSubsystemGOG::ShutdownGalaxyPeer()
 bool FOnlineSubsystemGOG::ShutdownImpl()
 {
 	FOnlineSubsystemImpl::Shutdown();
-
-	// TODO: release all interfaces before shutting down
 
 	galaxyIdentityInterface.Reset();
 	galaxySessionInterface.Reset();

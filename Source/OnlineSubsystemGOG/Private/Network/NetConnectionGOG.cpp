@@ -11,10 +11,9 @@ void UNetConnectionGOG::InitBase(UNetDriver* InDriver, class FSocket* InSocket, 
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitBase()"));
 
-	UNetConnection::InitBase(InDriver, InSocket, InURL, InState, InMaxPacket == 0 ? MAX_PACKET_SIZE : InMaxPacket, 1);
-
-	// We handle our own overhead
-
+	// Put temporary '1' for PacketOverhead to bypass assertion in InitBase ...
+	UNetConnection::InitBase(InDriver, InSocket, InURL, InState, InMaxPacket == 0 ? MAX_PACKET_SIZE: InMaxPacket, 1);
+	// ... then replace it with '0', as we handle our own overhead.
 	PacketOverhead = 0;
 
 	InitSendBuffer();
@@ -33,9 +32,6 @@ void UNetConnectionGOG::InitLocalConnection(UNetDriver* InDriver, class FSocket*
 		return;
 	}
 
-	galaxyNetworking = galaxy::api::Networking();
-	check(galaxyNetworking);
-
 	InitBase(InDriver, InSocket, InURL, InState, InMaxPacket, InPacketOverhead);
 }
 
@@ -51,10 +47,11 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 		return;
 	}
 
-	galaxyNetworking = galaxy::api::ServerNetworking();
-	check(galaxyNetworking);
-
 	InitBase(InDriver, InSocket, InURL, InState, InMaxPacket, InPacketOverhead);
+
+#if ENGINE_MINOR_VERSION >= 23
+	RemoteAddr = InRemoteAddr.Clone();
+#endif
 
 	serverMemberStateListener.Reset(new LobbyMemberStateListener{*this});
 
@@ -63,20 +60,30 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 }
 
 #if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION < 23
+TSharedPtr<FInternetAddr> UNetConnectionGOG::GetInternetAddr()
+{
+	// FInternetAddr is used by the engine for fast connection mapping, mainly to prevent DDoS when using IpNetDriver.
+	// We rely on the GalaxySDK, so this is not needed.
+	return {};
+}
+#endif
+
 void UNetConnectionGOG::LowLevelSend(void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
 #else
-void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBits*/, int32 InCountBits)
+void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBytes*/, int32 InCountBits)
 #endif
 {
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::LowLevelSend()"));
+	auto dataToSend = reinterpret_cast<uint8*>(InData);
+
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::LowLevelSend(): size=%u bits; data={%s}"),
+		InCountBits, *BytesToHex(dataToSend, FMath::DivideAndRoundUp(InCountBits, 8)));
 
 	if (!remotePeerID.IsValid())
 	{
 		UE_LOG_TRAFFIC(Error, TEXT("Invalid remote PeerID: peerID=%s, URL=%s"), *remotePeerID.ToString(), *URL.ToString(true));
 		return;
 	}
-
-	auto dataToSend = reinterpret_cast<uint8*>(InData);
 
 	if (Handler.IsValid() && !Handler->GetRawSend())
 	{
@@ -113,9 +120,15 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBits*/, int32 
 		return;
 	}
 
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("Low level send: remote='%s'; dataSize='%d' bytes"), *LowLevelGetRemoteAddress(), bytesToSend);
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::SendP2PPacket: remote='%s'; size='%d' bytes; data={%s}"),
+		*LowLevelGetRemoteAddress(), bytesToSend, *BytesToHex(dataToSend, bytesToSend));
 
-	galaxyNetworking->SendP2PPacket(remotePeerID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
+	galaxy::api::Networking()->SendP2PPacket(
+		remotePeerID,
+		dataToSend,
+		bytesToSend,
+		InternalAck ? galaxy::api::P2P_SEND_RELIABLE_IMMEDIATE : galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
+
 	auto err = galaxy::api::GetError();
 	if (err)
 		UE_LOG_TRAFFIC(Error, TEXT("Failed to send data: remote='%s'; %s; %s"), *LowLevelGetRemoteAddress(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
@@ -137,7 +150,7 @@ FString UNetConnectionGOG::LowLevelDescribe()
 
 FString UNetConnectionGOG::RemoteAddressToString()
 {
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::LowLevelSend()"));
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetConnectionGOG::RemoteAddressToString()"));
 
 	return LowLevelGetRemoteAddress(/* bAppendPort */ true);
 }

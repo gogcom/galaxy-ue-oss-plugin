@@ -870,7 +870,11 @@ bool FOnlineSessionGOG::JoinSession(int32 InPlayerNum, FName InSessionName, cons
 
 	const auto& sessionID = InDesiredSession.Session.SessionInfo->GetSessionId();
 
-	auto listener = CreateListener<FJoinLobbyListener>(*this, InSessionName, InDesiredSession.Session);
+	auto listener = CreateListener<FJoinLobbyListener>(
+		*this,
+		InSessionName,
+		InDesiredSession.Session,
+		ownUserOnlineAccount->GetUserId());
 
 	galaxy::api::Matchmaking()->JoinLobby(FUniqueNetIdGOG{sessionID}, listener.Value);
 	auto err = galaxy::api::GetError();
@@ -1147,9 +1151,6 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, gala
 {
 	UE_LOG_ONLINE_SESSION(Log, TEXT("FOnlineSessionGOG::OnLobbyLeft()"));
 
-	if (InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_USER_LEFT)
-		return;
-
 	auto storedSession = FindSession(InLobbyID);
 	if (!storedSession)
 	{
@@ -1157,8 +1158,25 @@ void FOnlineSessionGOG::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, gala
 		return;
 	}
 
-	// Not sure if we have to clean this up, or developer/Engine will manage everything, but let's do it
-	DestroySession(storedSession->SessionName);
+	// graceful session closing shall be handled by the higher levels
+
+	if (InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_USER_LEFT
+		|| InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_LOBBY_CLOSED)
+	{
+		if (storedSession->SessionState != EOnlineSessionState::Destroying)
+		{
+			UE_LOG_ONLINE_SESSION(
+				Error,
+				TEXT("Lobby left listener called, while session '%s' is not destroyed yet. Destroying it forcefully"),
+				*storedSession->SessionName.ToString());
+
+			DestroySession(storedSession->SessionName);
+		}
+
+		return;
+	}
+
+	// Rely on FOnlineSubsystemGOG::GlobalConnectionListener to trigger OnConnectionStatusChanged delegates
 }
 
 void FOnlineSessionGOG::OnGameInvitationReceived(galaxy::api::GalaxyID InUserID, const char* InConnectString)

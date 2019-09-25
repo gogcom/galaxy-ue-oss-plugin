@@ -28,7 +28,7 @@ void FGetSessionDetailsListener::OnLobbyDataRetrieveSuccess(const galaxy::api::G
 	if (!OnlineSessionUtils::Fill(InLobbyID, retrievedSession))
 		UE_LOG_ONLINE_SESSION(Warning, TEXT("Failed to get Session data: sessionID=%llu"), InLobbyID.ToUint64());
 
-	TriggerOnSessionDetailsCompleteDelegate(retrievedSession);
+	TriggerOnSessionDetailsCompleteDelegate(true, retrievedSession);
 }
 
 void FGetSessionDetailsListener::OnLobbyDataRetrieveFailure(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyDataRetrieveListener::FailureReason InFailureReason)
@@ -48,11 +48,11 @@ void FGetSessionDetailsListener::OnLobbyDataRetrieveFailure(const galaxy::api::G
 			break;;
 	}
 
-	TriggerOnSessionDetailsCompleteDelegate();
+	TriggerOnSessionDetailsCompleteDelegate(false);
 }
 
-void FGetSessionDetailsListener::TriggerOnSessionDetailsCompleteDelegate(FOnlineSessionSearchResult InOnlineSessionSearchResult)
+void FGetSessionDetailsListener::TriggerOnSessionDetailsCompleteDelegate(bool InWasSuccessful, FOnlineSessionSearchResult InOnlineSessionSearchResult)
 {
-	completionDelegate.ExecuteIfBound(LOCAL_USER_NUM, false, MoveTemp(InOnlineSessionSearchResult));
+	completionDelegate.ExecuteIfBound(LOCAL_USER_NUM, InWasSuccessful, MoveTemp(InOnlineSessionSearchResult));
 	listenerManager.FreeListener(MoveTemp(ListenerID));
 }

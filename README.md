@@ -1,15 +1,17 @@
 ### Supported baseline:
-- UnrealEngine 4.19, 4.20, 4.21, 4.22
-- Galaxy SDK 1.133.6
+- UnrealEngine 4.19, 4.20, 4.21, 4.22, 4.23
+- Galaxy SDK 1.138.1
 - Compiler:
 	- Windows: Visual Studio 15 Update 3 or later
 	- Mac: Xcode 9.4 or later
 
-### Known issues and limitations:
-- UnrealEngine 4.16 is not fully tested yet
+# Known issues and limitations:
 - GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
 - A player has to be logged on to GOG backend services prior to using any features from OnlineSubsystemGOG
 - Dedicated servers are not supported yet
+## UE4.20
+Multiplayer is broken for UE4.20 due to `FUniqueNetIdRepl` serialization bug in Engine.
+You can either cherry-pick the fix done by Michael.Kirzinger@epicgames.com from UnrealEngine repo(commit d2c61c90e1c203bd89d868950b552e5af7e0fe20), or apply diff-patch with these changes(Source/ue4.20-unique-net-id-serialization-fix.patch).
 
 # Installing plugin:
 
@@ -68,7 +70,7 @@ NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
 # Logging in:
 In order to use all functionality user must be signed in GOG Galaxy Client after which game must be authorized using one of the above methods:
 
-- Using C++, IOnlineIdentity::Login() method is provided:
+- Using C++, `IOnlineIdentity::Login()` method is provided:
 
 ```
 auto onlineIdentityInterface = Online::GetIdentityInterface(TEXT("GOG"));
@@ -85,6 +87,25 @@ void OnLoginComplete(int32, bool, const FUniqueNetId&, const FString&)
 ```
 
 - Using Blueprints, you can find **Login** method under the **Online** category
+
+## Steam authentication
+Before authenticating using **EncryptedAppTicket** both AppID and PrivateKey have to bey configured in [GOG Devportal](https://devportal.gog.com "GOG Devportal"). Please contact your GOG.com tech representative for more info on how to configure them.
+
+To authenticate using Steam **EncryptedAppTicket**, it has to be first converted to a hex string, then passed to the **Login** method along with Steam user name:
+
+```
+FOnlineAccountCredentials accountCredentials;
+accountCredentials.Type = TEXT("steam");
+
+uint8 rgubTicket[1024];
+uint32 cubTicket;
+SteamUser()->GetEncryptedAppTicket(rgubTicket, sizeof(rgubTicket), &cubTicket);
+accountCredentials.Token = BytesToHex(rgubTicket, cubTicket);
+
+accountCredentials.Id = TEXT(SteamFriends()->GetPersonaName());
+
+Online::GetIdentityInterface(TEXT("GOG"))->Login(0, accountCredentials);
+```
 
 # Using the Achivements:
 Prior to using the achivements:

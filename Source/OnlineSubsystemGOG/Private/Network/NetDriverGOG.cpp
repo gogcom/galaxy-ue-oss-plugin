@@ -1,7 +1,9 @@
 #include "NetDriverGOG.h"
+#include "InternetAddrGOG.h"
 #include "Types/UrlGOG.h"
 #include "Types/UniqueNetIdGOG.h"
 #include "Loggers.h"
+#include "UserInfoUtils.h"
 
 #include "PacketHandlers/StatelessConnectHandlerComponent.h"
 #include "Engine/Engine.h"
@@ -77,15 +79,20 @@ bool UNetDriverGOG::InitConnect(FNetworkNotify* InNotify, const FURL& InConnectU
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::InitConnect()"));
 
-	galaxyNetworking = galaxy::api::Networking();
-	check(galaxyNetworking);
-
 	if (!InitBase(true, InNotify, InConnectURL, false, InOutError))
 		return false;
 
-	check(!ServerConnection);
+	check(!ServerConnection && !serverUserId.IsValid());
 
 	ServerConnection = NewObject<UNetConnectionGOG>(NetConnectionClass);
+
+	serverUserId = galaxy::api::Matchmaking()->GetLobbyOwner(FUniqueNetIdGOG{InConnectURL.Host});
+	if (!serverUserId.IsValid() || serverUserId.GetIDType() != galaxy::api::GalaxyID::ID_TYPE_USER)
+	{
+		UE_LOG_NETWORKING(Error, TEXT("Failed to get host's user id"));
+		return false;
+	}
+
 	check(ServerConnection);
 
 	ServerConnection->InitLocalConnection(this, /*no socket*/ nullptr, InConnectURL, USOCK_Open);
@@ -103,13 +110,18 @@ bool UNetDriverGOG::InitListen(FNetworkNotify* InNotify, FURL& InLocalURL, bool 
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::InitListen()"));
 
-	galaxyNetworking = galaxy::api::ServerNetworking();
-	check(galaxyNetworking);
-
 	if (!InitBase(false, InNotify, InLocalURL, InReuseAddressAndPort, OutError))
 		return false;
 
 	InitConnectionlessHandler();
+
+#if ENGINE_MINOR_VERSION >= 23
+	auto ownUserID = UserInfoUtils::GetOwnUserID();
+	if (!ownUserID.IsValid())
+		return false;
+
+	LocalAddr = MakeShared<FInternetAddrGOG>(MoveTemp(ownUserID));
+#endif
 
 	return true;
 }
@@ -195,8 +207,6 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 
 	UNetDriver::TickDispatch(InDeltaTime);
 
-	check(galaxyNetworking && "Galaxy Networking interface is NULL");
-
 	uint32_t expectedPacketSize;
 	uint32_t actualPacketSize;
 
@@ -207,7 +217,7 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 
 	while (true)
 	{
-		isP2PPacketAvailable = galaxyNetworking->IsP2PPacketAvailable(&expectedPacketSize);
+		isP2PPacketAvailable = galaxy::api::Networking()->IsP2PPacketAvailable(&expectedPacketSize);
 		err = galaxy::api::GetError();
 		if (err)
 		{
@@ -221,7 +231,9 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			return;
 		}
 
-		galaxyNetworking->ReadP2PPacket(inPacketBuffer.data(), inPacketBuffer.size(), &actualPacketSize, senderGalaxyID);
+		galaxy::api::Networking()->ReadP2PPacket(inPacketBuffer.data(), inPacketBuffer.size(), &actualPacketSize, senderGalaxyID);
+		UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ReadP2PPacket: size=%u bytes; data={%s}"), actualPacketSize, *BytesToHex(inPacketBuffer.data(), actualPacketSize));
+
 		err = galaxy::api::GetError();
 		if (err)
 		{
@@ -239,26 +251,28 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			UE_LOG_TRAFFIC(Warning, TEXT("Actual packet size is different from expected packet size: expected='%u', actual='%u'"), expectedPacketSize, actualPacketSize);
 
 		auto senderID = FUniqueNetIdGOG{senderGalaxyID};
-		auto remoteURL = FUrlGOG{senderID};
+		receivedPackedData = inPacketBuffer.data();
 
 		UNetConnection* connection{nullptr};
 		if (IsServer())
 		{
-			connection = FindEstablishedConnection(remoteURL);
+			connection = FindEstablishedConnection(senderID);
 			if (!connection)
 			{
-				if (!ChallengeConnectingClient(remoteURL, inPacketBuffer.data(), actualPacketSize))
-					return;
+				UE_LOG_TRAFFIC(VeryVerbose, TEXT("No established connection yet : senderID='%s'"), *senderID.ToString());
 
-				connection = EstablishIncomingConnection(remoteURL);
+				if (!ChallengeConnectingClient(senderID, receivedPackedData, actualPacketSize))
+					continue;
+
+				connection = EstablishIncomingConnection(senderID);
 			}
 		}
 		else
 		{
-			if (remoteURL != ServerConnection->URL)
+			if (senderGalaxyID != serverUserId)
 			{
-				UE_LOG_TRAFFIC(Error, TEXT("Client recieved packet from an unknown source: serverAddress='%s', senderAddress='%s'"),
-					*ServerConnection->RemoteAddressToString(), *remoteURL.ToString());
+				UE_LOG_TRAFFIC(Error, TEXT("Client recieved packet from an unknown source: serverAddress='%s', senderID='%s'"),
+					*ServerConnection->RemoteAddressToString(), *senderID.ToString());
 				continue;
 			}
 
@@ -277,95 +291,108 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 			continue;
 		}
 
-		connection->ReceivedRawPacket(inPacketBuffer.data(), actualPacketSize);
+		UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ReceivedRawPacket: size=%u bytes; data={%s}"), actualPacketSize, *BytesToHex(receivedPackedData, actualPacketSize));
+		if (!actualPacketSize || !receivedPackedData)
+		{
+			UE_LOG_TRAFFIC(VeryVerbose, TEXT("No data left to process in packet: senderID='%s'"), *senderID.ToString());
+			continue;
+		}
+
+		connection->ReceivedRawPacket(receivedPackedData, actualPacketSize);
 	}
 }
 
-bool UNetDriverGOG::ChallengeConnectingClient(const FUrlGOG& InRemoteUrl, void* InData, uint32_t InDataSize)
+bool UNetDriverGOG::ChallengeConnectingClient(const FUniqueNetIdGOG& InSenderID, uint8* InOutData, uint32_t& InOutDataSize)
 {
-	const auto& inRemoteAddress = InRemoteUrl.ToString();
-
 	if (Notify->NotifyAcceptingConnection() != EAcceptConnection::Accept)
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("New incoming connections denied: remoteAddress='%s'"), *inRemoteAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("New incoming connections denied: senderID='%s'"), *InSenderID.ToString());
 		return false;
 	}
 
 	if (!ConnectionlessHandler.IsValid())
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet ConnectionlessHandler is invalid: remoteAddress='%s'"), *inRemoteAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet ConnectionlessHandler is invalid: senderID='%s'"), *InSenderID.ToString());
 		return false;
 	}
 
-	auto dataToSend = reinterpret_cast<uint8*>(InData);
+#if ENGINE_MINOR_VERSION >= 23
+	auto remoteAddress = MakeShared<FInternetAddrGOG>(InSenderID);
+#else
+	auto remoteAddress = FUrlGOG{InSenderID}.ToString();
+#endif
 
-	const auto unprocessedPacket = ConnectionlessHandler->IncomingConnectionless(inRemoteAddress, dataToSend, InDataSize);
+	const auto unprocessedPacket = ConnectionlessHandler->IncomingConnectionless(remoteAddress, InOutData, InOutDataSize);
 	if (unprocessedPacket.bError)
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Failed to process incoming handshake packet: remoteAddress='%s'"), *inRemoteAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Failed to process incoming handshake packet: senderID='%s'"), *InSenderID.ToString());
 		return false;
 	}
+
+	InOutDataSize = FMath::DivideAndRoundUp(unprocessedPacket.CountBits, 8);
+	InOutData = InOutDataSize > 0 ? unprocessedPacket.Data : nullptr;
 
 	auto statelessHandshakeComponent = StatelessConnectComponent.Pin();
 	if (!statelessHandshakeComponent.IsValid())
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet StatelessHandshakeComponent is invalid: remoteAddress='%s'"), *inRemoteAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Handshake challenge is in progress, yet StatelessHandshakeComponent is invalid: senderID='%s'"), *InSenderID.ToString());
 		return false;
 	}
 
 #if ENGINE_MINOR_VERSION >= 22
 	bool isHandshakeRestarted{false};
-	if (!statelessHandshakeComponent->HasPassedChallenge(inRemoteAddress, isHandshakeRestarted))
+	if (!statelessHandshakeComponent->HasPassedChallenge(remoteAddress, isHandshakeRestarted))
 #else
-	if (!statelessHandshakeComponent->HasPassedChallenge(inRemoteAddress))
+	if (!statelessHandshakeComponent->HasPassedChallenge(remoteAddress))
 #endif
 	{
-		UE_LOG_NETWORKING(Warning, TEXT("Client failed handshake challenge: remoteAddress='%s'"), *inRemoteAddress);
+		UE_LOG_NETWORKING(Warning, TEXT("Client failed handshake challenge: senderID='%s'"), *InSenderID.ToString());
 		return false;
 	}
 
-	UE_LOG_NETWORKING(Log, TEXT("Client passed handshake challenge: remoteAddress='%s'"), *inRemoteAddress);
+	UE_LOG_NETWORKING(Log, TEXT("Client passed handshake challenge: senderID='%s'"), *InSenderID.ToString());
 	return true;
 }
 
-UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUrlGOG& InRemoteUrl)
+UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetIdGOG& InSenderID)
 {
 	auto statelessHandshakeHandler = StatelessConnectComponent.Pin();
 	if (!statelessHandshakeHandler.IsValid())
 	{
-		UE_LOG_NETWORKING(Log, TEXT("Stateless connection handshake handler is invalid. Cannot accept connection: remoteAddress='%s'"), *InRemoteUrl.ToString());
+		UE_LOG_NETWORKING(Log, TEXT("Stateless connection handshake handler is invalid. Cannot accept connection: senderID='%s'"), *InSenderID.ToString());
 		return nullptr;
 	}
 
 	auto newIncomingConnection = NewObject<UNetConnectionGOG>(NetConnectionClass);
 	check(newIncomingConnection);
 
-	// Set the initial packet sequence from the handshake data
+	newIncomingConnection->InitRemoteConnection(this, nullptr, FUrlGOG{InSenderID}, FInternetAddrGOG{InSenderID}, USOCK_Open);
+	AddClientConnection(newIncomingConnection);
 
+#if ENGINE_MINOR_VERSION >= 19
+	// Set the initial packet sequence from the handshake data
 	int32 serverSequence = 0;
 	int32 clientSequence = 0;
-#if ENGINE_MINOR_VERSION >= 19
+
 	statelessHandshakeHandler->GetChallengeSequence(serverSequence, clientSequence);
 
 	newIncomingConnection->InitSequence(clientSequence, serverSequence);
-#endif
-	newIncomingConnection->InitRemoteConnection(this, nullptr, InRemoteUrl, /*not used*/*ISocketSubsystem::Get()->CreateInternetAddr(), USOCK_Open);
 
-#if ENGINE_MINOR_VERSION >= 19
 	if (newIncomingConnection->Handler.IsValid())
 		newIncomingConnection->Handler->BeginHandshaking();
 #endif
 
 	Notify->NotifyAcceptedConnection(newIncomingConnection);
-	AddClientConnection(newIncomingConnection);
 
 	return newIncomingConnection;
 }
 
-UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUrlGOG& InRemoteUrl)
+UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUniqueNetIdGOG& InRemoteUniqueID) const
 {
-	auto storedConnectionIt = ClientConnections.FindByPredicate([&](auto storedConnection) {
-		return InRemoteUrl == storedConnection->URL;
+	auto remoteUrl = FUrlGOG{InRemoteUniqueID};
+
+	auto storedConnectionIt = ClientConnections.FindByPredicate([&](const auto& storedConnection) {
+		return remoteUrl == storedConnection->URL;
 	});
 
 	if (!storedConnectionIt)
@@ -374,15 +401,32 @@ UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUrlGOG& InRemote
 	return *storedConnectionIt;
 }
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 23
+void UNetDriverGOG::LowLevelSend(TSharedPtr<const FInternetAddr> InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
+#elif ENGINE_MINOR_VERSION >= 21
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
 #else
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits)
 #endif
 {
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend()"));
-
 	auto dataToSend = reinterpret_cast<uint8*>(InData);
+
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend(): size=%u bits; data={%s}"), InCountBits, *BytesToHex(dataToSend, FMath::DivideAndRoundUp(InCountBits, 8)));
+
+#if ENGINE_MINOR_VERSION >= 23
+	const auto rawIP = InAddress->GetRawIp();
+	auto remoteID = FUniqueNetIdGOG{rawIP.GetData(), rawIP.Num()};
+	if (!remoteID.IsValid())
+	{
+		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress->ToString(true));
+#else
+	auto remoteID = FUniqueNetIdGOG{InAddress};
+	if (!remoteID.IsValid())
+	{
+		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress);
+#endif
+		return;
+	}
 
 	if (ConnectionlessHandler.IsValid())
 	{
@@ -408,16 +452,9 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 		return;
 	}
 
-	auto remoteID = FUniqueNetIdGOG{InAddress};
-	if (!remoteID.IsValid())
-	{
-		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress);
-		return;
-	}
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::SendP2PPacket: remoteID='%s' bytes; size=%d data: {%s}"), *remoteID.ToString(), bytesToSend, *BytesToHex(dataToSend, bytesToSend));
 
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("Low level send: remoteID='%s'; dataSize='%d' bytes"), *remoteID.ToString(), bytesToSend);
-
-	galaxyNetworking->SendP2PPacket(remoteID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
+	galaxy::api::Networking()->SendP2PPacket(remoteID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
 
 	auto err = galaxy::api::GetError();
 	if (err)
@@ -428,15 +465,14 @@ FString UNetDriverGOG::LowLevelGetNetworkNumber()
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::LowLevelGetNetworkNumber()"));
 
-	auto galaxyID = galaxy::api::User()->GetGalaxyID();
-	auto err = galaxy::api::GetError();
-	if (err || !galaxyID.IsValid())
-	{
-		UE_LOG_NETWORKING(Error, TEXT("Failed to get GOG UserId: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		return{};
-	}
+#if ENGINE_MINOR_VERSION >= 23
+	if(!LocalAddr)
+		return {};
 
-	return FUniqueNetIdGOG{galaxyID}.ToString();
+	return LocalAddr->ToString(true);
+#else
+	return UserInfoUtils::GetOwnUserID().ToString();
+#endif
 }
 
 ISocketSubsystem* UNetDriverGOG::GetSocketSubsystem()
@@ -451,15 +487,22 @@ UNetDriverGOG::LobbyLeftListener::LobbyLeftListener(UNetDriverGOG& InDriver)
 {
 }
 
-void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason /*InLeaveReason*/)
+void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::ILobbyLeftListener::LobbyLeaveReason InLeaveReason)
 {
-	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::OnLobbyMemberStateChanged()"));
+	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::OnLobbyLeft()"));
+
+	// TODO: ignore callbacks regarding other lobbies
+
+	// graceful session closing and host leaving shall be handled by the higher levels
+
+	if (InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_USER_LEFT
+		|| InLeaveReason == galaxy::api::ILobbyLeftListener::LOBBY_LEAVE_REASON_LOBBY_CLOSED)
+		return;
 
 	if (driver.IsServer())
 	{
-		// TODO: neither NetDriver::Shutdown() nor OnDestroySessionCompleteDelegates() are closing
-		// lobby in a test game when OnLobbyLeft() is suddenly called. Did we forgot some delegate?
-		driver.Shutdown();
+		for (auto clientConnection : driver.ClientConnections)
+			clientConnection->State = EConnectionState::USOCK_Closed;
 	}
 	else
 	{
@@ -469,7 +512,8 @@ void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& 
 			return;
 		}
 
-		driver.ServerConnection->Close();
+		driver.serverUserId = galaxy::api::GalaxyID::UNASSIGNED_VALUE;
+		driver.ServerConnection->State = EConnectionState::USOCK_Closed;
 	}
 
 	galaxy::api::ListenerRegistrar()->Unregister(GetListenerType(), this);

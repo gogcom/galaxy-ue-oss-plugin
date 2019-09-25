@@ -5,22 +5,17 @@
 
 #include "Online.h"
 
-FJoinLobbyListener::FJoinLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSession InJoiningSession)
+FJoinLobbyListener::FJoinLobbyListener(
+	class FOnlineSessionGOG& InSessionInterface,
+	FName InSessionName,
+	FOnlineSession InJoiningSession,
+	TSharedRef<const FUniqueNetId> InOwnUserID
+)
 	: sessionInterface{InSessionInterface}
 	, sessionName{MoveTemp(InSessionName)}
 	, joiningSession{MoveTemp(InJoiningSession)}
+	, ownUserID{MoveTemp(InOwnUserID)}
 {
-}
-
-void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult)
-{
-	// Save local copy of the session
-	if(InResult == EOnJoinSessionCompleteResult::Success)
-		sessionInterface.AddNamedSession(sessionName, joiningSession);
-
-	sessionInterface.TriggerOnJoinSessionCompleteDelegates(sessionName, InResult);
-
-	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }
 
 void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, galaxy::api::LobbyEnterResult InResult)
@@ -58,5 +53,23 @@ void FJoinLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID, 
 		}
 	}
 
+	// Save local copy of the session
+	auto newSession = sessionInterface.AddNamedSession(sessionName, joiningSession);
+	if (!newSession)
+	{
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to create new local session (NULL)"));
+		return TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::UnknownError);
+	}
+
+	newSession->SessionState = EOnlineSessionState::Pending;
+	newSession->HostingPlayerNum = LOCAL_USER_NUM;
+	newSession->LocalOwnerId = MoveTemp(ownUserID);
+
 	TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Success);
+}
+
+void FJoinLobbyListener::TriggerOnJoinSessionCompleteDelegates(EOnJoinSessionCompleteResult::Type InResult)
+{
+	sessionInterface.TriggerOnJoinSessionCompleteDelegates(sessionName, InResult);
+	sessionInterface.FreeListener(MoveTemp(ListenerID));
 }

@@ -3,6 +3,8 @@
 #include "CommonGOG.h"
 #include "Runtime/Launch/Resources/Version.h"
 
+uint32 GetTypeHash(const class FUniqueNetIdGOG& InUniqueNetIdGOG);
+
 class FUniqueNetIdGOG : public FUniqueNetId
 {
 public:

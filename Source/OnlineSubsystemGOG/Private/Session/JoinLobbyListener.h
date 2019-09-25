@@ -14,7 +14,11 @@ class FJoinLobbyListener
 {
 public:
 
-	FJoinLobbyListener(class FOnlineSessionGOG& InSessionInterface, FName InSessionName, FOnlineSession InJoiningSession);
+	FJoinLobbyListener(
+		class FOnlineSessionGOG& InSessionInterface,
+		FName InSessionName,
+		FOnlineSession InJoiningSession,
+		TSharedRef<const FUniqueNetId> InOwnUserID);
 
 private:
 
@@ -25,4 +29,5 @@ private:
 	class FOnlineSessionGOG& sessionInterface;
 	const FName sessionName;
 	const FOnlineSession joiningSession;
+	TSharedRef<const FUniqueNetId> ownUserID;
 };
