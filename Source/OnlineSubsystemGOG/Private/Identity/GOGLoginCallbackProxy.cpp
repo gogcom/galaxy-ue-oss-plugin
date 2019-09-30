@@ -7,8 +7,7 @@
 
 UGOGLoginCallbackProxy::UGOGLoginCallbackProxy(const FObjectInitializer& ObjectInitializer)
 	: Super{ObjectInitializer}
-{
-}
+{}
 
 UGOGLoginCallbackProxy* UGOGLoginCallbackProxy::Login(UObject* InWorldContextObject, class APlayerController* InPlayerController, FString AuthType, FString InUserID, FString InUserToken)
 {
@@ -46,7 +45,7 @@ void UGOGLoginCallbackProxy::Activate()
 {
 	if (!playerControllerWeakPtr.IsValid())
 	{
-		FFrame::KismetExecutionMessage(TEXT("Login - invalid PlayerController."), ELogVerbosity::Error);
+		FFrame::KismetExecutionMessage(TEXT("Login failed: invalid PlayerController."), ELogVerbosity::Error);
 		OnFailure.Broadcast(playerControllerWeakPtr.Get());
 		return;
 	}
@@ -57,41 +56,66 @@ void UGOGLoginCallbackProxy::Activate()
 	auto* localPlayer = Cast<ULocalPlayer>(playerControllerWeakPtr->Player);
 	if (!localPlayer)
 	{
-		FFrame::KismetExecutionMessage(TEXT("Login - invalid Player object for given PlayerController."), ELogVerbosity::Error);
+		FFrame::KismetExecutionMessage(TEXT("Login failed: invalid Player object for given PlayerController."), ELogVerbosity::Error);
 		OnFailure.Broadcast(playerControllerWeakPtr.Get());
 		return;
 	}
 
-	const auto ControllerId = localPlayer->GetControllerId();
-	if (ControllerId == INVALID_CONTROLLERID)
+	const auto playerControllerId = localPlayer->GetControllerId();
+	if (playerControllerId == INVALID_CONTROLLERID)
 	{
-		FFrame::KismetExecutionMessage(TEXT("Login - invalid PlayerControllerID is invalid."), ELogVerbosity::Error);
+		FFrame::KismetExecutionMessage(TEXT("Login failed: invalid PlayerControllerID."), ELogVerbosity::Error);
 		OnFailure.Broadcast(playerControllerWeakPtr.Get());
 		return;
 	}
 
-	if (onlineIdentity->OnLoginCompleteDelegates[ControllerId].IsBoundToObject(this))
+	if (onlineIdentity->OnLoginCompleteDelegates[playerControllerId].IsBoundToObject(this))
 	{
-		FFrame::KismetExecutionMessage(TEXT("Login - another authentication process is already in progress."), ELogVerbosity::Error);
+		FFrame::KismetExecutionMessage(TEXT("Login failed: another authentication process is already in progress."), ELogVerbosity::Error);
 		return;
 	}
 
-	loginCompleteDelegateHandle = onlineIdentity->AddOnLoginCompleteDelegate_Handle(ControllerId, FOnLoginCompleteDelegate::CreateUObject(this, &ThisClass::OnLoginComplete));
-	if (!onlineIdentity->Login(ControllerId, {authType.IsEmpty() ? onlineIdentity->GetAuthType() : authType, userID, userToken}))
+	loginCompleteDelegateHandle = onlineIdentity->AddOnLoginCompleteDelegate_Handle(playerControllerId, FOnLoginCompleteDelegate::CreateUObject(this, &ThisClass::OnLoginComplete));
+	if (!onlineIdentity->Login(playerControllerId, {authType.IsEmpty() ? onlineIdentity->GetAuthType() : authType, userID, userToken}))
 	{
-		FFrame::KismetExecutionMessage(TEXT("Login failed."), ELogVerbosity::Error);
+		FFrame::KismetExecutionMessage(TEXT("Login failed: invalid OnlineIdentityInterface."), ELogVerbosity::Error);
 		OnFailure.Broadcast(playerControllerWeakPtr.Get());
 		return;
 	}
 }
 
-void UGOGLoginCallbackProxy::OnLoginComplete(int32 InLocalUserNum, bool InWasSuccessful, const FUniqueNetId& InUserId, const FString& InErrorVal)
+void UGOGLoginCallbackProxy::OnLoginComplete(int32 InLocalUserNum, bool InWasSuccessful, const FUniqueNetId& /*InUserId*/, const FString& InErrorVal)
 {
 	if (onlineIdentity.IsValid())
 		onlineIdentity->ClearOnLogoutCompleteDelegate_Handle(InLocalUserNum, loginCompleteDelegateHandle);
 
-	if (InWasSuccessful)
+	if (InWasSuccessful && UpdatePlayerUniqueNetID(InLocalUserNum))
 		OnSuccess.Broadcast(playerControllerWeakPtr.Get());
 	else
 		OnFailure.Broadcast(playerControllerWeakPtr.Get());
+}
+
+bool UGOGLoginCallbackProxy::UpdatePlayerUniqueNetID(int32 InLocalUserNum) const
+{
+	if (!onlineIdentity.IsValid())
+	{
+		FFrame::KismetExecutionMessage(TEXT("Cannot update Player UniqueNetID: invalid OnlineIdentityInterface."), ELogVerbosity::Error);
+		return false;
+	}
+
+	if (!playerControllerWeakPtr.IsValid())
+	{
+		FFrame::KismetExecutionMessage(TEXT("Cannot update Player UniqueNetID: invalid PlayerController."), ELogVerbosity::Error);
+		return false;
+	}
+
+	auto* playerState = playerControllerWeakPtr->PlayerState;
+	if (!playerState)
+	{
+		FFrame::KismetExecutionMessage(TEXT("Cannot update Player UniqueNetID: invalid PlayerState object for given PlayerController."), ELogVerbosity::Error);
+		return false;
+	}
+
+	playerState->SetUniqueId(onlineIdentity->GetUniquePlayerId(InLocalUserNum));
+	return true;
 }

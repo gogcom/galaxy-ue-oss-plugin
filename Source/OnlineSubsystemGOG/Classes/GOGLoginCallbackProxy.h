@@ -35,6 +35,8 @@ private:
 
 	void OnLoginComplete(int32 InLocalUserNum, bool InWasSuccessful, const FUniqueNetId& InUserId, const FString& InErrorVal);
 
+	bool UpdatePlayerUniqueNetID(int32 InLocalUserNum) const;
+
 	IOnlineIdentityPtr onlineIdentity;
 
 	FString authType;
