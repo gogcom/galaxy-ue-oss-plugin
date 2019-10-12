@@ -18,6 +18,9 @@
 	"IsBetaVersion": true,
 	"EnabledByDefault": true,
 
+	"SupportedTargetPlatforms": [
+		"XboxOne"
+	],
 	"Modules":
 	[
 		{
@@ -27,7 +30,8 @@
 			"WhitelistPlatforms":
 			[
 				"Win64",
-				"Mac"
+				"Mac",
+				"XboxOne"
 			]
 		}
 	],
