@@ -23,6 +23,7 @@ namespace
 	}
 
 	constexpr auto MAX_STEAM_APP_TICKET_SIZE = 1024;
+
 }
 
 FOnlineIdentityGOG::FOnlineIdentityGOG(FOnlineSubsystemGOG& InOnlineSubsystemGOG)
@@ -109,7 +110,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 #elif PLATFORM_XBOXONE
 
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("Trying to log in with XBOX ONE UserID '%s'"), *InAccountCredentials.Id);
-	galaxy::api::User()->SignInXB1(static_cast<uint32_t>(FCString::Atoi(*InAccountCredentials.Id)));
+	galaxy::api::User()->SignInXB1(TCHAR_TO_UTF8(*InAccountCredentials.Id));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{

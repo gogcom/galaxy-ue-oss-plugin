@@ -3,8 +3,8 @@
 
 	"FriendlyName": "Online Subsystem GOG",
 	"Version": 1,
-	"VersionName": "0.7.1",
-	"VersionDescription": "Set proper UserID on AuthSuccess in Login blueprint node.",
+	"VersionName": "0.7.2",
+	"VersionDescription": "Add XBOX support.",
 	"SupportedEngineAssociation": ["4.19", "4.20", "4.21", "4.22", "4.23"],
 	"GalaxySDKVersion": "1.138.1",
 	"Description": "GOG online features",
@@ -18,6 +18,9 @@
 	"IsBetaVersion": true,
 	"EnabledByDefault": true,
 
+	"SupportedTargetPlatforms": [
+		"XboxOne"
+	],
 	"Modules":
 	[
 		{
@@ -27,7 +30,8 @@
 			"WhitelistPlatforms":
 			[
 				"Win64",
-				"Mac"
+				"Mac",
+				"XboxOne"
 			]
 		}
 	],

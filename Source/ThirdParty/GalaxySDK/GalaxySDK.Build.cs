@@ -83,6 +83,16 @@ public class GalaxySDK : ModuleRules
 			AdditionalBundleResources.Add(new UEBuildBundleResource(galaxyDLLPath, "MacOS"));
 #endif
 		}
+		else if (Target.Platform == UnrealTargetPlatform.XboxOne)
+		{
+			galaxyDLLName = "Galaxy64_Durango.dll";
+			PublicAdditionalLibraries.Add("Galaxy64_Durango.lib");
+			// In order to compile this for XBOX, please copy 'delayimp.lib' binary from:
+			// from: c:/Program Files (x86)/Microsoft Visual Studio/<version>/<Professional | Community>/VC/Tools/MSVC/<MS Tools version>/lib/x64/delayimp.lib
+			// to: <game repository>/Plugins/OnlineSubsystemGOG/Source/ThirdParty/GalaxySDK/Libraries/
+			PublicAdditionalLibraries.Add("delayimp.lib");
+			PublicDelayLoadDLLs.Add(galaxyDLLName);
+		}
 		else
 		{
 			string Err = string.Format("Unsupported platform: {0}", Target.Platform);
