@@ -4,8 +4,8 @@
 
 # Known issues and limitations:
 - GalaxySDK may be initialized only once per process, so each player window must be spawned in a separate process
-- A player has to be logged on to GOG backend services prior to using any features from OnlineSubsystemGOG
 - Dedicated servers are not supported yet
+
 ## UE4.20
 Multiplayer is broken for UE4.20 due to `FUniqueNetIdRepl` serialization bug in Engine.
 You can either cherry-pick the fix done by Michael.Kirzinger@epicgames.com from UnrealEngine repo(commit d2c61c90e1c203bd89d868950b552e5af7e0fe20), or apply diff-patch with these changes(Source/ue4.20-unique-net-id-serialization-fix.patch).
@@ -62,10 +62,28 @@ NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSub
 [/Script/OnlineSubsystemGOG.NetDriverGOG]
 NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
 ```
- Please contact your GOG.com tech representative for more info on how to obtain **ClientID** and **ClientSecret**
+ Please contact your GOG.com™ tech representative for more info on how to obtain **ClientID** and **ClientSecret**
 
-# Logging in:
-In order to use all functionality user must be signed in GOG Galaxy Client after which game must be authorized using one of the above methods:
+## XBOX cross platform support:
+Make sure your engine is compiled with the support for the XBOX. Please contact Epic Games™ representatives for more details.
+
+Make sure both Microsoft XDP and GOG.com™ backend services are configured to use XBOX authentication for Galaxy. Please contact your GOG.com™ tech representatives for more information on how to configure this.
+
+To compile this plugin for the XBOX, you will need binaries from both Win64 and XBOX versions of the [Galaxy SDK](https://devportal.gog.com/galaxy/components/sdk "Galaxy SDK") unpacked to "GameFolder/Plugins/OnlineSubsystemGOG/Source/ThirdParty/GalaxySDK"
+
+Update XBOX engine configuration file (**"GameFolder/Config/XboxOne/XboxOneEngine.ini"**), adding XBOX **TitleId** and **PrimaryServiceConfigId**:
+```
+[OnlineSubsystem]
+DefaultPlatformService=GOG
+
+[/Script/XboxOnePlatformEditor.XboxOneTargetSettings]
+TitleId=<XBOX TITLE ID>
+PrimaryServiceConfigId=<XBOX SERVICE CONFIG ID>
+```
+Rest of the config file is similar to the default engine configuration file described above.
+
+# Authentication:
+In order to use online functionalities user must be signed in GOG Galaxy Client after which game must be authorized using one of the above methods:
 
 - Using C++, `IOnlineIdentity::Login()` method is provided:
 
@@ -85,10 +103,10 @@ void OnLoginComplete(int32, bool, const FUniqueNetId&, const FString&)
 
 - Using Blueprints, you can find **Login** method under the **Online** category
 
-## Steam authentication
-Before authenticating using **EncryptedAppTicket** both AppID and PrivateKey have to bey configured in [GOG Devportal](https://devportal.gog.com "GOG Devportal"). Please contact your GOG.com tech representative for more info on how to configure them.
+## Steam-based authentication
+Before authenticating using Steam **EncryptedAppTicket** both **AppID** and **PrivateKey** have to be configured first in [GOG Devportal](https://devportal.gog.com "GOG Devportal"). Please contact your GOG.com™ tech representatives for more information on how to configure them.
 
-To authenticate using Steam **EncryptedAppTicket**, it has to be first converted to a hex string, then passed to the **Login** method along with Steam user name:
+Since Steam **EncryptedAppTicket** constains binary data it has to be first converted to a hex string, then passed to the **Login** method along with Steam user name:
 
 ```
 FOnlineAccountCredentials accountCredentials;
@@ -100,6 +118,16 @@ SteamUser()->GetEncryptedAppTicket(rgubTicket, sizeof(rgubTicket), &cubTicket);
 accountCredentials.Token = BytesToHex(rgubTicket, cubTicket);
 
 accountCredentials.Id = TEXT(SteamFriends()->GetPersonaName());
+
+Online::GetIdentityInterface(TEXT("GOG"))->Login(0, accountCredentials);
+```
+
+## XBOX-based authentication
+To authorize in Galaxy using XBOX authentication method, **XboxUserId** has to be passed to the **Login** method:
+```
+FOnlineAccountCredentials accountCredentials;
+accountCredentials.Type = TEXT("xbox");
+accountCredentials.Id = <XboxUserId>
 
 Online::GetIdentityInterface(TEXT("GOG"))->Login(0, accountCredentials);
 ```
