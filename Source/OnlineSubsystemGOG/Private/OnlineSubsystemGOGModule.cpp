@@ -6,21 +6,23 @@
 
 namespace
 {
-
-	const FString GetGalaxySdkLibraryPath()
+	const FString GetGalaxySDKLibrariesDir()
 	{
+#if PLATFORM_PS4
+		return TEXT("/app0/prx");
+#else
 		const auto pluginRootDir = IPluginManager::Get().FindPlugin(TEXT_ONLINE_SUBSYSTEM_GOG)->GetBaseDir();
 
 		if (pluginRootDir.IsEmpty())
 			UE_LOG_ONLINE(Error, TEXT("Cannot find base plugin directory for %s"), TEXT_ONLINE_SUBSYSTEM_GOG);
 
-		auto galaxySdkDllPath = FPaths::Combine(
-			pluginRootDir,
-			TEXT("Source"),
-			TEXT("ThirdParty"),
-			TEXT("GalaxySDK"),
-			TEXT("Libraries"),
-			TEXT(STRINGIFY(GALAXY_DLL_NAME)));
+		return FPaths::Combine(pluginRootDir, TEXT("Source"), TEXT("ThirdParty"), TEXT("GalaxySDK"), TEXT("Libraries"));
+#endif
+	}
+
+	const FString GetGalaxySdkLibraryPath()
+	{
+		auto galaxySdkDllPath = FPaths::Combine(GetGalaxySDKLibrariesDir(), TEXT(STRINGIFY(GALAXY_DLL_NAME)));
 
 		if (!FPaths::FileExists(galaxySdkDllPath))
 			UE_LOG_ONLINE(Error, TEXT("Cannot find GalaxySDK dll (%s)"), *galaxySdkDllPath);

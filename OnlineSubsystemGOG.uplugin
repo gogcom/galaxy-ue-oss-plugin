@@ -19,7 +19,8 @@
 	"EnabledByDefault": true,
 
 	"SupportedTargetPlatforms": [
-		"XboxOne"
+		"XboxOne",
+		"PS4"
 	],
 	"Modules":
 	[
@@ -31,7 +32,8 @@
 			[
 				"Win64",
 				"Mac",
-				"XboxOne"
+				"XboxOne",
+				"PS4"
 			]
 		}
 	],

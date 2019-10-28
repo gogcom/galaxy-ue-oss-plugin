@@ -93,6 +93,11 @@ public class GalaxySDK : ModuleRules
 			PublicAdditionalLibraries.Add("delayimp.lib");
 			PublicDelayLoadDLLs.Add(galaxyDLLName);
 		}
+		else if (Target.Platform == UnrealTargetPlatform.PS4)
+		{
+			galaxyDLLName = "libGalaxy64.prx";
+			PublicAdditionalLibraries.Add("Galaxy64_stub_weak");
+		}
 		else
 		{
 			string Err = string.Format("Unsupported platform: {0}", Target.Platform);
