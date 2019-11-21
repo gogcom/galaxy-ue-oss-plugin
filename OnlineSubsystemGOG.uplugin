@@ -19,6 +19,8 @@
 	"EnabledByDefault": true,
 
 	"SupportedTargetPlatforms": [
+		"Win64",
+		"Mac",
 		"XboxOne",
 		"PS4"
 	],
