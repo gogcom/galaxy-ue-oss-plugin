@@ -126,7 +126,7 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 #elif PLATFORM_PS4
 
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("Trying to log in with PS4 ClientID '%s'"), *InAccountCredentials.Id);
-	galaxy::api::User()->SignInPS4(TCHAR_TO_UTF8(*InAccountCredentials.Id), nullptr, nullptr, 0);
+	galaxy::api::User()->SignInPS4(TCHAR_TO_UTF8(*InAccountCredentials.Id));
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
