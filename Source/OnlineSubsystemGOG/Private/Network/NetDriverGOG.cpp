@@ -30,15 +30,11 @@ namespace
 
 bool UNetDriverGOG::IsAvailable() const
 {
-	UE_LOG_NETWORKING(VeryVerbose, TEXT("UNetDriverGOG::IsAvailable()"));
-
 	return IOnlineSubsystem::Get(TEXT_GOG) != nullptr;
 }
 
 bool UNetDriverGOG::IsNetResourceValid()
 {
-	UE_LOG_NETWORKING(VeryVerbose, TEXT("UNetDriverGOG::IsNetResourceValid()"));
-
 	if (!IsAvailable())
 		return false;
 
@@ -77,7 +73,7 @@ bool UNetDriverGOG::InitBase(bool InInitAsClient, FNetworkNotify* InNotify, cons
 
 bool UNetDriverGOG::InitConnect(FNetworkNotify* InNotify, const FURL& InConnectURL, FString& InOutError)
 {
-	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::InitConnect()"));
+	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::InitConnect(URL=%s)"), *InConnectURL.ToString(true));
 
 	if (!InitBase(true, InNotify, InConnectURL, false, InOutError))
 		return false;
@@ -85,15 +81,15 @@ bool UNetDriverGOG::InitConnect(FNetworkNotify* InNotify, const FURL& InConnectU
 	check(!ServerConnection && !serverUserId.IsValid());
 
 	ServerConnection = NewObject<UNetConnectionGOG>(NetConnectionClass);
+	check(ServerConnection);
 
 	serverUserId = galaxy::api::Matchmaking()->GetLobbyOwner(FUniqueNetIdGOG{InConnectURL.Host});
 	if (!serverUserId.IsValid() || serverUserId.GetIDType() != galaxy::api::GalaxyID::ID_TYPE_USER)
 	{
-		UE_LOG_NETWORKING(Error, TEXT("Failed to get host's user id"));
+		UE_LOG_NETWORKING(Error, TEXT("Failed to connect to host. Invalid user id: connectUrlHost='%s', hostID=%llu"),
+			*InConnectURL.Host, serverUserId.ToUint64());
 		return false;
 	}
-
-	check(ServerConnection);
 
 	ServerConnection->InitLocalConnection(this, /*no socket*/ nullptr, InConnectURL, USOCK_Open);
 
@@ -108,7 +104,7 @@ bool UNetDriverGOG::InitConnect(FNetworkNotify* InNotify, const FURL& InConnectU
 
 bool UNetDriverGOG::InitListen(FNetworkNotify* InNotify, FURL& InLocalURL, bool InReuseAddressAndPort, FString& OutError)
 {
-	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::InitListen()"));
+	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::InitListen(URL=%s)"), *InLocalURL.ToString(true));
 
 	if (!InitBase(false, InNotify, InLocalURL, InReuseAddressAndPort, OutError))
 		return false;
@@ -232,7 +228,8 @@ void UNetDriverGOG::TickDispatch(float InDeltaTime)
 		}
 
 		galaxy::api::Networking()->ReadP2PPacket(inPacketBuffer.data(), inPacketBuffer.size(), &actualPacketSize, senderGalaxyID);
-		UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ReadP2PPacket: size=%u bytes; data={%s}"), actualPacketSize, *BytesToHex(inPacketBuffer.data(), actualPacketSize));
+		UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ReadP2PPacket: size=%u bytes; data={%s}"),
+			actualPacketSize, *BytesToHex(inPacketBuffer.data(), actualPacketSize));
 
 		err = galaxy::api::GetError();
 		if (err)
@@ -411,15 +408,19 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 {
 	auto dataToSend = reinterpret_cast<uint8*>(InData);
 
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend(): size=%u bits; data={%s}"), InCountBits, *BytesToHex(dataToSend, FMath::DivideAndRoundUp(InCountBits, 8)));
-
 #if ENGINE_MINOR_VERSION >= 23
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend(): address='%s'; size=%u bits; data={%s}"),
+		*InAddress->ToString(true), InCountBits, *BytesToHex(dataToSend, FMath::DivideAndRoundUp(InCountBits, 8)));
+
 	const auto rawIP = InAddress->GetRawIp();
 	auto remoteID = FUniqueNetIdGOG{rawIP.GetData(), rawIP.Num()};
 	if (!remoteID.IsValid())
 	{
 		UE_LOG_TRAFFIC(Error, TEXT("Failed to parse GOG PeerID from send address: '%s'"), *InAddress->ToString(true));
 #else
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend(): address='%s'; size=%u bits; data={%s}"),
+		*InAddress, InCountBits, *BytesToHex(dataToSend, FMath::DivideAndRoundUp(InCountBits, 8)));
+
 	auto remoteID = FUniqueNetIdGOG{InAddress};
 	if (!remoteID.IsValid())
 	{
@@ -452,7 +453,8 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 		return;
 	}
 
-	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::SendP2PPacket: remoteID='%s' bytes; size=%d data: {%s}"), *remoteID.ToString(), bytesToSend, *BytesToHex(dataToSend, bytesToSend));
+	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::SendP2PPacket(): remoteID='%s' bytes; size=%d data: {%s}"),
+		*remoteID.ToString(), bytesToSend, *BytesToHex(dataToSend, bytesToSend));
 
 	galaxy::api::Networking()->SendP2PPacket(remoteID, dataToSend, bytesToSend, galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
 

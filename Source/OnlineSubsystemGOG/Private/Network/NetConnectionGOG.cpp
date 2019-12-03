@@ -21,10 +21,9 @@ void UNetConnectionGOG::InitBase(UNetDriver* InDriver, class FSocket* InSocket, 
 
 void UNetConnectionGOG::InitLocalConnection(UNetDriver* InDriver, class FSocket* InSocket, const FURL& InURL, EConnectionState InState, int32 InMaxPacket, int32 InPacketOverhead)
 {
-	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitLocalConnection()"));
+	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitLocalConnection(URL=%s)"), *InURL.ToString(true));
 
 	remotePeerID = FUniqueNetIdGOG{InURL.Host};
-
 	if (!remotePeerID.IsValid() || !remotePeerID.IsLobby())
 	{
 		UE_LOG_NETWORKING(Error, TEXT("Remote PeerID expected to be a lobby: remotePeerID='%s', remoteUrl='%s'"),
@@ -37,7 +36,7 @@ void UNetConnectionGOG::InitLocalConnection(UNetDriver* InDriver, class FSocket*
 
 void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket* InSocket, const FURL& InURL, const class FInternetAddr& InRemoteAddr, EConnectionState InState, int32 InMaxPacket, int32 InPacketOverhead)
 {
-	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitRemoteConnection()"));
+	UE_LOG_NETWORKING(Log, TEXT("UNetConnectionGOG::InitRemoteConnection(URL=%s)"), *InURL.ToString(true));
 
 	remotePeerID = FUniqueNetIdGOG{InURL.Host};
 	if (!remotePeerID.IsValid() || !remotePeerID.IsUser())
