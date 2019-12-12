@@ -5,11 +5,11 @@
 #include "Online.h"
 
 FWriteAchievementsListener::FWriteAchievementsListener(
-	class FOnlineAchievementsGOG& InAchivementsInterface,
+	class FOnlineAchievementsGOG& InAchievementsInterface,
 	const FUniqueNetIdGOG& InPlayerId,
 	FOnlineAchievementsWriteRef& InWriteObject,
 	const FOnAchievementsWrittenDelegate& InDelegate)
-	: achivementsInterface{InAchivementsInterface}
+	: achievementsInterface{InAchievementsInterface}
 	, playerId{InPlayerId}
 	, achievementsWriteObject{InWriteObject}
 	, achievementsWrittenDelegate{InDelegate}
@@ -37,7 +37,7 @@ void FWriteAchievementsListener::TriggerOnAchievementsWrittenDelegate(bool InRes
 		: EOnlineAsyncTaskState::Failed;
 
 	achievementsWrittenDelegate.ExecuteIfBound(playerId, InResult);
-	achivementsInterface.FreeListener(MoveTemp(ListenerID));
+	achievementsInterface.FreeListener(MoveTemp(ListenerID));
 
-	// Unlocked achivements are handled in FOnlineAchievementsGOG::OnAchievementUnlocked()
+	// Unlocked achievements are handled in FOnlineAchievementsGOG::OnAchievementUnlocked()
 }
