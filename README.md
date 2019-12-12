@@ -135,10 +135,10 @@ accountCredentials.Id = <XboxUserId>
 Online::GetIdentityInterface(TEXT("GOG"))->Login(0, accountCredentials);
 ```
 
-# Using the Achivements:
-Prior to using the achivements:
-* Achivements must be defined in [GOG Devportal](https://devportal.gog.com/panel/games "GOG Devportal")
-* Achivements **API Key**s as defined in Devportal should be provided to engine configuration file:
+# Using the Achievements:
+Prior to using the achievements:
+* Achievements must be defined in [GOG Devportal](https://devportal.gog.com/panel/games "GOG Devportal")
+* Achievements **API Key**s as defined in Devportal should be provided to engine configuration file:
 
 ```
 [OnlineSubsystemGOG]

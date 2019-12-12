@@ -5,10 +5,10 @@
 #include "Online.h"
 
 FQueryAchievementsListener::FQueryAchievementsListener(
-	FOnlineAchievementsGOG& InAchivementsInterface,
+	FOnlineAchievementsGOG& InAchievementsInterface,
 	const FUniqueNetIdGOG& InPlayerId,
 	const FOnQueryAchievementsCompleteDelegate& InDelegate)
-	: achivementsInterface{InAchivementsInterface}
+	: achievementsInterface{InAchievementsInterface}
 	, playerId{InPlayerId}
 	, queryAchievementsCompleteDelegate{InDelegate}
 {
@@ -18,7 +18,7 @@ void FQueryAchievementsListener::OnUserStatsAndAchievementsRetrieveSuccess(galax
 {
 	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("OnUserStatsAndAchievementsRetrieveSuccess: userID=%llu"), InUserID.ToUint64());
 
-	achivementsInterface.OnAchievementsRetrieved(InUserID);
+	achievementsInterface.OnAchievementsRetrieved(InUserID);
 
 	TriggerOnQueryAchievementsCompleteDelegate(true);
 }
@@ -34,5 +34,5 @@ void FQueryAchievementsListener::TriggerOnQueryAchievementsCompleteDelegate(bool
 {
 	queryAchievementsCompleteDelegate.ExecuteIfBound(playerId, InResult);
 
-	achivementsInterface.FreeListener(MoveTemp(ListenerID));
+	achievementsInterface.FreeListener(MoveTemp(ListenerID));
 }
