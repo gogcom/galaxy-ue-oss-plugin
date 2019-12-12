@@ -54,11 +54,11 @@ PACKAGE_SCOPE:
 
 private:
 
-	inline auto AchivementsCount() const;
+	inline auto AchievementsCount() const;
 
 	inline bool AssertAchievementsCount() const;
 
-	inline bool AreAchivementsDescriptionsAvailable() const;
+	inline bool AreAchievementsDescriptionsAvailable() const;
 
 	void OnAchievementUnlocked(const char* InName) override;
 
@@ -74,8 +74,8 @@ private:
 	void OnUserStatsAndAchievementsStoreSuccess() override;
 	void OnUserStatsAndAchievementsStoreFailure(galaxy::api::IStatsAndAchievementsStoreListener::FailureReason failureReason) override;
 
-	bool areAchivementsReset{false};
-	bool achivementsResetResult{false};
+	bool areAchievementsReset{false};
+	bool achievementsResetResult{false};
 #endif
 
 	FOnlineSubsystemGOG& subsystemGOG;

@@ -11,7 +11,7 @@ class FQueryAchievementsListener
 {
 public:
 
-	FQueryAchievementsListener(class FOnlineAchievementsGOG& InAchivementsInterface, const FUniqueNetIdGOG& InPlayerId, const FOnQueryAchievementsCompleteDelegate& InDelegate);
+	FQueryAchievementsListener(class FOnlineAchievementsGOG& InAchievementsInterface, const FUniqueNetIdGOG& InPlayerId, const FOnQueryAchievementsCompleteDelegate& InDelegate);
 
 private:
 
@@ -21,7 +21,7 @@ private:
 
 	void TriggerOnQueryAchievementsCompleteDelegate(bool InResult);
 
-	class FOnlineAchievementsGOG& achivementsInterface;
+	class FOnlineAchievementsGOG& achievementsInterface;
 
 	const FUniqueNetIdGOG playerId;
 
