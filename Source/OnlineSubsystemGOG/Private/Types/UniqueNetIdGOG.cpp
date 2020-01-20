@@ -6,7 +6,11 @@ namespace
 FString sanitizeID(const FString& InStr)
 {
 	if (InStr.StartsWith(TEXT("GOG.")))
+#if ENGINE_MINOR_VERSION >= 24
+		return InStr.Mid(UE_ARRAY_COUNT(TEXT("GOG.")) - 1);
+#else
 		return InStr.Mid(ARRAY_COUNT(TEXT("GOG.")) - 1);
+#endif
 
 	return InStr;
 }

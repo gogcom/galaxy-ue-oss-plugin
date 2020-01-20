@@ -374,6 +374,9 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetId
 	statelessHandshakeHandler->GetChallengeSequence(serverSequence, clientSequence);
 
 	newIncomingConnection->InitSequence(clientSequence, serverSequence);
+#if ENGINE_MINOR_VERSION >= 24
+	statelessHandshakeHandler->ResetChallengeData();
+#endif
 
 	if (newIncomingConnection->Handler.IsValid())
 		newIncomingConnection->Handler->BeginHandshaking();
