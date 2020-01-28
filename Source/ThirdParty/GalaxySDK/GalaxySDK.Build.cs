@@ -33,6 +33,17 @@ public class GalaxySDK : ModuleRules
 #endif
 	}
 
+	private void AddPublicLibrary(string libraryPath, string libraryName)
+	{
+		PublicAdditionalLibraries.Add(
+#if UE_4_24_OR_LATER
+		Path.Combine(libraryPath, libraryName)
+#else
+		libraryName
+#endif
+		);
+	}
+
 	public GalaxySDK(ReadOnlyTargetRules Target) : base(Target)
 	{
 		Type = ModuleType.External;
@@ -58,20 +69,21 @@ public class GalaxySDK : ModuleRules
 			System.Console.WriteLine(Err);
 			throw new BuildException(Err);
 		}
+#if ! UE_4_24_OR_LATER
 		PublicLibraryPaths.Add(LibrariesPath);
-
+#endif
 		string galaxyDLLName;
 		if(Target.Platform == UnrealTargetPlatform.Win32)
 		{
 			galaxyDLLName = "Galaxy.dll";
 			PublicDelayLoadDLLs.Add(galaxyDLLName);
-			PublicAdditionalLibraries.Add("Galaxy.lib");
+			AddPublicLibrary(LibrariesPath, "Galaxy.lib");
 		}
 		else if(Target.Platform == UnrealTargetPlatform.Win64)
 		{
 			galaxyDLLName = "Galaxy64.dll";
 			PublicDelayLoadDLLs.Add(galaxyDLLName);
-			PublicAdditionalLibraries.Add("Galaxy64.lib");
+			AddPublicLibrary(LibrariesPath, "Galaxy64.lib");
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Mac)
 		{
@@ -86,17 +98,17 @@ public class GalaxySDK : ModuleRules
 		else if (Target.Platform == UnrealTargetPlatform.XboxOne)
 		{
 			galaxyDLLName = "Galaxy64_Durango.dll";
-			PublicAdditionalLibraries.Add("Galaxy64_Durango.lib");
+			AddPublicLibrary(LibrariesPath, "Galaxy64_Durango.lib");
 			// In order to compile this for XBOX, please copy 'delayimp.lib' binary from:
 			// from: c:/Program Files (x86)/Microsoft Visual Studio/<version>/<Professional | Community>/VC/Tools/MSVC/<MS Tools version>/lib/x64/delayimp.lib
 			// to: <game repository>/Plugins/OnlineSubsystemGOG/Source/ThirdParty/GalaxySDK/Libraries/
-			PublicAdditionalLibraries.Add("delayimp.lib");
+			AddPublicLibrary(LibrariesPath, "delayimp.lib");
 			PublicDelayLoadDLLs.Add(galaxyDLLName);
 		}
 		else if (Target.Platform == UnrealTargetPlatform.PS4)
 		{
 			galaxyDLLName = "libGalaxy64.prx";
-			PublicAdditionalLibraries.Add("Galaxy64_stub_weak");
+			AddPublicLibrary(LibrariesPath, "Galaxy64_stub_weak");
 		}
 		else
 		{

@@ -9,6 +9,7 @@
 #include "Types/UniqueNetIdGOG.h"
 #include "Types/OnlineFriendGOG.h"
 #include "Types/UserOnlineAccountGOG.h"
+#include "OnlineError.h"
 
 namespace
 {
@@ -37,6 +38,18 @@ const FString& FOnlineFriendsGOG::GetDefaultFriendsListName()
 void FOnlineFriendsGOG::DumpRecentPlayers() const
 {
 	UE_LOG_ONLINE_FRIEND(Warning, TEXT("FOnlineFriendsGOG::DumpRecentPlayers() is not supported"));
+}
+#endif
+
+#if ENGINE_MINOR_VERSION >= 24
+void FOnlineFriendsGOG::SetFriendAlias(
+	int32 InLocalUserNum,
+	const FUniqueNetId& InFriendId,
+	const FString& InListName,
+	const FString& /*InAlias*/,
+	const FOnSetFriendAliasComplete& InDelegate)
+{
+	InDelegate.ExecuteIfBound(InLocalUserNum, InFriendId, InListName, FOnlineError(EOnlineErrorResult::NotImplemented));
 }
 #endif
 

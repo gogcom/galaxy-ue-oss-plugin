@@ -263,7 +263,7 @@ ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(int32 InLocalUserNum) cons
 
 ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(const FUniqueNetId& InUserId) const
 {
-	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetLoginStatus()"));
+	UE_LOG_ONLINE_IDENTITY(VeryVerbose, TEXT("FOnlineIdentityGOG::GetLoginStatus()"));
 
 	if(InUserId != *ownUserOnlineAccount->GetUserId())
 		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Only single local player is supported"));
@@ -273,7 +273,7 @@ ELoginStatus::Type FOnlineIdentityGOG::GetLoginStatus(const FUniqueNetId& InUser
 
 FString FOnlineIdentityGOG::GetPlayerNickname(int32 InLocalUserNum) const
 {
-	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetPlayerNickname()"));
+	UE_LOG_ONLINE_IDENTITY(VeryVerbose, TEXT("FOnlineIdentityGOG::GetPlayerNickname()"));
 
 	CheckLocalUserNum(InLocalUserNum);
 
@@ -282,7 +282,7 @@ FString FOnlineIdentityGOG::GetPlayerNickname(int32 InLocalUserNum) const
 
 FString FOnlineIdentityGOG::GetPlayerNickname(const FUniqueNetId& InUserId) const
 {
-	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetPlayerNickname()"));
+	UE_LOG_ONLINE_IDENTITY(VeryVerbose, TEXT("FOnlineIdentityGOG::GetPlayerNickname()"));
 
 	if (InUserId == *ownUserOnlineAccount->GetUserId())
 		return ownUserOnlineAccount->GetDisplayName();

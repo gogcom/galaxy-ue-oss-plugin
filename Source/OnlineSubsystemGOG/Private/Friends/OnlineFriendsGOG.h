@@ -61,6 +61,15 @@ public:
 	void DumpRecentPlayers() const override;
 #endif
 
+#if ENGINE_MINOR_VERSION >= 24
+	void SetFriendAlias(
+		int32 InLocalUserNum,
+		const FUniqueNetId& InFriendId,
+		const FString& InListName,
+		const FString& InAlias,
+		const FOnSetFriendAliasComplete& InDelegate = FOnSetFriendAliasComplete()) override;
+#endif
+
 PACKAGE_SCOPE:
 
 	FOnlineFriendsGOG(class FOnlineSubsystemGOG& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount);

@@ -1,4 +1,20 @@
 #include "UniqueNetIdGOG.h"
+#include "Loggers.h"
+
+namespace
+{
+FString sanitizeID(const FString& InStr)
+{
+	if (InStr.StartsWith(TEXT("GOG.")))
+#if ENGINE_MINOR_VERSION >= 24
+		return InStr.Mid(UE_ARRAY_COUNT(TEXT("GOG.")) - 1);
+#else
+		return InStr.Mid(ARRAY_COUNT(TEXT("GOG.")) - 1);
+#endif
+
+	return InStr;
+}
+}
 
 FUniqueNetIdGOG::FUniqueNetIdGOG(uint64 InId)
 	: id{InId}
@@ -11,7 +27,7 @@ FUniqueNetIdGOG::FUniqueNetIdGOG(const galaxy::api::GalaxyID& InGalaxyID)
 }
 
 FUniqueNetIdGOG::FUniqueNetIdGOG(const FString& InStr)
-	: id{static_cast<uint64>(FCString::Atoi64(*InStr))}
+	: id{static_cast<uint64>(FCString::Atoi64(*sanitizeID(InStr)))}
 {
 }
 

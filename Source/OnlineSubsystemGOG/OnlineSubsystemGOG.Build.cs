@@ -37,7 +37,10 @@ public class OnlineSubsystemGOG : ModuleRules
 				"OnlineSubsystem",
 				"Json",
 				"GalaxySDK",
-				"PacketHandler"
+				"PacketHandler",
+#if UE_4_24_OR_LATER
+				"NetCore"
+#endif
 			}
 		);
 
