@@ -40,7 +40,7 @@ namespace
 			}
 		}
 
-		checkf(false, TEXT("Invalid user state: %u"), userState);
+		checkf(false, TEXT("Invalid user state: %d"), static_cast<int32>(userState));
 		return false;
 	}
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Types/IListenerGOG.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 class FListenerManager
 {

@@ -4,6 +4,8 @@
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
 #include "OnlineSubsystemUtils.h"
+#include "Runtime/Launch/Resources/Version.h"
+#include "GameFramework/PlayerState.h"
 
 UGOGLoginCallbackProxy::UGOGLoginCallbackProxy(const FObjectInitializer& ObjectInitializer)
 	: Super{ObjectInitializer}
@@ -11,7 +13,7 @@ UGOGLoginCallbackProxy::UGOGLoginCallbackProxy(const FObjectInitializer& ObjectI
 
 UGOGLoginCallbackProxy* UGOGLoginCallbackProxy::Login(UObject* InWorldContextObject, class APlayerController* InPlayerController, FString AuthType, FString InUserID, FString InUserToken)
 {
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 18
 	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, EGetWorldErrorMode::ReturnNull));
 #else
 	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, true));

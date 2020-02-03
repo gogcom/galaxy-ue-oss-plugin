@@ -7,6 +7,7 @@
 #include "UserInfoUtils.h"
 
 #include "OnlineError.h"
+#include "ConfigCacheIni.h"
 
 #include <array>
 
@@ -347,7 +348,7 @@ void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPri
 	InDelegate.ExecuteIfBound(InUserId, InPrivilege, privilegeResult);
 }
 
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 18
 FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId) const
 #else
 FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId)
@@ -361,7 +362,7 @@ FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniq
 	return LOCAL_USER_NUM;
 }
 
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 18
 void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOnRevokeAuthTokenCompleteDelegate& InDelegate)
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::RevokeAuthToken()"));
@@ -378,7 +379,13 @@ void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOn
 	if (err)
 	{
 		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Failed to get access token: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-		InDelegate.ExecuteIfBound(InUserId, FOnlineError{501});
+		InDelegate.ExecuteIfBound(InUserId, FOnlineError{
+#if ENGINE_MINOR_VERSION >= 19
+			501
+#else
+			"501"
+#endif
+		});
 	}
 
 	ownUserOnlineAccount->GetAccessToken().Empty();

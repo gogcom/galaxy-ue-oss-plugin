@@ -126,7 +126,7 @@ void UNetDriverGOG::ProcessRemoteFunction(class AActor* InActor, class UFunction
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ProcessRemoteFunction()"));
 
-#if ENGINE_MINOR_VERSION >= 19 && !UE_BUILD_SHIPPING
+#if ENGINE_MINOR_VERSION >= 18 && !UE_BUILD_SHIPPING
 	bool outBlockSendRPC = false;
 
 	SendRPCDel.ExecuteIfBound(InActor, InFunction, InParameters, OutParms, InStack, InSubObject, outBlockSendRPC);
@@ -366,7 +366,7 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetId
 	newIncomingConnection->InitRemoteConnection(this, nullptr, FUrlGOG{InSenderID}, FInternetAddrGOG{InSenderID}, USOCK_Open);
 	AddClientConnection(newIncomingConnection);
 
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 18
 	// Set the initial packet sequence from the handshake data
 	int32 serverSequence = 0;
 	int32 clientSequence = 0;

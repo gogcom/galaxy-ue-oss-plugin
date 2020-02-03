@@ -17,7 +17,7 @@ public class GalaxySDK : ModuleRules
 
 	private void AddRuntimeDependency(string dllPath)
 	{
-#if UE_4_18_OR_LATER
+#if UE_4_19_OR_LATER
 		RuntimeDependencies.Add(dllPath);
 #else
 		RuntimeDependencies.Add(new RuntimeDependency(dllPath));
@@ -26,7 +26,7 @@ public class GalaxySDK : ModuleRules
 
 	private void AddPublicDefinition(string definition)
 	{
-#if UE_4_18_OR_LATER
+#if UE_4_19_OR_LATER
 		PublicDefinitions.Add(definition);
 #else
 		Definitions.Add(definition);
