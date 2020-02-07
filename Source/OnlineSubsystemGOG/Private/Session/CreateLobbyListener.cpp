@@ -171,7 +171,8 @@ bool FCreateLobbyListener::AdvertiseToFriends()
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"),
+			*connectString, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
