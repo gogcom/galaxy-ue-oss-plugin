@@ -13,7 +13,7 @@ UGOGLoginCallbackProxy::UGOGLoginCallbackProxy(const FObjectInitializer& ObjectI
 
 UGOGLoginCallbackProxy* UGOGLoginCallbackProxy::Login(UObject* InWorldContextObject, class APlayerController* InPlayerController, FString AuthType, FString InUserID, FString InUserToken)
 {
-#if ENGINE_MINOR_VERSION >= 18
+#if ENGINE_MINOR_VERSION >= 17
 	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, EGetWorldErrorMode::ReturnNull));
 #else
 	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, true));

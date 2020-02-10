@@ -366,7 +366,7 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetId
 	newIncomingConnection->InitRemoteConnection(this, nullptr, FUrlGOG{InSenderID}, FInternetAddrGOG{InSenderID}, USOCK_Open);
 	AddClientConnection(newIncomingConnection);
 
-#if ENGINE_MINOR_VERSION >= 18
+#if ENGINE_MINOR_VERSION >= 17
 	// Set the initial packet sequence from the handshake data
 	int32 serverSequence = 0;
 	int32 clientSequence = 0;

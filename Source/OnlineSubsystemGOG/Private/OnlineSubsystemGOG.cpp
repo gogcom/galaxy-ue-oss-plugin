@@ -130,7 +130,7 @@ bool FOnlineSubsystemGOG::ReadEngineConfiguration()
 	return !clientID.IsEmpty() && !clientSecret.IsEmpty();
 }
 
-#if ENGINE_MINOR_VERSION >= 18
+#if ENGINE_MINOR_VERSION >= 17
 FText FOnlineSubsystemGOG::GetOnlineServiceName() const
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::GetOnlineServiceName()"));
