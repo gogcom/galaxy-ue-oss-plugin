@@ -151,14 +151,15 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 		return;
 	}
 
-	if (!OnlineSessionUtils::ShouldAdvertiseViaPresence(sessionSettings))
+	if ( ! OnlineSessionUtils::ShouldAdvertiseViaPresence(sessionSettings)
+		// failure in game advertisement shall not fail game creation
+		|| ! AdvertiseToFriends())
 	{
 		TriggerOnCreateSessionCompleteDelegates(true);
 		return;
 	}
 
-	if (!AdvertiseToFriends())
-		TriggerOnCreateSessionCompleteDelegates(false);
+	// Wait until game is advertised via RichPresence
 }
 
 bool FCreateLobbyListener::AdvertiseToFriends()
