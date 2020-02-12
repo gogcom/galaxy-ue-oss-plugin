@@ -1,5 +1,5 @@
 ### Supported baseline:
-- UnrealEngine 4.19, 4.20, 4.21, 4.22, 4.23, 4.24
+- UnrealEngine 4.18, 4.19, 4.20, 4.21, 4.22, 4.23, 4.24
 - Galaxy SDK 1.139.2
 - Compiler:
 	- Windows: Visual Studio 15 Update 3 or later

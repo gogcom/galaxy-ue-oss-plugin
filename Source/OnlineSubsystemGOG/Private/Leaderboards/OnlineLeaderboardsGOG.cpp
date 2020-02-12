@@ -29,7 +29,7 @@ namespace
 				return galaxy::api::LEADERBOARD_SORT_METHOD_DESCENDING;
 		}
 
-		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid leaderboard sort method: %u"), InSortMethod);
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid leaderboard sort method: %d"), static_cast<int32>(InSortMethod));
 		return galaxy::api::LEADERBOARD_SORT_METHOD_NONE;
 	}
 
@@ -45,7 +45,7 @@ namespace
 				return galaxy::api::LEADERBOARD_DISPLAY_TYPE_TIME_MILLISECONDS;
 		}
 
-		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid leaderboard display type: %u"), InDisplayFormat);
+		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Invalid leaderboard display type: %d"), static_cast<int32>(InDisplayFormat));
 		return galaxy::api::LEADERBOARD_DISPLAY_TYPE_NONE;
 	}
 

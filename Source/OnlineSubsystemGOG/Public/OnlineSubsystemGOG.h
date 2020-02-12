@@ -12,7 +12,7 @@ public:
 
 	FString GetAppId() const override;
 
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 18
 	FText GetOnlineServiceName() const override;
 #endif
 

@@ -103,7 +103,7 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBytes*/, int32
 
 	auto bytesToSend = FMath::DivideAndRoundUp(InCountBits, 8);
 
-#if ENGINE_MINOR_VERSION >= 19 && !UE_BUILD_SHIPPING
+#if ENGINE_MINOR_VERSION >= 18 && !UE_BUILD_SHIPPING
 	bool bBlockSend = false;
 	LowLevelSendDel.ExecuteIfBound(InData, bytesToSend, bBlockSend);
 	if (bBlockSend)

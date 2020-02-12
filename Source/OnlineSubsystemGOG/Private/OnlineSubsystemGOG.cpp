@@ -70,7 +70,7 @@ public:
 				return EOnlineServerConnectionStatus::NotAuthorized;
 
 			default:
-				UE_LOG_ONLINE(Display, TEXT("Unsupported connection state: %u"), InConnectionState);
+				UE_LOG_ONLINE(Display, TEXT("Unsupported connection state: %d"), static_cast<int32>(InConnectionState));
 			case GOG_SERVICES_CONNECTION_STATE_UNDEFINED:
 				return EOnlineServerConnectionStatus::Normal;
 		}
@@ -130,7 +130,7 @@ bool FOnlineSubsystemGOG::ReadEngineConfiguration()
 	return !clientID.IsEmpty() && !clientSecret.IsEmpty();
 }
 
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 18
 FText FOnlineSubsystemGOG::GetOnlineServiceName() const
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::GetOnlineServiceName()"));

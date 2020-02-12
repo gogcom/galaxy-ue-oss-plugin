@@ -151,14 +151,15 @@ void FCreateLobbyListener::OnLobbyDataUpdateSuccess(const galaxy::api::GalaxyID&
 		return;
 	}
 
-	if (!OnlineSessionUtils::ShouldAdvertiseViaPresence(sessionSettings))
+	if ( ! OnlineSessionUtils::ShouldAdvertiseViaPresence(sessionSettings)
+		// failure in game advertisement shall not fail game creation
+		|| ! AdvertiseToFriends())
 	{
 		TriggerOnCreateSessionCompleteDelegates(true);
 		return;
 	}
 
-	if (!AdvertiseToFriends())
-		TriggerOnCreateSessionCompleteDelegates(false);
+	// Wait until game is advertised via RichPresence
 }
 
 bool FCreateLobbyListener::AdvertiseToFriends()
@@ -171,7 +172,8 @@ bool FCreateLobbyListener::AdvertiseToFriends()
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to set rich presence connect string: connectString='%s'; %s: %s"),
+			*connectString, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
