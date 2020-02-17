@@ -3,7 +3,6 @@ Binaries/
 Build/
 Intermediate/
 Saved/
-DerivedDataCache
 
 # Build generated folders
 Output/
@@ -13,6 +12,3 @@ Output/
 *.sln
 *.vs
 *.VC.opendb
-
-# python
-*.pyc
