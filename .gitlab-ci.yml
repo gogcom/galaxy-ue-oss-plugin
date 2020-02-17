@@ -1,0 +1,17 @@
+jenkins:
+  stage: test
+  variables:
+    GIT_STRATEGY: none
+    JENKINS_VERIFIER_CONFIGURATION: >
+      {
+        "job" : "ue4-test-game-ci",
+        "parameters" : {
+          "PLUGIN_REFSPEC" : "${CI_COMMIT_REF_NAME}",
+          "GAME_REFSPEC" : "master"
+        }
+      }
+  script:
+    - verify_on_jenkins
+  except:
+    - master
+    - tags

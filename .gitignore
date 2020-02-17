@@ -7,6 +7,13 @@ Saved/
 # Build generated folders
 Output/
 
+# SDK files
+Source/ThirdParty/GalaxySDK/Documentation.html
+Source/ThirdParty/GalaxySDK/Include
+Source/ThirdParty/GalaxySDK/Libraries
+Source/ThirdParty/GalaxySDK/Libraries_CSharp
+Source/ThirdParty/GalaxySDK/Licenses
+
 # VS generated files
 *.sdf
 *.sln
