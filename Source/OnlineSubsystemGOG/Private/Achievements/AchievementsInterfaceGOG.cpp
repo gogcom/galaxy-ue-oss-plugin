@@ -140,7 +140,6 @@ void FOnlineAchievementsGOG::QueryAchievementDescriptions(const FUniqueNetId& In
 	if (!AreAchievementsDescriptionsAvailable())
 	{
 		QueryAchievements(InPlayerId, InDelegate);
-		InDelegate.ExecuteIfBound(InPlayerId, false);
 		return;
 	}
 
