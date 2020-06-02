@@ -222,6 +222,15 @@ EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievementDescriptio
 };
 
 #if ! UE_BUILD_SHIPPING
+namespace
+{
+	void ResetCachedAchievementsProgress(TArray<FOnlineAchievement> & playerCachedAchievements)
+	{
+		for (auto& cachedAcvhievemnt : playerCachedAchievements)
+			cachedAcvhievemnt.Progress = 0;
+	}
+}
+
 bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 {
 	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::ResetAchievements()"));
@@ -259,14 +268,16 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 		return false;
 	}
 
-	playerCachedAchievements->Empty();
-
 	achievementsResetResult.Reset();
 
 	while (!achievementsResetResult.IsSet())
 		subsystemGOG.Tick(0.1);
 
-	return achievementsResetResult.GetValue();
+	if(!achievementsResetResult.GetValue())
+		return false;
+
+	ResetCachedAchievementsProgress(*playerCachedAchievements);
+	return true;
 };
 
 void FOnlineAchievementsGOG::OnUserStatsAndAchievementsStoreSuccess()
