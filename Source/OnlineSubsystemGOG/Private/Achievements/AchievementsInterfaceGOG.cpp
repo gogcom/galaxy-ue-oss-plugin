@@ -221,7 +221,7 @@ EOnlineCachedResult::Type FOnlineAchievementsGOG::GetCachedAchievementDescriptio
 	return EOnlineCachedResult::Success;
 };
 
-#if !UE_BUILD_SHIPPING
+#if ! UE_BUILD_SHIPPING
 bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 {
 	UE_LOG_ONLINE_ACHIEVEMENTS(Display, TEXT("FOnlineAchievementsGOG::ResetAchievements()"));
@@ -254,29 +254,28 @@ bool FOnlineAchievementsGOG::ResetAchievements(const FUniqueNetId& InPlayerId)
 	auto err = galaxy::api::GetError();
 	if (err)
 	{
-		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to reset player achievements: playerID='%s'; %s; %s"), *InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+		UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to reset player achievements: playerID='%s'; %s; %s"),
+			*InPlayerId.ToString(), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		return false;
 	}
 
 	playerCachedAchievements->Empty();
 
-	areAchievementsReset = false;
+	achievementsResetResult.Reset();
 
-	while (!areAchievementsReset)
+	while (!achievementsResetResult.IsSet())
 		subsystemGOG.Tick(0.1);
 
-	areAchievementsReset = false;
-	return achievementsResetResult;
+	return achievementsResetResult.GetValue();
 };
 
 void FOnlineAchievementsGOG::OnUserStatsAndAchievementsStoreSuccess()
 {
-	areAchievementsReset = achievementsResetResult = true;
+	achievementsResetResult = true;
 }
 
 void FOnlineAchievementsGOG::OnUserStatsAndAchievementsStoreFailure(galaxy::api::IStatsAndAchievementsStoreListener::FailureReason failureReason)
 {
-	areAchievementsReset = true;
 	achievementsResetResult = false;
 }
 

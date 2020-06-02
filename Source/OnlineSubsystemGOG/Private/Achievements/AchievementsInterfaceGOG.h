@@ -8,6 +8,10 @@
 
 #include "Interfaces/OnlineAchievementsInterface.h"
 
+#if !UE_BUILD_SHIPPING
+#include "Misc/Optional.h"
+#endif
+
 class FOnlineAchievementsGOG
 	: public IOnlineAchievements
 	, public FListenerManager
@@ -74,8 +78,7 @@ private:
 	void OnUserStatsAndAchievementsStoreSuccess() override;
 	void OnUserStatsAndAchievementsStoreFailure(galaxy::api::IStatsAndAchievementsStoreListener::FailureReason failureReason) override;
 
-	bool areAchievementsReset{false};
-	bool achievementsResetResult{false};
+	TOptional<bool> achievementsResetResult;
 #endif
 
 	FOnlineSubsystemGOG& subsystemGOG;
