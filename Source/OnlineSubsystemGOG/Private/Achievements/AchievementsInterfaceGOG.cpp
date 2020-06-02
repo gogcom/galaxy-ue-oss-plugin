@@ -352,7 +352,7 @@ void FOnlineAchievementsGOG::AddOrReplacePlayerAchievements(const FUniqueNetIdGO
 	playerCachedAchievements.Reserve(AchievementsCount());
 
 	bool isUnlocked;
-	// Ignore UnlockTime as it is in FOnlineAchievementDesc instead on FOnlineAchievement. This is clearly a bug in UE
+	// Ignore UnlockTime as it is in FOnlineAchievementDesc instead on FOnlineAchievement
 	uint32_t unlockTime;
 	decltype(galaxy::api::GetError()) err;
 	for (const auto& achievementID : achievementIDs)
@@ -371,7 +371,7 @@ void FOnlineAchievementsGOG::AddOrReplacePlayerAchievements(const FUniqueNetIdGO
 
 bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 {
-	// Assuming list of achievements cannot change in a runtime, update descriptions only once
+	// Assuming list of achievements cannot change during the runtime, update descriptions only once
 	if (AreAchievementsDescriptionsAvailable())
 		return true;
 
