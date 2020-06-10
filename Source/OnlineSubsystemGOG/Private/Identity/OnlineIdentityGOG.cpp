@@ -168,7 +168,6 @@ bool FOnlineIdentityGOG::AutoLogin(int32 InLocalUserNum)
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::AutoLogin(%d)"), InLocalUserNum);
 
-	// TODO: this has to be a dedicated server login
 	Login(InLocalUserNum, {GetAuthType(), TEXT(""), TEXT("")});
 
 	return true;

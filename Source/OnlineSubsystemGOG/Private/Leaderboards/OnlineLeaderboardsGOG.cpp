@@ -370,7 +370,7 @@ bool FOnlineLeaderboardsGOG::FlushLeaderboards(const FName& InSessionName)
 bool FOnlineLeaderboardsGOG::WriteOnlinePlayerRatings(const FName&, int32, const TArray<FOnlinePlayerScore>&)
 {
 	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("FOnlineLeaderboardsGOG::ReadLeaderboardsAroundUser"));
-	// TODO: FOnlinePlayerScore is not implemented in UE4
+	// TODO: FOnlinePlayerScore is not implemented at least up to 4.24
 	return false;
 }
 
