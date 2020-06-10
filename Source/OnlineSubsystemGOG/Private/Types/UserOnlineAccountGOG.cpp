@@ -20,7 +20,7 @@ namespace
 			return{};
 		}
 
-		return UTF8_TO_TCHAR(accessTokenBuffer.data());
+		return FString{UTF8_TO_TCHAR(accessTokenBuffer.data())};
 	}
 
 }

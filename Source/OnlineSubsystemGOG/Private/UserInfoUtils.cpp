@@ -82,7 +82,7 @@ namespace UserInfoUtils
 			return false;
 		}
 
-		OutPlayerNickname = FString{UTF8_TO_TCHAR(usernameBuffer.data())};
+		OutPlayerNickname = UTF8_TO_TCHAR(usernameBuffer.data());
 		return true;
 	}
 

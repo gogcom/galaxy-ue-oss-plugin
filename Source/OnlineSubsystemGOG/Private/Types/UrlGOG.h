@@ -8,6 +8,11 @@ class FUrlGOG : public FURL
 {
 public:
 
+	explicit FUrlGOG(TCHAR const* InRemoteAddress)
+		: FURL{nullptr, InRemoteAddress, ETravelType::TRAVEL_Absolute}
+	{
+	}
+
 	explicit FUrlGOG(const FString& InRemoteAddress)
 		: FURL{nullptr, *InRemoteAddress, ETravelType::TRAVEL_Absolute}
 	{
