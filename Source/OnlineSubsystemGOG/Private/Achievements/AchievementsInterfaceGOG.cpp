@@ -389,33 +389,32 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 
 	std::array<char, MAX_ACHIVEMENTS_BUFFER_SIZE> achievementInfoBuffer;
 
-	FString title;
-	FString description;
-	bool isHidden;
-
 	for (const auto& achievementID : achievementIDs)
 	{
-		const auto* achievementIDAsUTF8 = TCHAR_TO_UTF8(*achievementID);
+		const FTCHARToUTF8 achievementIDAsUTF8{*achievementID};
 
-		galaxy::api::Stats()->GetAchievementDisplayNameCopy(achievementIDAsUTF8, achievementInfoBuffer.data(), achievementInfoBuffer.size());
+		galaxy::api::Stats()->GetAchievementDisplayNameCopy(achievementIDAsUTF8.Get(), achievementInfoBuffer.data(), achievementInfoBuffer.size());
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
-			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achievement title: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
+			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achievement title: achievementID='%s'; %s; %s"),
+				*achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
-		title = UTF8_TO_TCHAR(achievementInfoBuffer.data());
 
-		galaxy::api::Stats()->GetAchievementDescriptionCopy(achievementIDAsUTF8, achievementInfoBuffer.data(), achievementInfoBuffer.size());
+		auto title{FText::FromString(UTF8_TO_TCHAR(achievementInfoBuffer.data()))};
+
+		galaxy::api::Stats()->GetAchievementDescriptionCopy(achievementIDAsUTF8.Get(), achievementInfoBuffer.data(), achievementInfoBuffer.size());
 		err = galaxy::api::GetError();
 		if (err)
 		{
 			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achievement description: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 			return false;
 		}
-		description = UTF8_TO_TCHAR(achievementInfoBuffer.data());
 
-		isHidden = !galaxy::api::Stats()->IsAchievementVisible(achievementIDAsUTF8);
+		auto description{FText::FromString(UTF8_TO_TCHAR(achievementInfoBuffer.data()))};
+
+		bool isHidden = !galaxy::api::Stats()->IsAchievementVisible(achievementIDAsUTF8.Get());
 		err = galaxy::api::GetError();
 		if (err)
 		{
@@ -423,7 +422,9 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 			return false;
 		}
 
-		cachedAchievementDescriptions.Emplace(achievementID, FOnlineAchievementDesc{FText::FromString(title), FText::FromString(description), FText::FromString(description), isHidden});
+		cachedAchievementDescriptions.Emplace(
+			achievementID,
+			FOnlineAchievementDesc{MoveTemp(title), description, description, isHidden});
 	}
 
 	return true;
