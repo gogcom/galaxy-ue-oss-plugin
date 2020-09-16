@@ -70,6 +70,10 @@ public:
 		const FOnSetFriendAliasComplete& InDelegate = FOnSetFriendAliasComplete()) override;
 #endif
 
+#if ENGINE_MINOR_VERSION >= 25
+	void DeleteFriendAlias(int32 LocalUserNum, const FUniqueNetId& FriendId, const FString& ListName, const FOnDeleteFriendAliasComplete& Delegate) override;
+#endif
+
 PACKAGE_SCOPE:
 
 	FOnlineFriendsGOG(class FOnlineSubsystemGOG& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount);

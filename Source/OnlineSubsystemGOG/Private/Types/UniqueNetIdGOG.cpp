@@ -119,6 +119,11 @@ bool FUniqueNetIdGOG::operator==(const galaxy::api::GalaxyID& InGalaxyID) const
 	return id == InGalaxyID.ToUint64();
 }
 
+bool FUniqueNetIdGOG::operator==(const FUniqueNetIdGOG& InGalaxyID) const
+{
+	return InGalaxyID == id;
+}
+
 FArchive& operator<<(FArchive& InArchive, FUniqueNetIdGOG& InUniqueNetId)
 {
 	return InArchive << InUniqueNetId.id;

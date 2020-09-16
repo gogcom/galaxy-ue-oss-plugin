@@ -126,7 +126,13 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBytes*/, int32
 		remotePeerID,
 		dataToSend,
 		bytesToSend,
-		InternalAck ? galaxy::api::P2P_SEND_RELIABLE_IMMEDIATE : galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
+#if ENGINE_MINOR_VERSION >= 25
+		IsInternalAck()
+#else
+		InternalAck
+#endif
+			? galaxy::api::P2P_SEND_RELIABLE_IMMEDIATE
+			: galaxy::api::P2P_SEND_UNRELIABLE_IMMEDIATE);
 
 	auto err = galaxy::api::GetError();
 	if (err)

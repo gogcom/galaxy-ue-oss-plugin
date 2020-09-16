@@ -43,6 +43,8 @@ public:
 
 	bool operator==(const galaxy::api::GalaxyID& InGalaxyID) const;
 
+	bool operator==(const FUniqueNetIdGOG& InGalaxyID) const;
+
 	friend FArchive& operator<<(FArchive& InArchive, FUniqueNetIdGOG& InUniqueNetId);
 
 #if ENGINE_MINOR_VERSION >= 20
