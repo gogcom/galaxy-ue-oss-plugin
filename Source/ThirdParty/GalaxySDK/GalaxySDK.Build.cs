@@ -87,7 +87,7 @@ public class GalaxySDK : ModuleRules
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Mac)
 		{
-			galaxyDLLName = "libGalaxy.dylib";
+			galaxyDLLName = "libGalaxy64.dylib";
 			string galaxyDLLPath = Path.Combine(LibrariesPath, galaxyDLLName);
 			PublicDelayLoadDLLs.Add(galaxyDLLPath);
 #if ! UE_4_22_OR_LATER
