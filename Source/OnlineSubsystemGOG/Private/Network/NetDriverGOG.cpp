@@ -59,9 +59,9 @@ bool UNetDriverGOG::InitBase(bool InInitAsClient, FNetworkNotify* InNotify, cons
 		return false;
 	}
 
-	SetParameterIfZero(InitialConnectTimeout, "InitalConnectTimeout", 10.f);
-	SetParameterIfZero(ConnectionTimeout, "ConnectionTimeout", 5.f);
-	SetParameterIfZero(KeepAliveTime, "KeepAliveTime", 0.f);
+	SetParameterIfZero(InitialConnectTimeout, "InitalConnectTimeout", 120.f);
+	SetParameterIfZero(ConnectionTimeout, "ConnectionTimeout", 120.f);
+	SetParameterIfZero(KeepAliveTime, "KeepAliveTime", 0.2f);
 	SetParameterIfZero(SpawnPrioritySeconds, "SpawnPrioritySeconds", 1.f);
 	SetParameterIfZero(RelevantTimeout, "RelevantTimeout", 5.f);
 	SetParameterIfZero(ServerTravelPause, "ServerTravelPause", 5.f);
