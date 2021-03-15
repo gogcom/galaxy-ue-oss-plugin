@@ -68,7 +68,7 @@ private:
 
 	void AddOrReplacePlayerAchievements(const FUniqueNetIdGOG& InPlayerID);
 
-	bool UpdateAchievementDescriptions();
+	void UpdateAchievementDescriptions();
 
 	TArray<FString> achievementIDs;
 	TMap<FString, FOnlineAchievementDesc> cachedAchievementDescriptions;

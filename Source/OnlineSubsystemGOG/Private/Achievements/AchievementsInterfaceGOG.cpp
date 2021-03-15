@@ -379,16 +379,15 @@ void FOnlineAchievementsGOG::AddOrReplacePlayerAchievements(const FUniqueNetIdGO
 	}
 }
 
-bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
+void FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 {
 	// Assuming list of achievements cannot change during the runtime, update descriptions only once
 	if (AreAchievementsDescriptionsAvailable())
-		return true;
+		return;
 
 	cachedAchievementDescriptions.Reserve(AchievementsCount());
 
 	std::array<char, MAX_ACHIVEMENTS_BUFFER_SIZE> achievementInfoBuffer;
-	bool success = true;
 
 	for (const auto& achievementID : achievementIDs)
 	{
@@ -400,7 +399,6 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 		{
 			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achievement title: achievementID='%s'; %s; %s"),
 				*achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			success = false;
 			continue;
 		}
 
@@ -411,7 +409,6 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 		if (err)
 		{
 			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to read achievement description: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			success = false;
 			continue;
 		}
 
@@ -422,7 +419,6 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 		if (err)
 		{
 			UE_LOG_ONLINE_ACHIEVEMENTS(Error, TEXT("Failed to get achievement visibility: achievementID='%s'; %s; %s"), *achievementID, UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
-			success = false;
 			continue;
 		}
 
@@ -430,6 +426,4 @@ bool FOnlineAchievementsGOG::UpdateAchievementDescriptions()
 			achievementID,
 			FOnlineAchievementDesc{MoveTemp(title), description, description, isHidden});
 	}
-
-	return success;
 }
