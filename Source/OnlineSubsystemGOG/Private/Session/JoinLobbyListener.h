@@ -10,7 +10,7 @@
 
 class FJoinLobbyListener
 	: public IListenerGOG
-	, public galaxy::api::ILobbyEnteredListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyEnteredListener>
 {
 public:
 

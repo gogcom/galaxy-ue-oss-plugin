@@ -9,7 +9,7 @@
 
 class FGetSessionDetailsListener
 	: public IListenerGOG
-	, public galaxy::api::ILobbyDataRetrieveListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyDataRetrieveListener>
 {
 public:
 

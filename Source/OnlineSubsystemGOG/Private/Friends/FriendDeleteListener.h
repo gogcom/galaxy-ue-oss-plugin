@@ -7,7 +7,7 @@
 
 class FFriendDeleteListener
 	: public IListenerGOG
-	, public galaxy::api::IFriendDeleteListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IFriendDeleteListener>
 {
 public:
 

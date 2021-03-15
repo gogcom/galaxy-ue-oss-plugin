@@ -7,7 +7,7 @@
 
 class FQueryAchievementsListener
 	: public IListenerGOG
-	, public galaxy::api::IUserStatsAndAchievementsRetrieveListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IUserStatsAndAchievementsRetrieveListener>
 {
 public:
 

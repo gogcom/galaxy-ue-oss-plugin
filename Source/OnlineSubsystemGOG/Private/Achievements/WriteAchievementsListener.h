@@ -8,7 +8,7 @@
 
 class FWriteAchievementsListener
 	: public IListenerGOG
-	, public galaxy::api::IStatsAndAchievementsStoreListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IStatsAndAchievementsStoreListener>
 {
 public:
 

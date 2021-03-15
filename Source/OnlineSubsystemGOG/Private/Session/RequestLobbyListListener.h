@@ -6,8 +6,8 @@
 
 class FRequestLobbyListListener
 	: public IListenerGOG
-	, public galaxy::api::ILobbyListListener
-	, public galaxy::api::ILobbyDataRetrieveListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyListListener>
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyDataRetrieveListener>
 {
 public:
 

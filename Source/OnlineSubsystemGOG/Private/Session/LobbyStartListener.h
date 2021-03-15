@@ -5,7 +5,7 @@
 
 class FLobbyStartListener
 	: public IListenerGOG
-	, public galaxy::api::ILobbyDataUpdateListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyDataUpdateListener>
 {
 public:
 

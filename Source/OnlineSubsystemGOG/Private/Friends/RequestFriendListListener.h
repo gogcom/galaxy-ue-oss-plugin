@@ -7,7 +7,7 @@
 
 class FRequestFriendListListener
 	: public IListenerGOG
-	, public galaxy::api::IFriendListListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IFriendListListener>
 {
 public:
 

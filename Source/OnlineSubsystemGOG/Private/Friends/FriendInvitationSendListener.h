@@ -7,7 +7,7 @@
 
 class FFriendInvitationSendListener
 	: public IListenerGOG
-	, public galaxy::api::IFriendInvitationSendListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IFriendInvitationSendListener>
 {
 public:
 

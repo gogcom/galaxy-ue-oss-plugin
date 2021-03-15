@@ -17,7 +17,7 @@ class FOnlineAchievementsGOG
 	, public FListenerManager
 	, public galaxy::api::GlobalAchievementChangeListener
 #if !UE_BUILD_SHIPPING
-	, public galaxy::api::IStatsAndAchievementsStoreListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IStatsAndAchievementsStoreListener>
 #endif
 {
 public:

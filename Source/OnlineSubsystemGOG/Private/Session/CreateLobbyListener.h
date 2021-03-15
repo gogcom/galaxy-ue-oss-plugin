@@ -8,10 +8,10 @@
 
 class FCreateLobbyListener
 	: public IListenerGOG
-	, public galaxy::api::ILobbyCreatedListener
-	, public galaxy::api::ILobbyEnteredListener
-	, public galaxy::api::ILobbyDataUpdateListener
-	, public galaxy::api::IRichPresenceChangeListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyCreatedListener>
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyEnteredListener>
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILobbyDataUpdateListener>
+	, public SelfDeregisteringListenerGOG<galaxy::api::IRichPresenceChangeListener>
 {
 public:
 

@@ -34,7 +34,7 @@ namespace
 template<bool IsInvitationAccepted>
 class FFriendInvitationRespondToListener
 	: public IListenerGOG
-	, public galaxy::api::IFriendInvitationRespondToListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IFriendInvitationRespondToListener>
 {
 public:
 

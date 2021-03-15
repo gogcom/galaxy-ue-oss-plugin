@@ -7,8 +7,8 @@
 
 class FLeaderboardRetriever
 	: public IListenerGOG
-	, public galaxy::api::ILeaderboardRetrieveListener
-	, protected galaxy::api::ILeaderboardEntriesRetrieveListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILeaderboardRetrieveListener>
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILeaderboardEntriesRetrieveListener>
 {
 PACKAGE_SCOPE:
 

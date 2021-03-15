@@ -6,7 +6,7 @@
 
 class FRequestRichPresenceListener
 	: public IListenerGOG
-	, public galaxy::api::IRichPresenceRetrieveListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::IRichPresenceRetrieveListener>
 {
 public:
 

@@ -7,8 +7,8 @@
 
 class FFlushLeaderboardsListener
 	: public IListenerGOG
-	, public galaxy::api::ILeaderboardRetrieveListener
-	, private galaxy::api::ILeaderboardScoreUpdateListener
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILeaderboardRetrieveListener>
+	, public SelfDeregisteringListenerGOG<galaxy::api::ILeaderboardScoreUpdateListener>
 {
 PACKAGE_SCOPE:
 

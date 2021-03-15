@@ -14,6 +14,17 @@ public:
 	FSetElementId ListenerID;
 };
 
+template<class GalaxyListener>
+class SelfDeregisteringListenerGOG : public GalaxyListener
+{
+public:
+
+	virtual ~SelfDeregisteringListenerGOG()
+	{
+		galaxy::api::ListenerRegistrar()->Unregister(GalaxyListener::GetListenerType(), this);
+	}
+};
+
 inline size_t GetTypeHash(const TUniquePtr<IListenerGOG>& inListener)
 {
 	return reinterpret_cast<size_t>(inListener.Get());
