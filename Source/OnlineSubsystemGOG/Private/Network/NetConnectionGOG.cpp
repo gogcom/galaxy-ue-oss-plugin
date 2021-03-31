@@ -179,7 +179,8 @@ void UNetConnectionGOG::LobbyMemberStateListener::OnLobbyMemberStateChanged(cons
 
 	if (InMemberStateChange == galaxy::api::LOBBY_MEMBER_STATE_CHANGED_LEFT
 		|| InMemberStateChange == galaxy::api::LOBBY_MEMBER_STATE_CHANGED_DISCONNECTED
-		|| InMemberStateChange == galaxy::api::LOBBY_MEMBER_STATE_CHANGED_KICKED)
+		|| InMemberStateChange == galaxy::api::LOBBY_MEMBER_STATE_CHANGED_KICKED
+		|| InMemberStateChange == galaxy::api::LOBBY_MEMBER_STATE_CHANGED_BANNED)
 	{
 		// Unregister listener as connection object destruction is delayed until garbage collection
 		galaxy::api::ListenerRegistrar()->Unregister(GetListenerType(), this);

@@ -27,6 +27,8 @@ namespace
 {
 
 	constexpr auto TEXT_SESSION_NAME_OPTION = TEXT("SessionName");
+	constexpr auto TEXT_LOBBY_TOPOLOGY_TYPE_SETTING_KEY = TEXT("GOGLobbyTopologyType");
+	constexpr auto DEFAULT_LOBBY_TOPOLOGY_TYPE = galaxy::api::LOBBY_TOPOLOGY_TYPE_STAR;
 
 	void FlushLeaderboards(IOnlineSubsystem& InSubsystem, FName InSessionName)
 	{
@@ -250,6 +252,49 @@ namespace
 		return galaxy::api::LOBBY_TYPE_PRIVATE;
 	}
 
+	template<typename IntType, typename = std::enable_if_t<std::is_integral<IntType>::value>>
+	galaxy::api::LobbyTopologyType ConvertToLobbyTopologyType(const FVariantData& data)
+	{
+		int32 topologyType;
+		if (!GetInt32ValueFromType<IntType>(data, topologyType))
+		{
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Numerical value for lobby topology type is out of int32 range: topologyType=%d"), topologyType);
+			return DEFAULT_LOBBY_TOPOLOGY_TYPE;
+		}
+
+		// validity of topology type is checked in SDK
+		UE_LOG_ONLINE_SESSION(Display, TEXT("Casting to LobbyTopologyType: topologyType=%d"), topologyType);
+		return static_cast<galaxy::api::LobbyTopologyType>(topologyType);
+	}
+
+	galaxy::api::LobbyTopologyType GetLobbyTopologyType(const FOnlineSessionSettings& InSessionSettings)
+	{
+		const auto topologyTypeSetting = InSessionSettings.Settings.FindRef(TEXT_LOBBY_TOPOLOGY_TYPE_SETTING_KEY);
+
+		switch (topologyTypeSetting.Data.GetType())
+		{
+		case EOnlineKeyValuePairDataType::Empty: // not provided
+			UE_LOG_ONLINE_SESSION(Display, TEXT("Using default lobby topology type: topologyType=%d"), DEFAULT_LOBBY_TOPOLOGY_TYPE);
+			return DEFAULT_LOBBY_TOPOLOGY_TYPE;
+
+		case EOnlineKeyValuePairDataType::Int32:
+			return ConvertToLobbyTopologyType<int32>(topologyTypeSetting.Data);
+
+		case EOnlineKeyValuePairDataType::UInt32:
+			return ConvertToLobbyTopologyType<uint32>(topologyTypeSetting.Data);
+
+		case EOnlineKeyValuePairDataType::Int64:
+			return ConvertToLobbyTopologyType<int64>(topologyTypeSetting.Data);
+
+		case EOnlineKeyValuePairDataType::UInt64:
+			return ConvertToLobbyTopologyType<uint64>(topologyTypeSetting.Data);
+
+		default:
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Value type for lobby topology is not numerical: value=%s"), *topologyTypeSetting.Data.ToString());
+			return DEFAULT_LOBBY_TOPOLOGY_TYPE;
+		}
+	}
+
 }
 
 FOnlineSessionGOG::FOnlineSessionGOG(IOnlineSubsystem& InSubsystem, TSharedRef<class FUserOnlineAccountGOG> InUserOnlineAccount)
@@ -311,7 +356,7 @@ bool FOnlineSessionGOG::CreateSession(int32 InHostingPlayerNum, FName InSessionN
 		GetLobbyType(InSessionSettings),
 		InSessionSettings.NumPublicConnections,
 		false,
-		galaxy::api::LOBBY_TOPOLOGY_TYPE_STAR,
+		GetLobbyTopologyType(InSessionSettings),
 		listener.Value,
 		listener.Value);
 
