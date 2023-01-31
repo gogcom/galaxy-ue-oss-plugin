@@ -22,10 +22,10 @@ public:
 
 	void InitLocalConnection(UNetDriver* InDriver, class FSocket* InSocket, const FURL& InURL, EConnectionState InState, int32 InMaxPacket = 0, int32 InPacketOverhead = 0) override;
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 	void LowLevelSend(void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;
 
-#if ENGINE_MINOR_VERSION < 23
+#if ENGINE_MINOR_VERSION < 23 && ENGINE_MAJOR_VERSION < 5
 	TSharedPtr<FInternetAddr> GetInternetAddr() override;
 
 #endif

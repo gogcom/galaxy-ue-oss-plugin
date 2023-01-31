@@ -42,7 +42,11 @@ bool UNetDriverGOG::IsNetResourceValid()
 		return true;
 
 	// Clients should not send packets to closed server connection
+#if ENGINE_MAJOR_VERSION > 4
+	return ServerConnection->GetConnectionState() == EConnectionState::USOCK_Open;
+#else
 	return ServerConnection->State == EConnectionState::USOCK_Open;
+#endif
 }
 
 bool UNetDriverGOG::InitBase(bool InInitAsClient, FNetworkNotify* InNotify, const FURL& InURL, bool InReuseAddressAndPort, FString& OutError)
@@ -93,7 +97,7 @@ bool UNetDriverGOG::InitConnect(FNetworkNotify* InNotify, const FURL& InConnectU
 
 	ServerConnection->InitLocalConnection(this, /*no socket*/ nullptr, InConnectURL, USOCK_Open);
 
-#if ENGINE_MINOR_VERSION >= 22
+#if ENGINE_MINOR_VERSION >= 22 || ENGINE_MAJOR_VERSION > 4
 	CreateInitialClientChannels();
 #else
 	ServerConnection->CreateChannel(CHTYPE_Control, true, INDEX_NONE);
@@ -111,7 +115,7 @@ bool UNetDriverGOG::InitListen(FNetworkNotify* InNotify, FURL& InLocalURL, bool 
 
 	InitConnectionlessHandler();
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 	auto ownUserID = UserInfoUtils::GetOwnUserID();
 	if (!ownUserID.IsValid())
 		return false;
@@ -126,7 +130,7 @@ void UNetDriverGOG::ProcessRemoteFunction(class AActor* InActor, class UFunction
 {
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::ProcessRemoteFunction()"));
 
-#if ENGINE_MINOR_VERSION >= 18 && !UE_BUILD_SHIPPING
+#if (ENGINE_MINOR_VERSION >= 18 || ENGINE_MAJOR_VERSION > 4) && !UE_BUILD_SHIPPING
 	bool outBlockSendRPC = false;
 
 	SendRPCDel.ExecuteIfBound(InActor, InFunction, InParameters, OutParms, InStack, InSubObject, outBlockSendRPC);
@@ -313,7 +317,7 @@ bool UNetDriverGOG::ChallengeConnectingClient(const FUniqueNetIdGOG& InSenderID,
 		return false;
 	}
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 	auto remoteAddress = MakeShared<FInternetAddrGOG>(InSenderID);
 #else
 	auto remoteAddress = FUrlGOG{InSenderID}.ToString();
@@ -336,7 +340,7 @@ bool UNetDriverGOG::ChallengeConnectingClient(const FUniqueNetIdGOG& InSenderID,
 		return false;
 	}
 
-#if ENGINE_MINOR_VERSION >= 22
+#if ENGINE_MINOR_VERSION >= 22 || ENGINE_MAJOR_VERSION > 4
 	bool isHandshakeRestarted{false};
 	if (!statelessHandshakeComponent->HasPassedChallenge(remoteAddress, isHandshakeRestarted))
 #else
@@ -366,7 +370,7 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetId
 	newIncomingConnection->InitRemoteConnection(this, nullptr, FUrlGOG{InSenderID}, FInternetAddrGOG{InSenderID}, USOCK_Open);
 	AddClientConnection(newIncomingConnection);
 
-#if ENGINE_MINOR_VERSION >= 17
+#if ENGINE_MINOR_VERSION >= 17 || ENGINE_MAJOR_VERSION > 4
 	// Set the initial packet sequence from the handshake data
 	int32 serverSequence = 0;
 	int32 clientSequence = 0;
@@ -374,7 +378,7 @@ UNetConnectionGOG* UNetDriverGOG::EstablishIncomingConnection(const FUniqueNetId
 	statelessHandshakeHandler->GetChallengeSequence(serverSequence, clientSequence);
 
 	newIncomingConnection->InitSequence(clientSequence, serverSequence);
-#if ENGINE_MINOR_VERSION >= 24
+#if ENGINE_MINOR_VERSION >= 24 || ENGINE_MAJOR_VERSION > 4
 	statelessHandshakeHandler->ResetChallengeData();
 #endif
 
@@ -401,7 +405,7 @@ UNetConnection* UNetDriverGOG::FindEstablishedConnection(const FUniqueNetIdGOG& 
 	return *storedConnectionIt;
 }
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 void UNetDriverGOG::LowLevelSend(TSharedPtr<const FInternetAddr> InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
 #elif ENGINE_MINOR_VERSION >= 21
 void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits)
@@ -411,7 +415,7 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 {
 	auto dataToSend = reinterpret_cast<uint8*>(InData);
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 	UE_LOG_TRAFFIC(VeryVerbose, TEXT("UNetDriverGOG::LowLevelSend(): address='%s'; size=%u bits; data={%s}"),
 		*InAddress->ToString(true), InCountBits, *BytesToHex(dataToSend, FMath::DivideAndRoundUp(InCountBits, 8)));
 
@@ -434,7 +438,7 @@ void UNetDriverGOG::LowLevelSend(FString InAddress, void* InData, int32 InCountB
 
 	if (ConnectionlessHandler.IsValid())
 	{
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 		const ProcessedPacket processedDataPacket = ConnectionlessHandler->OutgoingConnectionless(InAddress, dataToSend, InCountBits, OutTraits);
 #else
 		const ProcessedPacket processedDataPacket = ConnectionlessHandler->OutgoingConnectionless(InAddress, dataToSend, InCountBits);
@@ -470,7 +474,7 @@ FString UNetDriverGOG::LowLevelGetNetworkNumber()
 {
 	UE_LOG_NETWORKING(Log, TEXT("UNetDriverGOG::LowLevelGetNetworkNumber()"));
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 	if(!LocalAddr)
 		return {};
 
@@ -507,7 +511,11 @@ void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& 
 	if (driver.IsServer())
 	{
 		for (auto clientConnection : driver.ClientConnections)
+#if ENGINE_MAJOR_VERSION > 4
+			clientConnection->SetConnectionState(EConnectionState::USOCK_Closed);
+#else
 			clientConnection->State = EConnectionState::USOCK_Closed;
+#endif
 	}
 	else
 	{
@@ -518,7 +526,11 @@ void UNetDriverGOG::LobbyLeftListener::OnLobbyLeft(const galaxy::api::GalaxyID& 
 		}
 
 		driver.serverUserId = galaxy::api::GalaxyID::UNASSIGNED_VALUE;
+#if ENGINE_MAJOR_VERSION > 4
+		driver.ServerConnection->SetConnectionState(EConnectionState::USOCK_Closed);
+#else
 		driver.ServerConnection->State = EConnectionState::USOCK_Closed;
+#endif
 	}
 
 	galaxy::api::ListenerRegistrar()->Unregister(GetListenerType(), this);

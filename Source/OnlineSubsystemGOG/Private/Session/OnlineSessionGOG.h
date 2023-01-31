@@ -99,7 +99,7 @@ public:
 
 	void DumpSessionState() override;
 
-#if ENGINE_MINOR_VERSION >= 20
+#if ENGINE_MINOR_VERSION >= 20 || ENGINE_MAJOR_VERSION > 4
 	TSharedPtr<const FUniqueNetId> CreateSessionIdFromString(const FString& InSessionIdStr) override;
 #endif
 

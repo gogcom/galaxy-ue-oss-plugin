@@ -8,6 +8,7 @@ namespace
 {
 	const FString GetGalaxySDKLibrariesDir()
 	{
+#pragma warning (disable : 4668)
 #if PLATFORM_PS4
 		return TEXT("/app0/prx");
 #else
@@ -18,6 +19,7 @@ namespace
 
 		return FPaths::Combine(pluginRootDir, TEXT("Source"), TEXT("ThirdParty"), TEXT("GalaxySDK"), TEXT("Libraries"));
 #endif
+#pragma warning (default : 4668)
 	}
 
 	const FString GetGalaxySdkLibraryPath()

@@ -1,17 +1,21 @@
-jenkins:
-  stage: test
-  variables:
-    GIT_STRATEGY: none
-    JENKINS_VERIFIER_CONFIGURATION: >
-      {
-        "job" : "ue4-test-game-ci",
-        "parameters" : {
-          "PLUGIN_REFSPEC" : "${CI_COMMIT_REF_NAME}",
-          "GAME_REFSPEC" : "master"
-        }
-      }
-  script:
-    - verify_on_jenkins
-  except:
-    - master
-    - tags
+stages:
+  - start
+  - trigger-demo-game
+
+include:
+  - project: galaxy-sdk/build-scripts/gitlab-ci
+    file:
+      - /common-ci.yml
+
+start:
+  stage: start
+  script: env
+
+verify-plugin:
+  stage: trigger-demo-game
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "pipeline"'
+  trigger:
+    project: galaxy-sdk/galaxy-ue4-test-game
+    branch: "master"
+    strategy: depend

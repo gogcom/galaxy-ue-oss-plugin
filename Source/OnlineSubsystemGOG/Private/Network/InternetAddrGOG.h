@@ -35,7 +35,7 @@ public:
 
 	bool operator==(const FInternetAddr& InOther) const override;
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 	TArray<uint8> GetRawIp() const override;
 
 	void SetRawIp(const TArray<uint8>& InRawAddr) override;
@@ -43,7 +43,7 @@ public:
 	TSharedRef<FInternetAddr> Clone() const override;
 
 	void SetLoopbackAddress() override;
-#if ENGINE_MINOR_VERSION >= 22
+#if ENGINE_MINOR_VERSION >= 22 || ENGINE_MAJOR_VERSION > 4
 
 	uint32 GetTypeHash() const override;
 #else
@@ -52,7 +52,7 @@ public:
 #endif
 #endif
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 	FName GetProtocolType() const override;
 #endif
 

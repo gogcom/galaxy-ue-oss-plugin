@@ -12,7 +12,7 @@ public:
 
 	FString GetAppId() const override;
 
-#if ENGINE_MINOR_VERSION >= 17
+#if ENGINE_MINOR_VERSION >= 17 || ENGINE_MAJOR_VERSION > 4
 	FText GetOnlineServiceName() const override;
 #endif
 
@@ -75,8 +75,6 @@ public:
 
 	STUB_ONLINE_INTERFACE(Entitlements);
 
-	STUB_ONLINE_INTERFACE(Store);
-
 	STUB_ONLINE_INTERFACE(StoreV2);
 
 	STUB_ONLINE_INTERFACE(Purchase);
@@ -87,10 +85,10 @@ public:
 
 	STUB_ONLINE_INTERFACE(TurnBased);
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 	STUB_ONLINE_INTERFACE(Tournament);
 #endif
-#if ENGINE_MINOR_VERSION >= 22
+#if ENGINE_MINOR_VERSION >= 22 || ENGINE_MAJOR_VERSION > 4
 	STUB_ONLINE_INTERFACE(Stats);
 #endif
 

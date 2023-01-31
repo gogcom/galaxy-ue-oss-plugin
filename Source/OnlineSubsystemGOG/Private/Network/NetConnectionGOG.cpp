@@ -48,7 +48,7 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 
 	InitBase(InDriver, InSocket, InURL, InState, InMaxPacket, InPacketOverhead);
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 	RemoteAddr = InRemoteAddr.Clone();
 #endif
 
@@ -58,8 +58,8 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 	SetExpectedClientLoginMsgType(NMT_Hello);
 }
 
-#if ENGINE_MINOR_VERSION >= 21
-#if ENGINE_MINOR_VERSION < 23
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MINOR_VERSION < 23 && ENGINE_MAJOR_VERSION < 5
 TSharedPtr<FInternetAddr> UNetConnectionGOG::GetInternetAddr()
 {
 	// FInternetAddr is used by the engine for fast connection mapping, mainly to prevent DDoS when using IpNetDriver.
@@ -86,7 +86,7 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBytes*/, int32
 
 	if (Handler.IsValid() && !Handler->GetRawSend())
 	{
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 		const auto processedDataPacket = Handler->Outgoing(dataToSend, InCountBits, OutTraits);
 #else
 		const auto processedDataPacket = Handler->Outgoing(dataToSend, InCountBits);
@@ -103,7 +103,7 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBytes*/, int32
 
 	auto bytesToSend = FMath::DivideAndRoundUp(InCountBits, 8);
 
-#if ENGINE_MINOR_VERSION >= 18 && !UE_BUILD_SHIPPING
+#if (ENGINE_MINOR_VERSION >= 18 || ENGINE_MAJOR_VERSION > 4) && !UE_BUILD_SHIPPING
 	bool bBlockSend = false;
 	LowLevelSendDel.ExecuteIfBound(InData, bytesToSend, bBlockSend);
 	if (bBlockSend)
@@ -126,7 +126,7 @@ void UNetConnectionGOG::LowLevelSend(void* InData, int32 /*InCountBytes*/, int32
 		remotePeerID,
 		dataToSend,
 		bytesToSend,
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
 		IsInternalAck()
 #else
 		InternalAck

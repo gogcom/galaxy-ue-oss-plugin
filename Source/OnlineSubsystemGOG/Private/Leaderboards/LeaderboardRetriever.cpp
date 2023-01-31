@@ -25,7 +25,7 @@ namespace
 		FString playerNickname;
 		if (!UserInfoUtils::GetPlayerNickname(*userID, playerNickname))
 			return false;
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 19 || ENGINE_MAJOR_VERSION > 4
 		auto& newEntry = InOutReadLeaderboard->Rows.Emplace_GetRef(MoveTemp(playerNickname), MoveTemp(userID));
 #else
 		const auto newEntryIdx = InOutReadLeaderboard->Rows.Emplace(MoveTemp(playerNickname), MoveTemp(userID));
