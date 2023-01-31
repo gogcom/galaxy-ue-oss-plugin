@@ -57,11 +57,11 @@ public:
 
 	static const FString& GetDefaultFriendsListName();
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 	void DumpRecentPlayers() const override;
 #endif
 
-#if ENGINE_MINOR_VERSION >= 24
+#if ENGINE_MINOR_VERSION >= 24 || ENGINE_MAJOR_VERSION > 4
 	void SetFriendAlias(
 		int32 InLocalUserNum,
 		const FUniqueNetId& InFriendId,
@@ -70,7 +70,7 @@ public:
 		const FOnSetFriendAliasComplete& InDelegate = FOnSetFriendAliasComplete()) override;
 #endif
 
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
 	void DeleteFriendAlias(int32 LocalUserNum, const FUniqueNetId& FriendId, const FString& ListName, const FOnDeleteFriendAliasComplete& Delegate) override;
 #endif
 

@@ -130,7 +130,7 @@ bool FOnlineSubsystemGOG::ReadEngineConfiguration()
 	return !clientID.IsEmpty() && !clientSecret.IsEmpty();
 }
 
-#if ENGINE_MINOR_VERSION >= 17
+#if ENGINE_MINOR_VERSION >= 17 || ENGINE_MAJOR_VERSION > 4
 FText FOnlineSubsystemGOG::GetOnlineServiceName() const
 {
 	UE_LOG_ONLINE(Display, TEXT("OnlineSubsystemGOG::GetOnlineServiceName()"));
@@ -153,7 +153,7 @@ bool FOnlineSubsystemGOG::Tick(float InDeltaTime)
 
 void FOnlineSubsystemGOG::OnConnectionStateChange(EOnlineServerConnectionStatus::Type InConnectionState)
 {
-#if ENGINE_MINOR_VERSION < 20
+#if ENGINE_MINOR_VERSION < 20 && ENGINE_MAJOR_VERSION < 5
 	TriggerOnConnectionStatusChangedDelegates(currentState, InConnectionState);
 #else
 	TriggerOnConnectionStatusChangedDelegates(

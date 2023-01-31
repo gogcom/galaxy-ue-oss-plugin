@@ -1,6 +1,6 @@
 #pragma once
 
-#include "UObject/CoreOnline.h"
+#include "Online/CoreOnline.h"
 #include "OnlineSubsystem.h"
 
 #include <galaxy/GalaxyApi.h>

@@ -4,7 +4,7 @@ FInternetAddrGOG::FInternetAddrGOG(FUniqueNetIdGOG InUniqueNetID)
 	: uniqueNetID{MoveTemp(InUniqueNetID)}
 {}
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 TArray<uint8> FInternetAddrGOG::GetRawIp() const
 {
 	return {uniqueNetID.GetBytes(), uniqueNetID.GetSize()};
@@ -30,7 +30,7 @@ bool FInternetAddrGOG::operator==(const FInternetAddr& InOther) const
 	return GetRawIp() == InOther.GetRawIp();
 }
 
-#if ENGINE_MINOR_VERSION >= 22
+#if ENGINE_MINOR_VERSION >= 22 || ENGINE_MAJOR_VERSION > 4
 uint32 FInternetAddrGOG::GetTypeHash() const
 #else
 uint32 FInternetAddrGOG::GetTypeHash()
@@ -46,7 +46,7 @@ bool FInternetAddrGOG::operator==(const FInternetAddr& InOther) const
 }
 #endif
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 FName FInternetAddrGOG::GetProtocolType() const
 {
 	return TEXT_GOG;

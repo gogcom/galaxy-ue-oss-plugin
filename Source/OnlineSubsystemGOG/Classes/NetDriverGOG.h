@@ -33,7 +33,7 @@ public:
 
 	void TickDispatch(float InDeltaTime) override;
 
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
 	void LowLevelSend(TSharedPtr<const FInternetAddr> InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;
 #elif ENGINE_MINOR_VERSION >= 21
 	void LowLevelSend(FString InAddress, void* InData, int32 InCountBits, FOutPacketTraits& OutTraits) override;

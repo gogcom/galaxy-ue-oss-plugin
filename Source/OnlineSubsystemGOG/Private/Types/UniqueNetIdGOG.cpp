@@ -6,7 +6,7 @@ namespace
 FString sanitizeID(const FString& InStr)
 {
 	if (InStr.StartsWith(TEXT("GOG.")))
-#if ENGINE_MINOR_VERSION >= 24
+#if ENGINE_MINOR_VERSION >= 24 || ENGINE_MAJOR_VERSION > 4
 		return InStr.Mid(UE_ARRAY_COUNT(TEXT("GOG.")) - 1);
 #else
 		return InStr.Mid(ARRAY_COUNT(TEXT("GOG.")) - 1);
@@ -129,7 +129,7 @@ FArchive& operator<<(FArchive& InArchive, FUniqueNetIdGOG& InUniqueNetId)
 	return InArchive << InUniqueNetId.id;
 }
 
-#if ENGINE_MINOR_VERSION >= 20
+#if ENGINE_MINOR_VERSION >= 20 || ENGINE_MAJOR_VERSION > 4
 FName FUniqueNetIdGOG::GetType() const
 {
 	return TEXT_GOG;

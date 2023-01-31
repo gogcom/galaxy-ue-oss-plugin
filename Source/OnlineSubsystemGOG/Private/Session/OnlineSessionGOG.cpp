@@ -1355,7 +1355,7 @@ void FOnlineSessionGOG::OnLobbyMemberStateChanged(const galaxy::api::GalaxyID& I
 		++storedSession->NumOpenPublicConnections;
 }
 
-#if ENGINE_MINOR_VERSION >= 20
+#if ENGINE_MINOR_VERSION >= 20 || ENGINE_MAJOR_VERSION > 4
 TSharedPtr<const FUniqueNetId> FOnlineSessionGOG::CreateSessionIdFromString(const FString& InSessionIdStr)
 {
 	UE_LOG_ONLINE_SESSION(Display, TEXT("FOnlineSessionGOG::CreateSessionIdFromString()"));

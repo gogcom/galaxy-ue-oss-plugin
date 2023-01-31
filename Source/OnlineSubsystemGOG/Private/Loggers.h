@@ -8,7 +8,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTrafficGOG, Log, All);
 #define UE_LOG_NETWORKING(Verbosity, Format, ...) UE_LOG(LogNetworkingGOG, Verbosity, Format,  ##__VA_ARGS__)
 #define UE_LOG_TRAFFIC(Verbosity, Format, ...) UE_LOG(LogTrafficGOG, Verbosity, Format,  ##__VA_ARGS__)
 
-#if ENGINE_MINOR_VERSION < 20
+#if ENGINE_MINOR_VERSION < 20 && ENGINE_MAJOR_VERSION < 5
 DECLARE_LOG_CATEGORY_EXTERN(LogOnlineAchievements, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogOnlineFriend, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogOnlineIdentity, Log, All);

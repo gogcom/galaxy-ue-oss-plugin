@@ -13,7 +13,7 @@ UGOGLoginCallbackProxy::UGOGLoginCallbackProxy(const FObjectInitializer& ObjectI
 
 UGOGLoginCallbackProxy* UGOGLoginCallbackProxy::Login(UObject* InWorldContextObject, class APlayerController* InPlayerController, FString AuthType, FString InUserID, FString InUserToken)
 {
-#if ENGINE_MINOR_VERSION >= 17
+#if ENGINE_MINOR_VERSION >= 17 || ENGINE_MAJOR_VERSION > 4
 	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, EGetWorldErrorMode::ReturnNull));
 #else
 	auto onlineSubsystem = Online::GetSubsystem(GEngine->GetWorldFromContextObject(InWorldContextObject, true));
@@ -110,14 +110,21 @@ bool UGOGLoginCallbackProxy::UpdatePlayerUniqueNetID(int32 InLocalUserNum) const
 		FFrame::KismetExecutionMessage(TEXT("Cannot update Player UniqueNetID: invalid PlayerController."), ELogVerbosity::Error);
 		return false;
 	}
-
+#if ENGINE_MAJOR_VERSION > 4
+	TObjectPtr<APlayerState> playerState = playerControllerWeakPtr->PlayerState;
+#else
 	auto* playerState = playerControllerWeakPtr->PlayerState;
+#endif
+
 	if (!playerState)
 	{
 		FFrame::KismetExecutionMessage(TEXT("Cannot update Player UniqueNetID: invalid PlayerState object for given PlayerController."), ELogVerbosity::Error);
 		return false;
 	}
-
+#if ENGINE_MAJOR_VERSION > 4
+	playerState->SetUniqueId(FUniqueNetIdRepl(onlineIdentity->GetUniquePlayerId(InLocalUserNum)));
+#else
 	playerState->SetUniqueId(onlineIdentity->GetUniquePlayerId(InLocalUserNum));
+#endif
 	return true;
 }

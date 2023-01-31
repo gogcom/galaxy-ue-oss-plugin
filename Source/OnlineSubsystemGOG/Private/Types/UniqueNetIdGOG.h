@@ -47,7 +47,7 @@ public:
 
 	friend FArchive& operator<<(FArchive& InArchive, FUniqueNetIdGOG& InUniqueNetId);
 
-#if ENGINE_MINOR_VERSION >= 20
+#if ENGINE_MINOR_VERSION >= 20 || ENGINE_MAJOR_VERSION > 4
 	FName GetType() const override;
 #endif
 

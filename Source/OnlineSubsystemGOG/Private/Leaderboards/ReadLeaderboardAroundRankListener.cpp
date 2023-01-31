@@ -4,9 +4,7 @@
 #include <limits>
 #include <algorithm>
 
-#if ! PLATFORM_PS4
-#pragma warning (disable: 4868)
-#endif
+#pragma warning (disable : 4668)
 FReadLeaderboardAroundRankListener::FReadLeaderboardAroundRankListener(
 	class FOnlineLeaderboardsGOG& InLeaderboardsInterface,
 	int32 InRank,
@@ -19,9 +17,7 @@ FReadLeaderboardAroundRankListener::FReadLeaderboardAroundRankListener(
 	if (rank <= 0)
 		UE_LOG_ONLINE_LEADERBOARD(Error, TEXT("Rank cannot be negative or zero"));
 }
-#if ! PLATFORM_PS4
-#pragma warning (default: 4868)
-#endif
+#pragma warning (default : 4668)
 
 void FReadLeaderboardAroundRankListener::RequestLeaderboardEntries()
 {

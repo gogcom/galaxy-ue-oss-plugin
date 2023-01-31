@@ -34,14 +34,14 @@ const FString& FOnlineFriendsGOG::GetDefaultFriendsListName()
 	return defaultFriendsListName;
 }
 
-#if ENGINE_MINOR_VERSION >= 21
+#if ENGINE_MINOR_VERSION >= 21 || ENGINE_MAJOR_VERSION > 4
 void FOnlineFriendsGOG::DumpRecentPlayers() const
 {
 	UE_LOG_ONLINE_FRIEND(Warning, TEXT("FOnlineFriendsGOG::DumpRecentPlayers() is not supported"));
 }
 #endif
 
-#if ENGINE_MINOR_VERSION >= 24
+#if ENGINE_MINOR_VERSION >= 24 || ENGINE_MAJOR_VERSION > 4
 void FOnlineFriendsGOG::SetFriendAlias(
 	int32 InLocalUserNum,
 	const FUniqueNetId& InFriendId,
@@ -429,7 +429,7 @@ void FOnlineFriendsGOG::OnFriendAdded(galaxy::api::GalaxyID InFriendID, galaxy::
 	TriggerOnInviteAcceptedDelegates(*ownUserOnlineAccount->GetUserId(), FUniqueNetIdGOG{InFriendID});
 }
 
-#if ENGINE_MINOR_VERSION >= 25
+#if ENGINE_MINOR_VERSION >= 25 || ENGINE_MAJOR_VERSION > 4
 void FOnlineFriendsGOG::DeleteFriendAlias(int32 LocalUserNum, const FUniqueNetId& FriendId, const FString& ListName, const FOnDeleteFriendAliasComplete& Delegate)
 {
 	UE_LOG_ONLINE_FRIEND(Warning, TEXT("FOnlineFriendsOculus::DeleteFriendAlias is not implemented"));

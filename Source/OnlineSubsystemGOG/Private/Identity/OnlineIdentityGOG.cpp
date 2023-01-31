@@ -347,7 +347,7 @@ void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPri
 	InDelegate.ExecuteIfBound(InUserId, InPrivilege, privilegeResult);
 }
 
-#if ENGINE_MINOR_VERSION >= 18
+#if ENGINE_MINOR_VERSION >= 18 || ENGINE_MAJOR_VERSION > 4
 FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId) const
 #else
 FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId)
@@ -358,10 +358,14 @@ FPlatformUserId FOnlineIdentityGOG::GetPlatformUserIdFromUniqueNetId(const FUniq
 	if(InUniqueNetId != *ownUserOnlineAccount->GetUserId())
 		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Only single local player is supported"));
 
+#if ENGINE_MAJOR_VERSION > 4
+	return FPlatformMisc::GetPlatformUserForUserIndex(LOCAL_USER_NUM);
+#else
 	return LOCAL_USER_NUM;
+#endif
 }
 
-#if ENGINE_MINOR_VERSION >= 18
+#if ENGINE_MINOR_VERSION >= 18 || ENGINE_MAJOR_VERSION > 4
 void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOnRevokeAuthTokenCompleteDelegate& InDelegate)
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::RevokeAuthToken()"));
@@ -379,7 +383,7 @@ void FOnlineIdentityGOG::RevokeAuthToken(const FUniqueNetId& InUserId, const FOn
 	{
 		UE_LOG_ONLINE_IDENTITY(Error, TEXT("Failed to get access token: %s; %s"), UTF8_TO_TCHAR(err->GetName()), UTF8_TO_TCHAR(err->GetMsg()));
 		InDelegate.ExecuteIfBound(InUserId, FOnlineError{
-#if ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MINOR_VERSION >= 19 || ENGINE_MAJOR_VERSION > 4
 			501
 #else
 			"501"
