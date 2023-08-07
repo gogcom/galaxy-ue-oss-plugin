@@ -6,6 +6,7 @@
 #include "Leaderboards/OnlineLeaderboardsGOG.h"
 #include "Friends/OnlineFriendsGOG.h"
 #include "Presence/OnlinePresenceGOG.h"
+#include "ExternalUI/OnlineExternalUIGOG.h"
 
 #include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
@@ -219,6 +220,7 @@ bool FOnlineSubsystemGOG::Init()
 	galaxyLeaderboardsInterface = MakeShared<FOnlineLeaderboardsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyFriendsInterface = MakeShared<FOnlineFriendsGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 	galaxyPresenceInterface = MakeShared<FOnlinePresenceGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
+	galaxyExternalUIInterface = MakeShared<FOnlineExternalUIGOG, ESPMode::ThreadSafe>(*this, ownUserOnlineAccount);
 
 #if !UE_BUILD_SHIPPING
 	// CLI authentication is for testing purpose only
@@ -294,6 +296,7 @@ bool FOnlineSubsystemGOG::ShutdownImpl()
 	galaxyLeaderboardsInterface.Reset();
 	galaxyFriendsInterface.Reset();
 	galaxyPresenceInterface.Reset();
+	galaxyExternalUIInterface.Reset();
 
 	globalConnectionListener.Reset();
 

@@ -37,6 +37,12 @@ void FOnlinePresenceGOG::SetPresence(const FUniqueNetId& InUserID, const FOnline
 	}
 
 	auto presenceMetaData = InStatus.Properties.Find(DefaultPresenceKey);
+	if (presenceMetaData == nullptr)
+	{
+		UE_LOG_ONLINE_PRESENCE(Warning, TEXT("Rich presence metadata is empty"));
+		return;
+	}
+
 	auto numOfNonCustomProperties = InStatus.Properties.Num() - (presenceMetaData ? 1 : 0);
 	if (numOfNonCustomProperties > 0)
 		// TODO: re-consider if more RichPresence data is implemented

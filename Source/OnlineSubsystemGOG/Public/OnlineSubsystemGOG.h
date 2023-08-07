@@ -44,6 +44,7 @@ public:
 	DECLARE_ONLINE_INTERFACE(Leaderboards);
 	DECLARE_ONLINE_INTERFACE(Friends);
 	DECLARE_ONLINE_INTERFACE(Presence);
+	DECLARE_ONLINE_INTERFACE(ExternalUI);
 
 #define STUB_ONLINE_INTERFACE(interfaceName) \
 	IOnline##interfaceName##Ptr Get##interfaceName##Interface() const override \
@@ -67,13 +68,13 @@ public:
 
 	STUB_ONLINE_INTERFACE(Voice);
 
-	STUB_ONLINE_INTERFACE(ExternalUI);
-
 	STUB_ONLINE_INTERFACE(Time);
 
 	STUB_ONLINE_INTERFACE(TitleFile);
 
 	STUB_ONLINE_INTERFACE(Entitlements);
+
+	STUB_ONLINE_INTERFACE(Store);
 
 	STUB_ONLINE_INTERFACE(StoreV2);
 
