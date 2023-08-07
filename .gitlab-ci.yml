@@ -16,6 +16,6 @@ verify-plugin:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "pipeline"'
   trigger:
-    project: galaxy-sdk/galaxy-ue4-test-game
+    project: galaxy-sdk/galaxy-ue-test-game
     branch: "master"
     strategy: depend

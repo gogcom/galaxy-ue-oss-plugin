@@ -10,4 +10,5 @@ DEFINE_LOG_CATEGORY(LogOnlineIdentity);
 DEFINE_LOG_CATEGORY(LogOnlineLeaderboard);
 DEFINE_LOG_CATEGORY(LogOnlinePresence);
 DEFINE_LOG_CATEGORY(LogOnlineSession);
+DEFINE_LOG_CATEGORY(LogOnlineExternalUI);
 #endif

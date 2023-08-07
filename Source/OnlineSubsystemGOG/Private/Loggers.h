@@ -15,6 +15,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogOnlineIdentity, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogOnlineLeaderboard, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogOnlinePresence, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogOnlineSession, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogOnlineExternalUI, Log, All);
 
 #define UE_LOG_ONLINE_ACHIEVEMENTS(Verbosity, Format, ...) { \
 	UE_LOG(LogOnlineAchievements, Verbosity, TEXT("%s%s"), ONLINE_LOG_PREFIX, *FString::Printf(Format, ##__VA_ARGS__)); }
@@ -33,4 +34,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogOnlineSession, Log, All);
 
 #define UE_LOG_ONLINE_SESSION(Verbosity, Format, ...) { \
 	UE_LOG(LogOnlineSession, Verbosity, TEXT("%s%s"), ONLINE_LOG_PREFIX, *FString::Printf(Format, ##__VA_ARGS__)); }
+
+#define UE_LOG_ONLINE_EXTERNALUI(Verbosity, Format, ...) { \
+	UE_LOG(LogOnlineExternalUI, Verbosity, TEXT("%s%s"), ONLINE_LOG_PREFIX, *FString::Printf(Format, ##__VA_ARGS__)); }
 #endif
