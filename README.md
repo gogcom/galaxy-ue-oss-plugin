@@ -174,5 +174,5 @@ void MyClass::PrintMyGalaxyId()
 Output:
 
 ```
-LogTemp: Warning: My GalaxyId is 195892623335099075
+LogTemp: Warning: My GalaxyId is {your galaxy id} 
 ```
