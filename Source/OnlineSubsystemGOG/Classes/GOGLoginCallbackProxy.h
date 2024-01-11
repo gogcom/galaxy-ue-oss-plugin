@@ -6,7 +6,7 @@
 
 #include "GOGLoginCallbackProxy.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnlineLogoutResult, APlayerController*, PlayerController);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnlineLogoutResultDelegate, APlayerController*, PlayerController);
 
 UCLASS(MinimalAPI)
 class UGOGLoginCallbackProxy : public UOnlineBlueprintCallProxyBase
@@ -17,10 +17,10 @@ class UGOGLoginCallbackProxy : public UOnlineBlueprintCallProxyBase
 public:
 
 	UPROPERTY(BlueprintAssignable)
-	FOnlineLogoutResult OnSuccess;
+	FOnlineLogoutResultDelegate OnSuccess;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnlineLogoutResult OnFailure;
+	FOnlineLogoutResultDelegate OnFailure;
 
 	/* Log in to platform backend services
 	 *
