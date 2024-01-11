@@ -65,7 +65,13 @@ NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/OnlineSub
 [/Script/OnlineSubsystemGOG.NetDriverGOG]
 NetConnectionClassName="/Script/OnlineSubsystemGOG.NetConnectionGOG"
 ```
- Please contact your GOG.com™ tech representative for more info on how to obtain **ClientID** and **ClientSecret**
+Please contact your GOG.com™ tech representative for more info on how to obtain **ClientID** and **ClientSecret**
+
+- Add GOG to private dependencies array in projects Build.cs file (**"GameFolder/Source/GameName.Target.cs"**):
+
+```
+PrivateDependencyModuleNames.AddRange(new string[] { "... other modules, "GalaxySDK" });
+```
 
 ## XBOX cross platform support:
 Make sure your engine is compiled with the support for the XBOX. Please contact Epic Games™ representatives for more details.
@@ -146,4 +152,27 @@ Prior to using the achievements:
 +Achievements=ACHIEVEMENT_KEY_1
 +Achievements=ACHIEVEMENT_KEY_2
 ... e.t.c.
+```
+
+# Example usage of the Galaxy API
+Code:
+
+```
+#include "galaxy/GalaxyApi.h"
+
+void MyClass::PrintMyGalaxyId()
+{
+	galaxy::api::IUser* GalaxyUser = galaxy::api::User();
+	if (GalaxyUser != nullptr)
+	{
+		const galaxy::api::GalaxyID MyGalaxyId = GalaxyUser->GetGalaxyID();
+		UE_LOG(LogTemp, Warning, TEXT("My GalaxyId is %llu"), MyGalaxyId.ToUint64())	
+	}	
+}
+```
+
+Output:
+
+```
+LogTemp: Warning: My GalaxyId is {your galaxy id} 
 ```
