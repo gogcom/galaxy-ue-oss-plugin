@@ -29,8 +29,6 @@ public:
 
 	bool InitListen(FNetworkNotify* InNotify, FURL& InLocalURL, bool InReuseAddressAndPort, FString& OutError) override;
 
-	void ProcessRemoteFunction(class AActor* InActor, class UFunction* InFunction, void* InParameters, struct FOutParmRec* OutParms, struct FFrame* InStack, class UObject* InSubObject = NULL) override;
-
 	void TickDispatch(float InDeltaTime) override;
 
 #if ENGINE_MINOR_VERSION >= 23 || ENGINE_MAJOR_VERSION > 4
