@@ -23,6 +23,42 @@
 
 #include <algorithm>
 
+// HACK: these defines are missing from UE 5.4 source
+#if (ENGINE_MINOR_VERSION >= 4 && ENGINE_MAJOR_VERSION >= 5)
+/**
+ * Search settings
+ */
+
+/** Search only for dedicated servers (value is true/false) */
+#define SEARCH_DEDICATED_ONLY FName(TEXT("DEDICATEDONLY"))
+/** Search for empty servers only (value is true/false) */
+#define SEARCH_EMPTY_SERVERS_ONLY FName(TEXT("EMPTYONLY"))
+/** Search for non empty servers only (value is true/false) */
+#define SEARCH_NONEMPTY_SERVERS_ONLY FName(TEXT("NONEMPTYONLY"))
+/** Search for secure servers only (value is true/false) */
+#define SEARCH_SECURE_SERVERS_ONLY FName(TEXT("SECUREONLY"))
+/** Search for presence sessions only (value is true/false) */
+#define SEARCH_PRESENCE FName(TEXT("PRESENCESEARCH"))
+/** Search for a match with min player availability (value is int) */
+#define SEARCH_MINSLOTSAVAILABLE FName(TEXT("MINSLOTSAVAILABLE"))
+/** Exclude all matches where any unique ids in a given array are present (value is string of the form "uniqueid1;uniqueid2;uniqueid3") */
+#define SEARCH_EXCLUDE_UNIQUEIDS FName(TEXT("EXCLUDEUNIQUEIDS"))
+/** User ID to search for session of */
+#define SEARCH_USER FName(TEXT("SEARCHUSER"))
+/** Keywords to match in session search */
+#define SEARCH_KEYWORDS FName(TEXT("SEARCHKEYWORDS"))
+/** The matchmaking queue name to matchmake in, e.g. "TeamDeathmatch" (value is string) */
+#define SEARCH_MATCHMAKING_QUEUE FName(TEXT("MATCHMAKINGQUEUE"))
+/** If set, use the named Xbox Live hopper to find a session via matchmaking (value is a string) */
+#define SEARCH_XBOX_LIVE_HOPPER_NAME UE_DEPRECATED_MACRO(5.4, "SEARCH_XBOX_LIVE_HOPPER_NAME has been deprecated. Use SETTING_MATCHING_HOPPER instead.") SETTING_MATCHING_HOPPER
+/** Which session template from the service configuration to use.*/
+#define SEARCH_XBOX_LIVE_SESSION_TEMPLATE_NAME UE_DEPRECATED_MACRO(5.4, "SEARCH_XBOX_LIVE_SESSION_TEMPLATE_NAME has been deprecated. Use SETTING_SESSION_TEMPLATE_NAME instead.")  SETTING_SESSION_TEMPLATE_NAME
+/** Selection method used to determine which match to join when multiple are returned (valid only on Switch) */
+#define SEARCH_SWITCH_SELECTION_METHOD FName(TEXT("SWITCHSELECTIONMETHOD"))
+/** Whether to use lobbies vs sessions */
+#define SEARCH_LOBBIES FName(TEXT("LOBBYSEARCH"))
+#endif
+
 namespace
 {
 
