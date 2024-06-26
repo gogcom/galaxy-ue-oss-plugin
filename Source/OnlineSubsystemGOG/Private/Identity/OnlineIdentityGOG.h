@@ -43,7 +43,11 @@ public:
 
 	FString GetAuthToken(int32 InLocalUserNum) const override;
 
+#if (ENGINE_MINOR_VERSION >= 4 && ENGINE_MAJOR_VERSION >= 5)
+	void GetUserPrivilege(const FUniqueNetId& InUserId, EUserPrivileges::Type InPrivilege, const FOnGetUserPrivilegeCompleteDelegate& InDelegate, EShowPrivilegeResolveUI ShowResolveUI = EShowPrivilegeResolveUI::Default) override;
+#else
 	void GetUserPrivilege(const FUniqueNetId& InUserId, EUserPrivileges::Type InPrivilege, const FOnGetUserPrivilegeCompleteDelegate& InDelegate) override;
+#endif
 
 #if ENGINE_MINOR_VERSION >= 18 || ENGINE_MAJOR_VERSION > 4
 	FPlatformUserId GetPlatformUserIdFromUniqueNetId(const FUniqueNetId& InUniqueNetId) const override;
