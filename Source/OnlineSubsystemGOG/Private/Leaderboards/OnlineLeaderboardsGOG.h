@@ -7,6 +7,7 @@
 
 #include "Interfaces/OnlineLeaderboardInterface.h"
 #include "OnlineStats.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FOnlineLeaderboardsGOG
 	: public IOnlineLeaderboards

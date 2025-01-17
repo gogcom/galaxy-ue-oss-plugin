@@ -306,7 +306,7 @@ FString FOnlineIdentityGOG::GetAuthToken(int32 InLocalUserNum) const
 	return ownUserOnlineAccount->GetAccessToken();
 }
 
-#if (ENGINE_MINOR_VERSION >= 4 && ENGINE_MAJOR_VERSION >= 5)
+#if (ENGINE_MINOR_VERSION >= 5 && ENGINE_MAJOR_VERSION >= 5)
 void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPrivileges::Type InPrivilege, const FOnGetUserPrivilegeCompleteDelegate& InDelegate, EShowPrivilegeResolveUI ShowResolveUI)
 #else
 void FOnlineIdentityGOG::GetUserPrivilege(const FUniqueNetId& InUserId, EUserPrivileges::Type InPrivilege, const FOnGetUserPrivilegeCompleteDelegate& InDelegate)

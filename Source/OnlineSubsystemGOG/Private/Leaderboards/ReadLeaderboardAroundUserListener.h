@@ -4,6 +4,7 @@
 #include "Types/UniqueNetIdGOG.h"
 
 #include "OnlineStats.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FReadLeaderboardAroundUserListener
 	: public FLeaderboardRetriever

@@ -1338,7 +1338,7 @@ FNamedOnlineSession* FOnlineSessionGOG::FindSession(const FUniqueNetIdGOG& InSes
 {
 	return storedSessions.FindByPredicate([&](const auto& session) {
 		const auto& sessionInfo = session.SessionInfo;
-		return sessionInfo.IsValid() && sessionInfo->IsValid() && sessionInfo->GetSessionId() == InSessionID;
+		return sessionInfo.IsValid() && sessionInfo->IsValid() && FUniqueNetIdGOG(sessionInfo->GetSessionId()) == InSessionID;
 	});
 }
 

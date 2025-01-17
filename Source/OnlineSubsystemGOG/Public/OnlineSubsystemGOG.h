@@ -5,7 +5,7 @@
 #include "OnlineSubsystemImpl.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "HAL/RunnableThread.h"
-
+#include "OnlineSubsystemGOGPackage.h"
 class ONLINESUBSYSTEMGOG_API FOnlineSubsystemGOG : public FOnlineSubsystemImpl
 {
 public:

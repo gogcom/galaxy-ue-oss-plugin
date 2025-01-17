@@ -9,6 +9,7 @@
 
 #include "Interfaces/OnlineExternalUIInterface.h"
 #include "Types/UniqueNetIdGOG.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FOnlineExternalUIGOG
 	: public IOnlineExternalUI

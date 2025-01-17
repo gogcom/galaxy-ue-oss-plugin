@@ -2,6 +2,7 @@
 
 #include "CommonGOG.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 uint32 GetTypeHash(const class FUniqueNetIdGOG& InUniqueNetIdGOG);
 

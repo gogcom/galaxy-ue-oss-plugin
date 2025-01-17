@@ -25,6 +25,7 @@ public class OnlineSubsystemGOG : ModuleRules
 				"OnlineSubsystemUtils"
 			}
 		);
+        PrivateDefinitions.Add("ONLINESUBSYSTEMGOG_PACKAGE=1");
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
