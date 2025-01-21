@@ -5,6 +5,8 @@
 
 #include "Interfaces/OnlineIdentityInterface.h"
 
+#include <functional>
+
 class FOnlineIdentityGOG
 	: public IOnlineIdentity
 	, public galaxy::api::GlobalAuthListener
@@ -59,6 +61,8 @@ public:
 	FString GetAuthType() const override;
 
 	TSharedRef<FUserOnlineAccountGOG> GetOwnUserOnlineAccount() const;
+	
+	virtual void GetLinkedAccountAuthToken(int32 LocalUserNum, const FString& TokenType, const FOnGetLinkedAccountAuthTokenCompleteDelegate& Delegate) const override;
 
 private:
 
@@ -79,8 +83,24 @@ private:
 	bool isAuthInProgress{false};
 	bool isSigningOut{false};
 	ELoginStatus::Type loginStatus{ELoginStatus::NotLoggedIn};
-
+	
 	TSharedRef<FUserOnlineAccountGOG> ownUserOnlineAccount;
+
+	class EncryptedAppTicketListener : public galaxy::api::IEncryptedAppTicketListener
+	{
+	public:
+		EncryptedAppTicketListener(
+		std::function<void()> OnEncryptedAppTicketRetrieveSuccessCallback,
+		std::function<void(FailureReason)> OnEncryptedAppTicketRetrieveFailureCallback
+		);
+			virtual void OnEncryptedAppTicketRetrieveSuccess() override;
+			virtual void OnEncryptedAppTicketRetrieveFailure(FailureReason failureReason) override;
+		~EncryptedAppTicketListener();
+	private:
+		std::function<void()> SuccessCallback;
+		std::function<void(FailureReason)> FailureCallback;
+	};
+	mutable TSharedPtr<EncryptedAppTicketListener> Listener;
 };
 
 using FOnlineIdentityGOGPtr = TSharedPtr<class FOnlineIdentityGOG, ESPMode::ThreadSafe>;
