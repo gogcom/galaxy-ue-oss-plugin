@@ -7,6 +7,7 @@
 #include "Types/UserOnlineAccountGOG.h"
 
 #include "Interfaces/OnlineAchievementsInterface.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 #if !UE_BUILD_SHIPPING
 #include "Misc/Optional.h"

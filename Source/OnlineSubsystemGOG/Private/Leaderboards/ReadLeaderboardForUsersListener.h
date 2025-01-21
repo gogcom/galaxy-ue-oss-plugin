@@ -3,6 +3,7 @@
 #include "LeaderboardRetriever.h"
 
 #include "OnlineStats.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FReadLeaderboardForUsersListener
 	: public FLeaderboardRetriever

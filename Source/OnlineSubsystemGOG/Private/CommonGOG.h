@@ -1,5 +1,4 @@
 #pragma once
-
 #if ENGINE_MAJOR_VERSION > 4
 #include "Online/CoreOnline.h"
 #else

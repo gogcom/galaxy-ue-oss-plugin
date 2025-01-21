@@ -4,6 +4,7 @@
 #include "Types/IListenerGOG.h"
 
 #include "OnlineStats.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FLeaderboardRetriever
 	: public IListenerGOG

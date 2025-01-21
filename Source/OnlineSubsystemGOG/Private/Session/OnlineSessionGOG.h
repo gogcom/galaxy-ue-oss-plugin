@@ -7,6 +7,7 @@
 
 #include "OnlineSessionSettings.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FOnlineSessionGOG
 	: public IOnlineSession

@@ -145,7 +145,7 @@ void FOnlinePresenceGOG::OnRichPresenceUpdated(galaxy::api::GalaxyID InUserID)
 	TriggerOnPresenceArrayUpdatedDelegates(userID, presenceArray);
 	TriggerOnPresenceReceivedDelegates(userID, cachedUserPresence);
 
-	if (*ownUserOnlineAccount->GetUserId() == userID)
+	if (FUniqueNetIdGOG(*ownUserOnlineAccount->GetUserId()) == userID)
 		return;
 
 	// Update rich presence info in friends cache

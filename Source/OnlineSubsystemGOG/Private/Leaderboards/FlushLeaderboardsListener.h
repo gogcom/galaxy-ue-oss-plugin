@@ -4,6 +4,7 @@
 #include "CachedLeaderboardsDetails.h"
 
 #include "OnlineStats.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FFlushLeaderboardsListener
 	: public IListenerGOG

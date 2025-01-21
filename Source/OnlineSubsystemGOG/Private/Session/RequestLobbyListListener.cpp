@@ -3,7 +3,7 @@
 #include "OnlineSessionGOG.h"
 #include "VariantDataUtils.h"
 #include "OnlineSessionUtils.h"
-
+#include "Online/OnlineSessionNames.h"
 #include "Online.h"
 
 namespace

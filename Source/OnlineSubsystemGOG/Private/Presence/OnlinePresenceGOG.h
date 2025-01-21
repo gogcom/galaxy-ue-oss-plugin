@@ -5,6 +5,7 @@
 
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "Types/UniqueNetIdGOG.h"
+#include "OnlineSubsystemGOGPackage.h"
 
 class FOnlinePresenceGOG
 	: public IOnlinePresence
