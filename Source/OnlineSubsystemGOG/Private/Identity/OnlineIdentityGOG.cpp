@@ -504,38 +504,37 @@ void FOnlineIdentityGOG::GetLinkedAccountAuthToken(int32 LocalUserNum,
 	Listener = MakeShared<EncryptedAppTicketListener>(
 		[LocalUserNum, onComplete = Delegate]()
 		{
-			uint8_t encryptedTicket[1023];
+			std::array<uint8_t,1023> encryptedTicket;
 			FExternalAuthToken token;
-			token.TokenData.Reserve(1023);
 			uint32_t actualSize;
-			galaxy::api::User()->GetEncryptedAppTicket(encryptedTicket, 1023, actualSize);
-			token.TokenData.Append(encryptedTicket, actualSize);
+			galaxy::api::User()->GetEncryptedAppTicket(encryptedTicket.data(), 1023, actualSize);
+			token.TokenData.Append(encryptedTicket.data(), actualSize);
 			onComplete.ExecuteIfBound(LocalUserNum, true, token);
 		},
 		[LocalUserNum, onComplete = Delegate](
 			galaxy::api::IEncryptedAppTicketListener::FailureReason FailureReason)
-		{ onComplete.ExecuteIfBound(LocalUserNum, false, FExternalAuthToken{}); });
+		{
+            UE_LOG_ONLINE(Display, TEXT("Failed to retrieve Encrypted app ticket: %i"),FailureReason);
+			onComplete.ExecuteIfBound(LocalUserNum, false, FExternalAuthToken{});
+		});
 	galaxy::api::User()->RequestEncryptedAppTicket(nullptr, 0, Listener.Get());
-	if (const auto* error = galaxy::api::GetError())
+	if (const auto* Error = galaxy::api::GetError())
 	{
 		UE_LOG_ONLINE(Display,
 			TEXT("Failed to request GOG encrypted app ticket. Error: %hs"),
-			error->GetMsg());
+			Error->GetMsg());
 	}
 }
 
 FOnlineIdentityGOG::EncryptedAppTicketListener::EncryptedAppTicketListener(
-	std::function<void()> OnEncryptedAppTicketRetrieveSuccessCallback,
-	std::function<void(FailureReason)> OnEncryptedAppTicketRetrieveFailureCallback) :
-	SuccessCallback(OnEncryptedAppTicketRetrieveSuccessCallback),
-	FailureCallback(OnEncryptedAppTicketRetrieveFailureCallback)
+	std::function<void()> TicketRetrieveSuccessCallback,
+	std::function<void(FailureReason)> TicketRetrieveFailureCallback) :
+	SuccessCallback(TicketRetrieveSuccessCallback),
+	FailureCallback(TicketRetrieveFailureCallback)
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::EncryptedAppTicketListener::ctor()"));
 }
-FOnlineIdentityGOG::EncryptedAppTicketListener::~EncryptedAppTicketListener()
-{
-	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::EncryptedAppTicketListener::dtor()"));
-}
+
 void FOnlineIdentityGOG::EncryptedAppTicketListener::OnEncryptedAppTicketRetrieveSuccess()
 {
 	SuccessCallback();

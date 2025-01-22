@@ -90,12 +90,11 @@ private:
 	{
 	public:
 		EncryptedAppTicketListener(
-		std::function<void()> OnEncryptedAppTicketRetrieveSuccessCallback,
-		std::function<void(FailureReason)> OnEncryptedAppTicketRetrieveFailureCallback
+		std::function<void()> TicketRetrieveSuccessCallback,
+		std::function<void(FailureReason)> TicketRetrieveFailureCallback
 		);
 			virtual void OnEncryptedAppTicketRetrieveSuccess() override;
 			virtual void OnEncryptedAppTicketRetrieveFailure(FailureReason failureReason) override;
-		~EncryptedAppTicketListener();
 	private:
 		std::function<void()> SuccessCallback;
 		std::function<void(FailureReason)> FailureCallback;
