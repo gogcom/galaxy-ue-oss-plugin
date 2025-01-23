@@ -90,14 +90,13 @@ private:
 	{
 	public:
 		EncryptedAppTicketListener(
-		std::function<void()> TicketRetrieveSuccessCallback,
-		std::function<void(FailureReason)> TicketRetrieveFailureCallback
-		);
-			virtual void OnEncryptedAppTicketRetrieveSuccess() override;
-			virtual void OnEncryptedAppTicketRetrieveFailure(FailureReason failureReason) override;
+			int32 LocalUserNum, FOnGetLinkedAccountAuthTokenCompleteDelegate SuccessDelegate);
+		virtual void OnEncryptedAppTicketRetrieveSuccess() override;
+		virtual void OnEncryptedAppTicketRetrieveFailure(FailureReason FailureReason) override;
+
 	private:
-		std::function<void()> SuccessCallback;
-		std::function<void(FailureReason)> FailureCallback;
+		FOnGetLinkedAccountAuthTokenCompleteDelegate onComplete;
+		int32 LocalUserNum;
 	};
 	mutable TSharedPtr<EncryptedAppTicketListener> Listener;
 };

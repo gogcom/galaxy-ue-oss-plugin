@@ -79,8 +79,10 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 
 	if (accountType == TEXT("test"))
 	{
-		UE_LOG_ONLINE_IDENTITY(Display, TEXT("Trying to log in as user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignInCredentials(TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
+		UE_LOG_ONLINE_IDENTITY(
+			Display, TEXT("Trying to log in as user '%s'"), *InAccountCredentials.Id);
+		galaxy::api::User()->SignInCredentials(
+			TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
@@ -501,22 +503,7 @@ void FOnlineIdentityGOG::GetLinkedAccountAuthToken(int32 LocalUserNum,
 	const FOnGetLinkedAccountAuthTokenCompleteDelegate& Delegate) const
 {
 	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetLinkedAccountAuthToken()"));
-	Listener = MakeShared<EncryptedAppTicketListener>(
-		[LocalUserNum, onComplete = Delegate]()
-		{
-			std::array<uint8_t,1023> encryptedTicket;
-			FExternalAuthToken token;
-			uint32_t actualSize;
-			galaxy::api::User()->GetEncryptedAppTicket(encryptedTicket.data(), 1023, actualSize);
-			token.TokenData.Append(encryptedTicket.data(), actualSize);
-			onComplete.ExecuteIfBound(LocalUserNum, true, token);
-		},
-		[LocalUserNum, onComplete = Delegate](
-			galaxy::api::IEncryptedAppTicketListener::FailureReason FailureReason)
-		{
-            UE_LOG_ONLINE(Display, TEXT("Failed to retrieve Encrypted app ticket: %i"),FailureReason);
-			onComplete.ExecuteIfBound(LocalUserNum, false, FExternalAuthToken{});
-		});
+	Listener = MakeShared<EncryptedAppTicketListener>(LocalUserNum,Delegate);
 	galaxy::api::User()->RequestEncryptedAppTicket(nullptr, 0, Listener.Get());
 	if (const auto* Error = galaxy::api::GetError())
 	{
@@ -527,21 +514,24 @@ void FOnlineIdentityGOG::GetLinkedAccountAuthToken(int32 LocalUserNum,
 }
 
 FOnlineIdentityGOG::EncryptedAppTicketListener::EncryptedAppTicketListener(
-	std::function<void()> TicketRetrieveSuccessCallback,
-	std::function<void(FailureReason)> TicketRetrieveFailureCallback) :
-	SuccessCallback(TicketRetrieveSuccessCallback),
-	FailureCallback(TicketRetrieveFailureCallback)
+	int32 LocalUserNum, FOnGetLinkedAccountAuthTokenCompleteDelegate SuccessDelegate) :
+	onComplete(SuccessDelegate), LocalUserNum(LocalUserNum)
 {
-	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::EncryptedAppTicketListener::ctor()"));
 }
 
 void FOnlineIdentityGOG::EncryptedAppTicketListener::OnEncryptedAppTicketRetrieveSuccess()
 {
-	SuccessCallback();
+	std::array<uint8_t, 1023> encryptedTicket;
+	FExternalAuthToken token;
+	uint32_t actualSize;
+	galaxy::api::User()->GetEncryptedAppTicket(encryptedTicket.data(), 1023, actualSize);
+	token.TokenData.Append(encryptedTicket.data(), actualSize);
+	onComplete.ExecuteIfBound(LocalUserNum, true, token);
 }
 
 void FOnlineIdentityGOG::EncryptedAppTicketListener::OnEncryptedAppTicketRetrieveFailure(
-	FailureReason failureReason)
+	FailureReason FailureReason)
 {
-	FailureCallback(failureReason);
+	UE_LOG_ONLINE(Display, TEXT("Failed to retrieve Encrypted app ticket: %i"), FailureReason);
+	onComplete.ExecuteIfBound(LocalUserNum, false, FExternalAuthToken{});
 }
