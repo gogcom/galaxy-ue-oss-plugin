@@ -79,10 +79,8 @@ bool FOnlineIdentityGOG::Login(int32 InLocalUserNum, const FOnlineAccountCredent
 
 	if (accountType == TEXT("test"))
 	{
-		UE_LOG_ONLINE_IDENTITY(
-			Display, TEXT("Trying to log in as user '%s'"), *InAccountCredentials.Id);
-		galaxy::api::User()->SignInCredentials(
-			TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
+		UE_LOG_ONLINE_IDENTITY(Display, TEXT("Trying to log in as user '%s'"), *InAccountCredentials.Id);
+		galaxy::api::User()->SignInCredentials(TCHAR_TO_UTF8(*InAccountCredentials.Id), TCHAR_TO_UTF8(*InAccountCredentials.Token));
 		auto err = galaxy::api::GetError();
 		if (err)
 		{
