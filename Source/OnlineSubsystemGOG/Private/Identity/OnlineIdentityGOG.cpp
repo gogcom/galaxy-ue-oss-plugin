@@ -495,3 +495,41 @@ TSharedRef<FUserOnlineAccountGOG> FOnlineIdentityGOG::GetOwnUserOnlineAccount() 
 {
 	return ownUserOnlineAccount;
 }
+
+void FOnlineIdentityGOG::GetLinkedAccountAuthToken(int32 LocalUserNum,
+	const FString& TokenType,
+	const FOnGetLinkedAccountAuthTokenCompleteDelegate& Delegate) const
+{
+	UE_LOG_ONLINE_IDENTITY(Display, TEXT("FOnlineIdentityGOG::GetLinkedAccountAuthToken()"));
+	Listener = MakeShared<EncryptedAppTicketListener>(LocalUserNum,Delegate);
+	galaxy::api::User()->RequestEncryptedAppTicket(nullptr, 0, Listener.Get());
+	if (const auto* Error = galaxy::api::GetError())
+	{
+		UE_LOG_ONLINE(Display,
+			TEXT("Failed to request GOG encrypted app ticket. Error: %hs"),
+			Error->GetMsg());
+	}
+}
+
+FOnlineIdentityGOG::EncryptedAppTicketListener::EncryptedAppTicketListener(
+	int32 LocalUserNum, FOnGetLinkedAccountAuthTokenCompleteDelegate SuccessDelegate) :
+	onComplete(SuccessDelegate), LocalUserNum(LocalUserNum)
+{
+}
+
+void FOnlineIdentityGOG::EncryptedAppTicketListener::OnEncryptedAppTicketRetrieveSuccess()
+{
+	std::array<uint8_t, 1023> encryptedTicket;
+	FExternalAuthToken token;
+	uint32_t actualSize;
+	galaxy::api::User()->GetEncryptedAppTicket(encryptedTicket.data(), 1023, actualSize);
+	token.TokenData.Append(encryptedTicket.data(), actualSize);
+	onComplete.ExecuteIfBound(LocalUserNum, true, token);
+}
+
+void FOnlineIdentityGOG::EncryptedAppTicketListener::OnEncryptedAppTicketRetrieveFailure(
+	FailureReason FailureReason)
+{
+	UE_LOG_ONLINE(Display, TEXT("Failed to retrieve Encrypted app ticket: %i"), FailureReason);
+	onComplete.ExecuteIfBound(LocalUserNum, false, FExternalAuthToken{});
+}
