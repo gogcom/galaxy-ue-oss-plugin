@@ -8,8 +8,7 @@ namespace
 {
 	const FString GetGalaxySDKLibrariesDir()
 	{
-#pragma warning (disable : 4668)
-#if PLATFORM_PS4
+#if defined(PLATFORM_PS4) && PLATFORM_PS4
 		return TEXT("/app0/prx");
 #else
 		const auto pluginRootDir = IPluginManager::Get().FindPlugin(TEXT_ONLINE_SUBSYSTEM_GOG)->GetBaseDir();
@@ -19,7 +18,6 @@ namespace
 
 		return FPaths::Combine(pluginRootDir, TEXT("Source"), TEXT("ThirdParty"), TEXT("GalaxySDK"), TEXT("Libraries"));
 #endif
-#pragma warning (default : 4668)
 	}
 
 	const FString GetGalaxySdkLibraryPath()
