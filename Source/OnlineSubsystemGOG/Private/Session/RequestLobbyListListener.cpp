@@ -215,7 +215,7 @@ void FRequestLobbyListListener::OnLobbyDataRetrieveFailure(const galaxy::api::Ga
 	{
 		case galaxy::api::ILobbyDataRetrieveListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST:
 		{
-			UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to get lobby data. Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
+			UE_LOG_ONLINE_SESSION(Error, TEXT("Failed to get lobby data. Lobby does not exist: lobbyID=%llu"), InLobbyID.ToUint64());
 			pendingLobbyList.RemoveSwap(InLobbyID);
 
 			if (pendingLobbyList.Num() == 0)

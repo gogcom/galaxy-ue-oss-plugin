@@ -62,7 +62,7 @@ void FLeaderboardRetriever::OnLeaderboardRetrieveSuccess(const char* InName)
 
 void FLeaderboardRetriever::OnLeaderboardRetrieveFailure(const char* InName, galaxy::api::ILeaderboardRetrieveListener::FailureReason failureReason)
 {
-	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("OnLeaderboardRetrieveSuccess: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
+	UE_LOG_ONLINE_LEADERBOARD(Display, TEXT("OnLeaderboardRetrieveFailure: leaderboardName='%s'"), UTF8_TO_TCHAR(InName));
 
 	TriggerOnLeaderboardReadCompleteDelegates(false);
 }

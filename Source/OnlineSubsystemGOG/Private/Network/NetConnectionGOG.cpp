@@ -41,7 +41,7 @@ void UNetConnectionGOG::InitRemoteConnection(UNetDriver* InDriver, class FSocket
 	remotePeerID = FUniqueNetIdGOG{InURL.Host};
 	if (!remotePeerID.IsValid() || !remotePeerID.IsUser())
 	{
-		UE_LOG_NETWORKING(Error, TEXT("Remote PeerID expected to be an user: remotePeerID='%s', remoteUrl='%s'"),
+		UE_LOG_NETWORKING(Error, TEXT("Remote PeerID expected to be a user: remotePeerID='%s', remoteUrl='%s'"),
 			*remotePeerID.ToString(), *InURL.ToString(true));
 		return;
 	}

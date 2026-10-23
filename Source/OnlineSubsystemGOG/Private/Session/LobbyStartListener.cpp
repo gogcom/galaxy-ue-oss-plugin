@@ -33,7 +33,7 @@ void FLobbyStartListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID& 
 
 	if (InFailureReason == galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST)
 	{
-		UE_LOG_ONLINE_SESSION(Error, TEXT("Specified lobby does not exists"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Specified lobby does not exist"));
 	}
 	else
 	{
