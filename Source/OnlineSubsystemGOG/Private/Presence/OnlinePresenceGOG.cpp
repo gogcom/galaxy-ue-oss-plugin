@@ -66,7 +66,7 @@ void FOnlinePresenceGOG::SetPresence(const FUniqueNetId& InUserID, const FOnline
 
 void FOnlinePresenceGOG::QueryPresence(const FUniqueNetId& InUserID, const FOnPresenceTaskCompleteDelegate& InDelegate)
 {
-	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FOnlinePresenceGOG::SetPresence()"));
+	UE_LOG_ONLINE_PRESENCE(Display, TEXT("FOnlinePresenceGOG::QueryPresence()"));
 
 	FUniqueNetIdGOG userID{InUserID};
 

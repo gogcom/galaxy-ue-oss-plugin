@@ -25,7 +25,7 @@ void FUpdateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID&
 	{
 		case galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST:
 		{
-			UE_LOG_ONLINE_SESSION(Warning, TEXT("Specified lobby does not exists anymore: lobbyID=%llu"), InLobbyID.ToUint64());
+			UE_LOG_ONLINE_SESSION(Warning, TEXT("Specified lobby does not exist anymore: lobbyID=%llu"), InLobbyID.ToUint64());
 			break;
 		}
 		case galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_UNDEFINED:

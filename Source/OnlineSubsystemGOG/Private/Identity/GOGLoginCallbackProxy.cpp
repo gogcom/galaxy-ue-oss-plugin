@@ -20,7 +20,7 @@ UGOGLoginCallbackProxy* UGOGLoginCallbackProxy::Login(UObject* InWorldContextObj
 #endif
 	if (onlineSubsystem == nullptr)
 	{
-		FFrame::KismetExecutionMessage(*FString::Printf(TEXT("Login - Invalid or uninitialized OnlineSubsystem"), "Login"), ELogVerbosity::Warning);
+		FFrame::KismetExecutionMessage(*FString::Printf(TEXT("Login - Invalid or uninitialized OnlineSubsystem")), ELogVerbosity::Warning);
 		return nullptr;
 	}
 

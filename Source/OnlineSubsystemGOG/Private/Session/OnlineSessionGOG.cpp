@@ -560,7 +560,7 @@ bool FOnlineSessionGOG::UpdateSession(FName InSessionName, FOnlineSessionSetting
 	auto* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot update a session that does not exists: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot update a session that does not exist: sessionName='%s'"), *InSessionName.ToString());
 		TriggerOnUpdateSessionCompleteDelegates(InSessionName, false);
 		return false;
 	}
@@ -695,7 +695,7 @@ bool FOnlineSessionGOG::EndSession(FName InSessionName)
 	auto* storedSession = GetNamedSession(InSessionName);
 	if (!storedSession)
 	{
-		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot end a session that does not exists: sessionName='%s'"), *InSessionName.ToString());
+		UE_LOG_ONLINE_SESSION(Warning, TEXT("Cannot end a session that does not exist: sessionName='%s'"), *InSessionName.ToString());
 		TriggerOnEndSessionCompleteDelegates(InSessionName, false);
 		return false;
 	}

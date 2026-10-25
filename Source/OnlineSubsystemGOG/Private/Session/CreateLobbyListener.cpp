@@ -94,7 +94,7 @@ void FCreateLobbyListener::OnLobbyEntered(const galaxy::api::GalaxyID& InLobbyID
 		{
 			case galaxy::api::LOBBY_ENTER_RESULT_LOBBY_DOES_NOT_EXIST:
 			{
-				UE_LOG_ONLINE_SESSION(Error, TEXT("Lobby does not exists: lobbyID=%llu"), InLobbyID.ToUint64());
+				UE_LOG_ONLINE_SESSION(Error, TEXT("Lobby does not exist: lobbyID=%llu"), InLobbyID.ToUint64());
 				break;
 			}
 
@@ -186,7 +186,7 @@ void FCreateLobbyListener::OnLobbyDataUpdateFailure(const galaxy::api::GalaxyID&
 
 	if (InFailureReason == galaxy::api::ILobbyDataUpdateListener::FAILURE_REASON_LOBBY_DOES_NOT_EXIST)
 	{
-		UE_LOG_ONLINE_SESSION(Error, TEXT("Specified lobby does not exists"));
+		UE_LOG_ONLINE_SESSION(Error, TEXT("Specified lobby does not exist"));
 	}
 	else
 	{

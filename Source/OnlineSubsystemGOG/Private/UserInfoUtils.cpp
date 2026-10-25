@@ -147,13 +147,13 @@ namespace UserInfoUtils
 		if (!GetPlayerAvatarUrl(InUserId, galaxy::api::AVATAR_TYPE_MEDIUM, avatarURL))
 			return false;
 
-		OutUserAttributes.Emplace(AVATAR_SMALL_KEY, avatarURL);
+		OutUserAttributes.Emplace(AVATAR_MEDIUM_KEY, avatarURL);
 
 
 		if (!GetPlayerAvatarUrl(InUserId, galaxy::api::AVATAR_TYPE_LARGE, avatarURL))
 			return false;
 
-		OutUserAttributes.Emplace(AVATAR_SMALL_KEY, avatarURL);
+		OutUserAttributes.Emplace(AVATAR_LARGE_KEY, avatarURL);
 
 		return GetUserData(InUserId, OutUserAttributes);
 	}
